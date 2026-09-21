@@ -19,3 +19,7 @@ game/assets/town/*
 !game/assets/town/SOURCE.md
 !game/assets/town/house.png
 !game/assets/town/house.png.import
+
+# Diseño y guía de trabajo: notas personales (el lore tiene spoilers)
+CLAUDE.md
+design/

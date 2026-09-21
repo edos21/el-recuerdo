@@ -103,12 +103,8 @@ el-recuerdo/
 │   ├── shaders/              Tinte de mundo (saturación, frío, viñeta)
 │   ├── tools/                Generadores reproducibles de arte y sprites
 │   └── assets/               Arte y audio (ver Créditos)
-├── design/
-│   ├── historia_lore.md      Mundo, protagonista, misterio y preguntas abiertas
-│   └── documento_base_diseno.md   Sistemas, Estabilidad, niveles y géneros
 ├── tools/                    Generador de audio (numpy)
-├── docs/screenshots/         Capturas de este README
-└── CLAUDE.md                 Guía del proyecto para trabajar con agentes
+└── docs/screenshots/         Capturas de este README
 ```
 
 ### Cómo se conecta
