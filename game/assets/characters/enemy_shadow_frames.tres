@@ -1,0 +1,34 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-00.png" id="1_qcsm0"]
+[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-01.png" id="2_3s37q"]
+[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-02.png" id="3_s3ukr"]
+[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-03.png" id="4_dwl1u"]
+[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-04.png" id="5_e2ogq"]
+[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-05.png" id="6_3spgh"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_qcsm0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_3s37q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_s3ukr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_dwl1u")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_e2ogq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_3spgh")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 9.0
+}]

@@ -1,0 +1,21 @@
+# Godot
+game/.godot/
+game/*.translation
+export_presets.cfg
+*.tmp
+
+# macOS
+.DS_Store
+
+# Packs descargados sin importar (no se referencian desde el juego)
+assets-library/
+
+# Arte de terceros con licencia que no permite redistribuirlo: no se sube.
+# `python3 game/tools/gen_placeholder_art.py` crea placeholders (ver README, "Arte").
+game/assets/player/*
+!game/assets/player/SOURCE.md
+game/assets/enemies/
+game/assets/town/*
+!game/assets/town/SOURCE.md
+!game/assets/town/house.png
+!game/assets/town/house.png.import

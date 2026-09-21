@@ -1,0 +1,19 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tiles/tilemap_packed.png" id="1_sy3d7"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_22y4j"]
+texture = ExtResource("1_sy3d7")
+separation = Vector2i(1, 1)
+texture_region_size = Vector2i(18, 18)
+1:6/0 = 0
+8:2/0 = 0
+8:3/0 = 0
+4:4/0 = 0
+6:6/0 = 0
+4:6/0 = 0
+8:6/0 = 0
+
+[resource]
+tile_size = Vector2i(18, 18)
+sources/0 = SubResource("TileSetAtlasSource_22y4j")

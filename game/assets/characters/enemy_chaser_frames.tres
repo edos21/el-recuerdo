@@ -1,0 +1,34 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/chaser-walk-00.png" id="1_ipxid"]
+[ext_resource type="Texture2D" path="res://assets/enemies/chaser-walk-01.png" id="2_6bp2e"]
+[ext_resource type="Texture2D" path="res://assets/enemies/chaser-walk-02.png" id="3_1t0jr"]
+[ext_resource type="Texture2D" path="res://assets/enemies/chaser-walk-03.png" id="4_7slok"]
+[ext_resource type="Texture2D" path="res://assets/enemies/chaser-walk-04.png" id="5_v833c"]
+[ext_resource type="Texture2D" path="res://assets/enemies/chaser-walk-05.png" id="6_iin23"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ipxid")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_6bp2e")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_1t0jr")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_7slok")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_v833c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_iin23")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 12.0
+}]

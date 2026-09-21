@@ -1,0 +1,228 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/core.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="3"]
+[ext_resource type="Shader" path="res://shaders/world_tint.gdshader" id="5"]
+[ext_resource type="Script" path="res://scripts/audio_layers.gd" id="7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_Tint"]
+shader = ExtResource("5")
+shader_parameter/saturation = 0.12
+shader_parameter/focus_saturation = 0.75
+shader_parameter/focus_center = Vector2(-10000, -10000)
+shader_parameter/focus_radius = 0.0
+shader_parameter/vignette = 0.0
+shader_parameter/cold_tint = 1.0
+
+[node name="Core" type="Node"]
+script = ExtResource("1")
+
+[node name="WorldTint" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="TintRect" type="ColorRect" parent="WorldTint"]
+material = SubResource("ShaderMaterial_Tint")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="AudioLayers" type="Node" parent="."]
+script = ExtResource("7")
+
+[node name="HUD" type="CanvasLayer" parent="." groups=["hud"]]
+process_mode = 3
+layer = 2
+script = ExtResource("3")
+
+[node name="HealthRow" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 8.0
+offset_right = 260.0
+offset_bottom = 48.0
+
+[node name="HealthLabel" type="Label" parent="HUD/HealthRow"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 26.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 22
+text = "Vida"
+
+[node name="HealthBarBg" type="ColorRect" parent="HUD/HealthRow"]
+layout_mode = 0
+offset_top = 24.0
+offset_right = 240.0
+offset_bottom = 40.0
+color = Color(0.15, 0.15, 0.15, 1)
+
+[node name="HealthBarFill" type="ColorRect" parent="HUD/HealthRow/HealthBarBg"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 16.0
+color = Color(0.8, 0.2, 0.2, 1)
+
+[node name="StabilityRow" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 56.0
+offset_right = 260.0
+offset_bottom = 96.0
+
+[node name="StabilityLabel" type="Label" parent="HUD/StabilityRow"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 26.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 22
+text = "Estabilidad"
+
+[node name="StabilityBarBg" type="ColorRect" parent="HUD/StabilityRow"]
+layout_mode = 0
+offset_top = 24.0
+offset_right = 240.0
+offset_bottom = 40.0
+color = Color(0.15, 0.15, 0.15, 1)
+
+[node name="StabilityBarFill" type="ColorRect" parent="HUD/StabilityRow/StabilityBarBg"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 16.0
+color = Color(0.3, 0.5, 0.85, 1)
+
+[node name="MemoryRow" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -260.0
+offset_top = 8.0
+offset_right = -20.0
+offset_bottom = 84.0
+
+[node name="Icons" type="HBoxContainer" parent="HUD/MemoryRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 30.0
+offset_right = 240.0
+offset_bottom = 70.0
+alignment = 2
+
+[node name="MemoryLabel" type="Label" parent="HUD/MemoryRow"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 26.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 2
+text = "Recuerdos 0/4"
+
+[node name="NarrativeBox" type="ColorRect" parent="HUD"]
+visible = false
+offset_left = 200.0
+offset_top = 560.0
+offset_right = 1400.0
+offset_bottom = 872.0
+color = Color(0.05, 0.05, 0.08, 0.85)
+
+[node name="NarrativeLabel" type="Label" parent="HUD/NarrativeBox"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 1176.0
+offset_bottom = 262.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="DismissHint" type="Label" parent="HUD/NarrativeBox"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 270.0
+offset_right = 1176.0
+offset_bottom = 300.0
+theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 20
+text = "[Enter] continuar"
+horizontal_alignment = 1
+
+[node name="ThoughtLabel" type="Label" parent="HUD"]
+offset_left = 200.0
+offset_top = 780.0
+offset_right = 1400.0
+offset_bottom = 850.0
+theme_override_colors/font_color = Color(0.92, 0.92, 0.97, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="TitleCard" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Shade" type="ColorRect" parent="HUD/TitleCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.02, 0.02, 0.04, 0.55)
+
+[node name="Title" type="Label" parent="HUD/TitleCard"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -60.0
+offset_right = 400.0
+offset_bottom = 0.0
+theme_override_colors/font_color = Color(0.95, 0.93, 0.88, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 52
+text = "El Recuerdo"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="HUD/TitleCard"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = 4.0
+offset_right = 400.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 24
+text = "Nivel 1"
+horizontal_alignment = 1

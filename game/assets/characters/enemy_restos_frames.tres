@@ -1,0 +1,22 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/restos-walk-00.png" id="1_r6vcx"]
+[ext_resource type="Texture2D" path="res://assets/enemies/restos-walk-01.png" id="2_pg2bi"]
+[ext_resource type="Texture2D" path="res://assets/enemies/restos-walk-02.png" id="3_56rth"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_r6vcx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_pg2bi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_56rth")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 8.0
+}]

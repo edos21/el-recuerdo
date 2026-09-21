@@ -1,0 +1,70 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/level_loader.gd" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/respawn.ogg" id="4"]
+[ext_resource type="Script" path="res://scripts/world_progression.gd" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/Core.tscn" id="10"]
+[ext_resource type="Texture2D" path="res://assets/tiles/parallax_far.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/tiles/parallax_near.png" id="9"]
+
+[sub_resource type="Gradient" id="Gradient_Sky"]
+colors = PackedColorArray(0.2, 0.23, 0.32, 1, 0.5, 0.54, 0.63, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_Sky"]
+gradient = SubResource("Gradient_Sky")
+fill_from = Vector2(0, 0)
+fill_to = Vector2(0, 1)
+
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+debug_start_at_end = true
+
+[node name="Sky" type="CanvasLayer" parent="."]
+layer = -10
+
+[node name="Gradient" type="TextureRect" parent="Sky"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_Sky")
+expand_mode = 1
+
+[node name="Parallax" type="Node2D" parent="."]
+
+[node name="Far" type="Parallax2D" parent="Parallax"]
+scroll_scale = Vector2(0.2, 1)
+repeat_size = Vector2(1280, 0)
+repeat_times = 6
+
+[node name="Hills" type="Sprite2D" parent="Parallax/Far"]
+position = Vector2(0, -20)
+scale = Vector2(2, 2)
+texture = ExtResource("8")
+centered = false
+
+[node name="Near" type="Parallax2D" parent="Parallax"]
+scroll_scale = Vector2(0.5, 1)
+repeat_size = Vector2(1280, 0)
+repeat_times = 6
+
+[node name="Hills" type="Sprite2D" parent="Parallax/Near"]
+position = Vector2(0, -20)
+scale = Vector2(2, 2)
+texture = ExtResource("9")
+centered = false
+
+[node name="LevelLoader" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="Core" parent="." instance=ExtResource("10")]
+
+[node name="WorldProgression" type="Node" parent="." node_paths=PackedStringArray("tint_rect", "parallax")]
+script = ExtResource("6")
+tint_rect = NodePath("../Core/WorldTint/TintRect")
+parallax = NodePath("../Parallax")
+
+[node name="RespawnSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4")
