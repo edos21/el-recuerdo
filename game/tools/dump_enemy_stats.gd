@@ -2,9 +2,8 @@ extends SceneTree
 # godot --headless --fixed-fps 60 --script res://tools/dump_enemy_stats.gd
 # Vuelca los stats efectivos de cada enemigo del Nivel 1 y el estado de los
 # recuerdos antes y despues de vencer a los enemigos. La salida tiene que ser
-# identica entre dos versiones del interprete: se compara con diff. No
-# referencia EnemyData a proposito, para poder correr tambien sobre una version
-# del loader que todavia no lo usa.
+# identica entre dos versiones del interprete: se compara con diff. Solo mira
+# lo que el loader construyo, asi sirve para cualquier cambio del interprete.
 
 const LEVEL := "res://levels/level1.txt"
 
