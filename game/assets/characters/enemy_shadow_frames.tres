@@ -1,11 +1,11 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dh4pork3deq87"]
 
-[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-00.png" id="1_qcsm0"]
-[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-01.png" id="2_3s37q"]
-[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-02.png" id="3_s3ukr"]
-[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-03.png" id="4_dwl1u"]
-[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-04.png" id="5_e2ogq"]
-[ext_resource type="Texture2D" path="res://assets/enemies/shadow-walk-05.png" id="6_3spgh"]
+[ext_resource type="Texture2D" uid="uid://ctte766s03su4" path="res://assets/enemies/shadow-walk-00.png" id="1_qcsm0"]
+[ext_resource type="Texture2D" uid="uid://dt71lo143k7b7" path="res://assets/enemies/shadow-walk-01.png" id="2_3s37q"]
+[ext_resource type="Texture2D" uid="uid://c56dts7dflp1k" path="res://assets/enemies/shadow-walk-02.png" id="3_s3ukr"]
+[ext_resource type="Texture2D" uid="uid://qdre08sck1dd" path="res://assets/enemies/shadow-walk-03.png" id="4_dwl1u"]
+[ext_resource type="Texture2D" uid="uid://ddi2d8pfyvlv" path="res://assets/enemies/shadow-walk-04.png" id="5_e2ogq"]
+[ext_resource type="Texture2D" uid="uid://bomb7ju5odgtk" path="res://assets/enemies/shadow-walk-05.png" id="6_3spgh"]
 
 [resource]
 animations = [{
