@@ -1,37 +1,9 @@
 extends SceneTree
 # godot --headless --script res://tools/build_character_frames.gd
-# Genera los SpriteFrames (pixel art 24px) para el jugador y cada variante
-# de enemigo a partir de la hoja de personajes de Kenney.
+# Genera los SpriteFrames del jugador y de cada variante de enemigo a partir de
+# los PNG sueltos de assets/player y assets/enemies.
 
-const SHEET := "res://assets/characters/characters_packed.png"
-const CELL := 24
-const SEP := 1
 const OUT_DIR := "res://assets/characters/"
-
-func _rect(col: int, row: int) -> Rect2:
-	return Rect2(col * (CELL + SEP), row * (CELL + SEP), CELL, CELL)
-
-func _atlas(tex: Texture2D, col: int, row: int) -> AtlasTexture:
-	var at := AtlasTexture.new()
-	at.atlas = tex
-	at.region = _rect(col, row)
-	return at
-
-func _make(tex: Texture2D, name: String, anims: Dictionary) -> void:
-	var frames := SpriteFrames.new()
-	frames.remove_animation("default")
-	for anim_name in anims:
-		var coords: Array = anims[anim_name]
-		var loop: bool = true
-		var speed: float = 6.0
-		frames.add_animation(anim_name)
-		frames.set_animation_loop(anim_name, loop)
-		frames.set_animation_speed(anim_name, speed)
-		for c in coords:
-			frames.add_frame(anim_name, _atlas(tex, c[0], c[1]))
-	var path := OUT_DIR + name + ".tres"
-	var err := ResourceSaver.save(frames, path)
-	print(name, " -> ", path, " (", err, ")")
 
 const PLAYER_DIR := "res://assets/player/"
 
@@ -88,8 +60,6 @@ func _make_guardian() -> void:
 	print("enemy_guardian_frames -> ", path, " (", ResourceSaver.save(frames, path), ")")
 
 func _initialize() -> void:
-	var tex: Texture2D = load(SHEET)
-
 	_make_player()
 	_make_shadow("enemy_shadow_frames", "shadow", 6, 9.0)
 	_make_guardian()

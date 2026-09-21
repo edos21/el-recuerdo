@@ -30,6 +30,9 @@ const DIRT_EDGES := {
 	"bl": Vector2i(1, 3), "b": Vector2i(2, 3), "br": Vector2i(3, 3),
 }
 
+# Objetos que se paran sobre el suelo de su entorno (camino si hay camino al lado).
+const MOBILE_OBJECTS := ['P', 'n', 'N']
+
 # Dimensiones de las imagenes de arboles y casas (px de la textura): el origen
 # de cada sprite queda en sus pies, para que el orden por Y (y_sort) funcione.
 const TREE_FEET := Vector2(40, 100)
@@ -42,7 +45,7 @@ var objects: Node2D
 var _rows: Array = []
 
 func build(level_path: String) -> CharacterBody2D:
-	_rows = _read_grid(level_path)
+	_rows = MapUtils.read_grid(level_path)
 	var cols := 0
 	for row in _rows:
 		cols = maxi(cols, row.length())
@@ -80,16 +83,6 @@ func build(level_path: String) -> CharacterBody2D:
 	player.set_camera_limits(bounds)
 	return player
 
-func _read_grid(level_path: String) -> Array:
-	var file := FileAccess.open(level_path, FileAccess.READ)
-	var rows: Array = []
-	while not file.eof_reached():
-		var line := file.get_line()
-		if line == "" and file.eof_reached():
-			break
-		rows.append(line)
-	return rows
-
 func _make_tile_set() -> TileSet:
 	var source := TileSetAtlasSource.new()
 	source.texture = GROUND_TEXTURE
@@ -114,19 +107,17 @@ func _is_path(col: int, row: int) -> bool:
 	return _rows[row][col] == ','
 
 func _ground_tile(col: int, row: int) -> Vector2i:
-	var ch: String = _rows[row][col]
-	var on_path := ch == ',' or (not ch in ['.', 'T', 'H'] and _has_path_neighbor(col, row))
-	if not on_path:
-		var roll := _hash(col, row)
+	var roll := _hash(col, row)
+	if not _is_dirt(col, row):
 		if roll % 100 < int(FLOWER_CHANCE * 100.0):
 			return FLOWERS[roll % FLOWERS.size()]
 		return GRASS[roll % GRASS.size()]
-	var up := _is_path(col, row - 1) or _is_object_on_path(col, row - 1)
-	var down := _is_path(col, row + 1) or _is_object_on_path(col, row + 1)
-	var left := _is_path(col - 1, row) or _is_object_on_path(col - 1, row)
-	var right := _is_path(col + 1, row) or _is_object_on_path(col + 1, row)
+	var up := _is_dirt(col, row - 1)
+	var down := _is_dirt(col, row + 1)
+	var left := _is_dirt(col - 1, row)
+	var right := _is_dirt(col + 1, row)
 	if (not left and not right) or (not up and not down):
-		return DIRT_FULL[_hash(col, row) % DIRT_FULL.size()]
+		return DIRT_FULL[roll % DIRT_FULL.size()]
 	var vertical := "t" if not up else ("b" if not down else "")
 	var horizontal := "l" if not left else ("r" if not right else "")
 	if vertical == "" and horizontal == "":
@@ -137,6 +128,10 @@ func _ground_tile(col: int, row: int) -> Vector2i:
 		return DIRT_EDGES[vertical]
 	return DIRT_EDGES[vertical + horizontal]
 
+# Suelo de tierra: el camino en si, o un objeto movil (spawn, NPC) parado sobre uno.
+func _is_dirt(col: int, row: int) -> bool:
+	return _is_path(col, row) or _is_object_on_path(col, row)
+
 func _has_path_neighbor(col: int, row: int) -> bool:
 	return _is_path(col - 1, row) or _is_path(col + 1, row) \
 			or _is_path(col, row - 1) or _is_path(col, row + 1)
@@ -145,7 +140,7 @@ func _is_object_on_path(col: int, row: int) -> bool:
 	if row < 0 or row >= _rows.size() or col < 0 or col >= _rows[row].length():
 		return false
 	var ch: String = _rows[row][col]
-	return ch in ['P', 'n', 'N'] and _has_path_neighbor(col, row)
+	return MOBILE_OBJECTS.has(ch) and _has_path_neighbor(col, row)
 
 # Hash determinista por celda: el pasto no cambia de una corrida a otra.
 func _hash(col: int, row: int) -> int:
@@ -174,7 +169,7 @@ func _add_house(col: int, row: int) -> void:
 	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	sprite.position = _feet(col, row)
 	objects.add_child(sprite)
-	_add_blocker(_feet(col, row) - Vector2(0, HOUSE_BODY.y * 0.5), HOUSE_BODY)
+	_add_blocker(_feet(col, row), HOUSE_BODY)
 
 func _add_npc(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = TownNpcData.LIST[ch]
@@ -185,16 +180,14 @@ func _add_npc(ch: String, col: int, row: int) -> void:
 	npc.position = _feet(col, row)
 	objects.add_child(npc)
 
-# Cuerpo estatico centrado en `center` (para arboles y casas).
-func _add_blocker(center: Vector2, size: Vector2) -> void:
+# Cuerpo estatico apoyado en `base` (el centro de su borde inferior), para
+# arboles y casas: la forma crece hacia arriba desde los pies del sprite.
+func _add_blocker(base: Vector2, size: Vector2) -> void:
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
-	body.position = center
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = size
-	shape.shape = rect
+	body.position = base
+	var shape := MapUtils.rect_shape(size)
 	shape.position = Vector2(0, -size.y * 0.5)
 	body.add_child(shape)
 	add_child(body)
@@ -212,9 +205,5 @@ func _add_boundary(bounds: Rect2) -> void:
 		body.collision_layer = 1
 		body.collision_mask = 0
 		body.position = side.get_center()
-		var shape := CollisionShape2D.new()
-		var rect := RectangleShape2D.new()
-		rect.size = side.size
-		shape.shape = rect
-		body.add_child(shape)
+		body.add_child(MapUtils.rect_shape(side.size))
 		add_child(body)

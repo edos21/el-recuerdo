@@ -11,7 +11,7 @@ func _initialize() -> void:
 	var player := loader.build("res://levels/level1.txt")
 
 	var checkpoints := get_nodes_in_group("checkpoints")
-	var cave := get_nodes_in_group("cave_entrance")
+	var expulsion := get_nodes_in_group("expulsion_trigger")
 	var kill := get_nodes_in_group("kill_zone")
 
 	var enemies := 0
@@ -30,12 +30,12 @@ func _initialize() -> void:
 				platforms += 1
 			else:
 				solids += 1
-		elif child is Area2D and not child.is_in_group("cave_entrance") and not child.is_in_group("kill_zone") and not child.is_in_group("checkpoints"):
+		elif child is Area2D and not child.is_in_group("expulsion_trigger") and not child.is_in_group("kill_zone") and not child.is_in_group("checkpoints"):
 			hazards += 1
 
 	print("player: ", player != null, " at ", player.position if player else "?")
 	print("checkpoints: ", checkpoints.size())
-	print("cave_entrance: ", cave.size())
+	print("expulsion_trigger: ", expulsion.size())
 	print("kill_zone: ", kill.size())
 	print("enemies: ", enemies)
 	print("memory pickups: ", memories)

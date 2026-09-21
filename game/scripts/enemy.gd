@@ -1,3 +1,4 @@
+class_name Enemy
 extends CharacterBody2D
 
 signal defeated
@@ -12,6 +13,9 @@ const GUARD_STRIKE_HEIGHT := 40.0
 const GUARD_WINDUP := 0.3
 const GUARD_RECOVERY := 0.2
 const GUARD_COOLDOWN := 1.3
+
+const CHASE_HEIGHT := 60.0
+const EDGE_PROBE_DISTANCE := 10.0
 
 # La embestida se esquiva saltando o alejandose durante el destello; el
 # castigo es el rato que queda aturdido despues, sobre todo si choca contra
@@ -63,12 +67,16 @@ func _ready() -> void:
 		sprite.play("walk")
 	hurt_box.body_entered.connect(_on_hurt_box_body_entered)
 
+# Rayo hacia abajo un paso adelante en `direction`: sin piso ahi, hay un borde.
+func _has_floor_ahead(direction: int) -> bool:
+	edge_ray.position.x = EDGE_PROBE_DISTANCE * direction
+	edge_ray.force_raycast_update()
+	return edge_ray.is_colliding()
+
 # El jugador se agrega al arbol despues que los enemigos (level_loader lo suma
 # al final), asi que en _ready todavia no existe: hay que buscarlo despues.
 func _find_player() -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if not players.is_empty():
-		_player = players[0]
+	_player = get_tree().get_first_node_in_group("player")
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -102,9 +110,7 @@ func _process_patrol() -> void:
 	# No dejamos que un patrullero en una repisa se caiga por el borde: si el
 	# rayo hacia abajo, un paso adelante en la direccion actual, no encuentra
 	# piso, damos la vuelta antes de llegar a pisar el vacio.
-	edge_ray.position.x = 10.0 * _direction
-	edge_ray.force_raycast_update()
-	if not edge_ray.is_colliding():
+	if not _has_floor_ahead(_direction):
 		_direction *= -1
 
 	velocity.x = _direction * speed
@@ -155,10 +161,6 @@ func _floor_of(body: CharacterBody2D) -> Object:
 			return collision.get_collider()
 	return null
 
-# El perseguidor solo persigue mientras el jugador esta en su misma plataforma:
-# si te "ve" desde otra, o se tira al vacio o te espera pegado al borde y no
-# hay forma de evitarlo. En el aire se conserva el ultimo estado, asi un salto
-# o una caida no lo apagan a mitad de camino.
 func _process_charge(delta: float) -> void:
 	match _charge_state:
 		ChargeState.IDLE:
@@ -203,13 +205,11 @@ func _process_dash() -> void:
 			body.take_damage(contact_damage, global_position)
 			connected = true
 
-	edge_ray.position.x = 10.0 * _charge_direction
-	edge_ray.force_raycast_update()
 	var hit_wall := _touching_wall()
 	var traveled := absf(global_position.x - _charge_origin_x)
 	# Si te alcanza, la embestida termina ahi: seguir empujando contra el
 	# jugador la dejaria trabada en el mismo lugar.
-	if connected or hit_wall or not edge_ray.is_colliding() or traveled >= CHARGE_MAX_DISTANCE:
+	if connected or hit_wall or not _has_floor_ahead(_charge_direction) or traveled >= CHARGE_MAX_DISTANCE:
 		_start_recovery(CHARGE_WALL_RECOVERY if hit_wall else CHARGE_RECOVERY)
 
 func _start_recovery(duration: float) -> void:
@@ -224,6 +224,10 @@ func _end_recovery() -> void:
 	_charge_cooldown = CHARGE_COOLDOWN
 	create_tween().tween_property(sprite, "modulate", Color.WHITE, 0.15)
 
+# El perseguidor solo persigue mientras el jugador esta en su misma plataforma:
+# si te "ve" desde otra, o se tira al vacio o te espera pegado al borde y no
+# hay forma de evitarlo. En el aire se conserva el ultimo estado, asi un salto
+# o una caida no lo apagan a mitad de camino.
 func _process_chase() -> void:
 	if _home_floor and _player and _player.is_on_floor():
 		_player_on_home_floor = _floor_of(_player) == _home_floor
@@ -231,13 +235,11 @@ func _process_chase() -> void:
 		_process_patrol()
 		return
 	if _player and absf(_player.global_position.x - global_position.x) <= chase_range \
-			and absf(_player.global_position.y - global_position.y) < 60.0:
+			and absf(_player.global_position.y - global_position.y) < CHASE_HEIGHT:
 		_direction = 1 if _player.global_position.x > global_position.x else -1
 		# Si te ve en una plataforma de al lado, se frena en el borde en vez de
 		# tirarse al vacio persiguiendote.
-		edge_ray.position.x = 10.0 * _direction
-		edge_ray.force_raycast_update()
-		velocity.x = _direction * chase_speed if edge_ray.is_colliding() else 0.0
+		velocity.x = _direction * chase_speed if _has_floor_ahead(_direction) else 0.0
 	else:
 		_process_patrol()
 		return
@@ -276,8 +278,8 @@ func take_hit(amount: int = 1) -> bool:
 
 func _flash() -> void:
 	var tween := create_tween()
-	tween.tween_property(sprite, "modulate", Color(3, 3, 3, 1) * modulate, 0.05)
-	tween.tween_property(sprite, "modulate", modulate, 0.12)
+	tween.tween_property(sprite, "modulate", Color(3, 3, 3, 1), 0.05)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
 
 func _on_hurt_box_body_entered(body: Node2D) -> void:
 	if behavior == Behavior.CHASE and body.is_in_group("player"):

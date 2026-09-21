@@ -13,6 +13,9 @@ const JUMP_VELOCITY = -450.0
 const ATTACK_DURATION = 0.25
 const ATTACK_OFFSET = 22.0
 const KNOCKBACK_FORCE = 220.0
+const KNOCKBACK_LIFT = 150.0
+# Espera antes del aviso de evitar: primero se siente el empujon, despues el texto.
+const AVOIDANCE_HINT_DELAY = 0.45
 const INVULNERABILITY_TIME = 0.6
 const HURT_ANIM_TIME = 0.3
 # Pegar no te protege por si solo (si no, spamear el ataque seria una
@@ -329,7 +332,7 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 
 	var push_direction := signf(global_position.x - from_position.x)
 	velocity.x = push_direction * KNOCKBACK_FORCE
-	velocity.y = -150.0
+	velocity.y = -KNOCKBACK_LIFT
 
 	if not can_attack and not _shown_avoidance_hint:
 		_shown_avoidance_hint = true
@@ -353,7 +356,7 @@ func _show_avoidance_hint_delayed() -> void:
 	# Esperamos un instante para que primero se sienta el empujón — si el
 	# mensaje (que pausa el juego) apareciera en el mismo frame del golpe,
 	# se comería la reacción física.
-	await get_tree().create_timer(0.45).timeout
+	await get_tree().create_timer(AVOIDANCE_HINT_DELAY).timeout
 	get_tree().call_group("hud", "show_hint_once", "avoidance", "No estoy en condiciones de enfrentar esto todavía. No pasa nada — a veces evitarlo es la decisión correcta.")
 
 func request_respawn() -> void:

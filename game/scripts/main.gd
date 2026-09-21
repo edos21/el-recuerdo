@@ -3,7 +3,6 @@ extends Node2D
 const LEVEL_PATH := "res://levels/level1.txt"
 
 @onready var level_loader: Node2D = $LevelLoader
-@onready var core: Node = $Core
 @onready var hud := $Core/HUD
 @onready var respawn_sound: AudioStreamPlayer = $RespawnSound
 @onready var world_progression: Node = $WorldProgression
@@ -21,8 +20,7 @@ const TOWN_SCENE := "res://scenes/Town.tscn"
 # Tiempo que se queda el pensamiento final sobre el negro antes de despertar.
 const COLLAPSE_HOLD_TIME := 6.0
 
-const DEBUG_ABILITIES := ["jump", "sprint", "stability", "health", "attack"]
-const DEBUG_START_OFFSET := Vector2(2 * 36.0, 0.0)
+const DEBUG_START_CELLS := 2
 
 var player: Node2D
 var _current_checkpoint: Vector2
@@ -57,7 +55,7 @@ func _ready() -> void:
 		_apply_debug_start()
 
 func _apply_debug_start() -> void:
-	for ability in DEBUG_ABILITIES:
+	for ability in GameState.ALL_ABILITIES:
 		player.unlock(ability)
 	var last_checkpoint: Node2D
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
@@ -68,7 +66,7 @@ func _apply_debug_start() -> void:
 	_current_checkpoint = last_checkpoint.global_position
 	# Un par de celdas al costado para no arrancar pisando el banco, que
 	# frenaria el juego con su mensaje de primera vez.
-	player.global_position = _current_checkpoint + DEBUG_START_OFFSET
+	player.global_position = _current_checkpoint + Vector2(DEBUG_START_CELLS * level_loader.CELL, 0.0)
 
 func _on_ability_unlocked(ability: String) -> void:
 	hud.note_ability_unlocked(ability)

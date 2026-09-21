@@ -1,6 +1,5 @@
 extends Area2D
 
-@export var memory_id: String = ""
 @export var ability: String = ""
 @export_multiline var message: String = ""
 @export var icon: Texture2D
