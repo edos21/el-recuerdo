@@ -6,8 +6,6 @@ extends Node2D
 # despues queda accesible por grupo ("player", "checkpoints", "expulsion_trigger",
 # "kill_zone") o por lo que devuelve build().
 
-# El recuerdo del camino opcional no aparece hasta vencer al elite de la arena.
-const ELITE_REWARD_MEMORY := '5'
 const CELL := 36.0          # 18px de tile * escala 2
 const TILE_SCALE := Vector2(2, 2)
 const GROUND_TINT := Color(0.58, 0.55, 0.66)
@@ -29,18 +27,6 @@ const ATLAS := {
 	"tree": Vector2i(6, 6),
 	"bush": Vector2i(4, 6),
 }
-
-const ENEMY_FRAMES := {
-	"z": "res://assets/characters/enemy_shadow_frames.tres",
-	"f": "res://assets/characters/enemy_shadow_frames.tres",
-	"e": "res://assets/characters/enemy_elite_frames.tres",
-	"g": "res://assets/characters/enemy_guardian_frames.tres",
-	"h": "res://assets/characters/enemy_chaser_frames.tres",
-	"m": "res://assets/characters/enemy_restos_frames.tres",
-}
-
-var arena_elite: CharacterBody2D
-var reward_pickup: Area2D
 
 var tilemap: TileMapLayer
 var props_layer: TileMapLayer
@@ -67,6 +53,8 @@ func build(level_path: String) -> Node2D:
 
 	var solid_runs := {}   # row -> array de columnas con '#'
 	var platform_runs := {}
+	var memory_pickups := {}   # caracter de recuerdo -> Area2D
+	var guarded_by := {}       # caracter de recuerdo -> Array de enemigos que lo custodian
 	var player: Node2D = null
 	var max_row := rows.size() - 1
 	var max_col := 0
@@ -110,17 +98,13 @@ func build(level_path: String) -> Node2D:
 				'X':
 					_add_expulsion_trigger(col, row)
 				'1', '2', '3', '4', '5':
-					var pickup := _add_memory(ch, col, row)
-					if ch == ELITE_REWARD_MEMORY:
-						reward_pickup = pickup
+					memory_pickups[ch] = _add_memory(ch, col, row)
 				'z', 'f', 'e', 'g', 'h', 'm':
-					var enemy := _add_enemy(ch, col, row)
-					if ch == 'e':
-						arena_elite = enemy
+					_track_guardian(guarded_by, ch, _add_enemy(ch, col, row))
 
-	if arena_elite and reward_pickup:
-		reward_pickup.lock()
-		arena_elite.defeated.connect(reward_pickup.reveal)
+	for memory_ch: String in guarded_by:
+		if memory_pickups.has(memory_ch):
+			_lock_until_defeated(memory_pickups[memory_ch], guarded_by[memory_ch])
 
 	_build_collision_runs(solid_runs, false)
 	_build_collision_runs(platform_runs, true)
@@ -183,44 +167,53 @@ func _add_memory(digit: String, col: int, row: int) -> Area2D:
 	add_child(pickup)
 	return pickup
 
-func _add_enemy(ch: String, col: int, row: int) -> CharacterBody2D:
-	var enemy := ENEMY_SCENE.instantiate()
+# Todo se asigna antes de add_child porque Enemy._ready() copia max_health a
+# health: un stat seteado despues llega tarde.
+func _add_enemy(ch: String, col: int, row: int) -> Enemy:
+	var data: Dictionary = EnemyData.LIST[ch]
+	var enemy: Enemy = ENEMY_SCENE.instantiate()
 	enemy.position = _cell_center(col, row)
-	enemy.sprite_frames_path = ENEMY_FRAMES[ch]
-	match ch:
-		'z':
-			enemy.behavior = Enemy.Behavior.PATROL
-			enemy.speed = 60.0
-			enemy.patrol_distance = 70.0
-		'f':
-			enemy.behavior = Enemy.Behavior.PATROL
-			enemy.speed = 115.0
-			enemy.patrol_distance = 70.0
-			enemy.modulate = Color(0.8, 0.9, 1.6, 1)
-		'e':
-			enemy.behavior = Enemy.Behavior.CHARGE
-			enemy.speed = 90.0
-			enemy.patrol_distance = 25.0
-			enemy.max_health = 5
-			enemy.contact_damage = 2
-		'g':
-			enemy.behavior = Enemy.Behavior.GUARD
-			enemy.max_health = 2
-			# El guardian si tiene que ser un cuerpo solido para el jugador
-			# (capa 1 ademas de la 2): la idea es que no se pueda atravesar.
-			enemy.collision_layer = 3
-		'h':
-			enemy.behavior = Enemy.Behavior.CHASE
-			enemy.killable = false
-			enemy.chase_range = 320.0
-			enemy.chase_speed = 150.0
-		'm':
-			enemy.behavior = Enemy.Behavior.PATROL
-			enemy.speed = 110.0
-			enemy.patrol_distance = 35.0
-			enemy.max_health = 1
+	enemy.sprite_frames_path = data.frames
+	enemy.behavior = data.behavior
+	enemy.speed = data.speed
+	enemy.patrol_distance = data.patrol_distance
+	enemy.max_health = data.max_health
+	enemy.contact_damage = data.contact_damage
+	enemy.chase_range = data.chase_range
+	enemy.chase_speed = data.chase_speed
+	enemy.killable = data.killable
+	enemy.modulate = data.tint
+	enemy.collision_layer = data.collision_layer
 	add_child(enemy)
 	return enemy
+
+# Un enemigo que custodia un recuerdo se anota como su custodio. Si no se lo
+# puede vencer, el recuerdo quedaria escondido para siempre: se avisa y no se lo
+# cuenta, asi un dato mal cargado no deja el nivel incompletable.
+func _track_guardian(guarded_by: Dictionary, ch: String, enemy: Enemy) -> void:
+	var memory_ch: String = EnemyData.LIST[ch].guards_memory
+	if memory_ch == "":
+		return
+	if not enemy.killable:
+		push_warning("El enemigo '%s' custodia el recuerdo '%s' pero no se lo puede vencer." % [ch, memory_ch])
+		return
+	if not guarded_by.has(memory_ch):
+		guarded_by[memory_ch] = []
+	guarded_by[memory_ch].append(enemy)
+
+# El recuerdo custodiado no existe hasta que cae el ultimo de sus custodios.
+# Se usa erase y no is_instance_valid porque Enemy emite `defeated` antes de
+# queue_free: en ese momento el nodo sigue siendo valido. Mientras quede un
+# custodio el recuerdo esta bloqueado (no se puede recoger ni liberar), asi que
+# el ultimo en morir siempre lo encuentra vivo.
+func _lock_until_defeated(pickup: Area2D, guardians: Array) -> void:
+	pickup.lock()
+	for guardian: Enemy in guardians:
+		guardian.defeated.connect(func() -> void:
+			guardians.erase(guardian)
+			if guardians.is_empty():
+				pickup.reveal()
+		)
 
 # Zona invisible: al cruzarla arranca la secuencia de expulsion del recuerdo.
 func _add_expulsion_trigger(col: int, row: int) -> void:
