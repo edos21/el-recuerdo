@@ -198,7 +198,7 @@ Los enemigos no son monstruos genéricos: son manifestaciones de historias incom
   al jugador o reaparecer.
 
 (Los datos mecánicos concretos de cada enemigo — vida, velocidad, comportamiento — viven en
-`game/scripts/enemy.gd` y se documentan como avance de proyecto en `TAREAS.md`.)
+`game/scripts/enemy.gd` y se documentan en el historial de git y en los issues del repo.)
 
 ---
 

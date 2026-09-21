@@ -2,7 +2,7 @@ extends Node2D
 # Lee un mapa ASCII (levels/level1.txt) y arma el nivel: TileMapLayer visual
 # + colisiones simples (StaticBody2D por tramo, como el nivel viejo, pero
 # generadas en vez de dibujadas a mano) + enemigos + recuerdos + checkpoints
-# + entrada de la cueva + zona de muerte. Todo lo que main.gd necesita
+# + zona de expulsion + zona de muerte. Todo lo que main.gd necesita
 # despues queda accesible por grupo ("player", "checkpoints", "expulsion_trigger",
 # "kill_zone") o por lo que devuelve build().
 
@@ -22,8 +22,7 @@ const CHECKPOINT_SCENE := preload("res://scenes/Checkpoint.tscn")
 const DOOR_TEXTURE := preload("res://assets/props/door.png")
 
 const ATLAS := {
-	"ground_top": Vector2i(1, 6),
-	"ground_fill": Vector2i(1, 6),
+	"ground": Vector2i(1, 6),
 	"platform": Vector2i(8, 2),
 	"spike": Vector2i(8, 3),
 	"sign": Vector2i(4, 4),
@@ -47,7 +46,7 @@ var tilemap: TileMapLayer
 var props_layer: TileMapLayer
 
 func build(level_path: String) -> Node2D:
-	var rows := _read_grid(level_path)
+	var rows := MapUtils.read_grid(level_path)
 	tilemap = TileMapLayer.new()
 	tilemap.name = "Tiles"
 	tilemap.tile_set = TILE_SET
@@ -69,7 +68,6 @@ func build(level_path: String) -> Node2D:
 	var solid_runs := {}   # row -> array de columnas con '#'
 	var platform_runs := {}
 	var player: Node2D = null
-	var min_row := 0
 	var max_row := rows.size() - 1
 	var max_col := 0
 
@@ -78,15 +76,14 @@ func build(level_path: String) -> Node2D:
 		max_col = maxi(max_col, line.length())
 		for col in range(line.length()):
 			var ch := line[col]
-			if ch == '.' or ch == '':
+			if ch == '.':
 				continue
 			match ch:
 				'#':
 					if not solid_runs.has(row):
 						solid_runs[row] = []
 					solid_runs[row].append(col)
-					var above_empty: bool = row == 0 or rows[row - 1].length() <= col or rows[row - 1][col] == '.'
-					tilemap.set_cell(Vector2i(col, row), 0, ATLAS.ground_top if above_empty else ATLAS.ground_fill)
+					tilemap.set_cell(Vector2i(col, row), 0, ATLAS.ground)
 				'=':
 					if not platform_runs.has(row):
 						platform_runs[row] = []
@@ -134,16 +131,6 @@ func build(level_path: String) -> Node2D:
 		add_child(player)
 	return player
 
-func _read_grid(level_path: String) -> Array:
-	var file := FileAccess.open(level_path, FileAccess.READ)
-	var rows: Array = []
-	while not file.eof_reached():
-		var line := file.get_line()
-		if line == "" and file.eof_reached():
-			break
-		rows.append(line)
-	return rows
-
 func _cell_center(col: int, row: int) -> Vector2:
 	return Vector2((col + 0.5) * CELL, (row + 0.5) * CELL)
 
@@ -164,10 +151,7 @@ func _add_solid_body(col_start: int, col_end: int, row: int, one_way: bool) -> v
 	var width := float(col_end - col_start + 1) * CELL
 	var body := StaticBody2D.new()
 	body.position = Vector2(col_start * CELL + width * 0.5, row * CELL + CELL * 0.5)
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(width, CELL if not one_way else 10.0)
-	shape.shape = rect
+	var shape := MapUtils.rect_shape(Vector2(width, CELL if not one_way else 10.0))
 	if one_way:
 		shape.one_way_collision = true
 		shape.position.y = -CELL * 0.5 + 5.0
@@ -178,10 +162,7 @@ func _add_hazard(col: int, row: int) -> void:
 	var area := Area2D.new()
 	area.collision_layer = 0
 	area.position = _cell_center(col, row)
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(CELL * 0.8, CELL * 0.6)
-	shape.shape = rect
+	var shape := MapUtils.rect_shape(Vector2(CELL * 0.8, CELL * 0.6))
 	shape.position.y = CELL * 0.2
 	area.add_child(shape)
 	area.body_entered.connect(func(body: Node2D) -> void:
@@ -195,7 +176,6 @@ func _add_memory(digit: String, col: int, row: int) -> Area2D:
 	var data: Dictionary = MemoryData.LIST[digit]
 	var pickup := MEMORY_SCENE.instantiate()
 	pickup.position = _cell_center(col, row)
-	pickup.memory_id = data.memory_id
 	pickup.ability = data.ability
 	pickup.message = data.message
 	pickup.icon = load(data.icon)
@@ -209,33 +189,33 @@ func _add_enemy(ch: String, col: int, row: int) -> CharacterBody2D:
 	enemy.sprite_frames_path = ENEMY_FRAMES[ch]
 	match ch:
 		'z':
-			enemy.behavior = 0  # PATROL
+			enemy.behavior = Enemy.Behavior.PATROL
 			enemy.speed = 60.0
 			enemy.patrol_distance = 70.0
 		'f':
-			enemy.behavior = 0
+			enemy.behavior = Enemy.Behavior.PATROL
 			enemy.speed = 115.0
 			enemy.patrol_distance = 70.0
 			enemy.modulate = Color(0.8, 0.9, 1.6, 1)
 		'e':
-			enemy.behavior = 3  # CHARGE
+			enemy.behavior = Enemy.Behavior.CHARGE
 			enemy.speed = 90.0
 			enemy.patrol_distance = 25.0
 			enemy.max_health = 5
 			enemy.contact_damage = 2
 		'g':
-			enemy.behavior = 1  # GUARD
+			enemy.behavior = Enemy.Behavior.GUARD
 			enemy.max_health = 2
 			# El guardian si tiene que ser un cuerpo solido para el jugador
 			# (capa 1 ademas de la 2): la idea es que no se pueda atravesar.
 			enemy.collision_layer = 3
 		'h':
-			enemy.behavior = 2  # CHASE
+			enemy.behavior = Enemy.Behavior.CHASE
 			enemy.killable = false
 			enemy.chase_range = 320.0
 			enemy.chase_speed = 150.0
 		'm':
-			enemy.behavior = 0
+			enemy.behavior = Enemy.Behavior.PATROL
 			enemy.speed = 110.0
 			enemy.patrol_distance = 35.0
 			enemy.max_health = 1
@@ -249,15 +229,9 @@ func _add_expulsion_trigger(col: int, row: int) -> void:
 	area.add_to_group("expulsion_trigger")
 	area.collision_layer = 0
 	area.position = _cell_center(col, row)
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(CELL, CELL * 3.0)
-	shape.shape = rect
-	area.add_child(shape)
+	area.add_child(MapUtils.rect_shape(Vector2(CELL, CELL * 3.0)))
 	add_child(area)
 
-# Sin borde de mapa, el jugador debilitado de la expulsion caminaria hasta
-# caerse al vacio antes de desplomarse.
 # La puerta no es un tile del atlas (el tile que se usaba era una llave): es un
 # sprite propio, hijo de la capa de props para heredar su aparicion gradual.
 func _add_door(col: int, row: int) -> void:
@@ -270,15 +244,13 @@ func _add_door(col: int, row: int) -> void:
 	door.position = Vector2((col + 0.5) * CELL / 2.0 - size.x / 2.0, (row + 1) * CELL / 2.0 - size.y)
 	props_layer.add_child(door)
 
+# Sin borde de mapa, el jugador debilitado de la expulsion caminaria hasta
+# caerse al vacio antes de desplomarse.
 func _add_end_wall(max_col: int, max_row: int) -> void:
 	var height := (max_row + 6) * CELL
 	var body := StaticBody2D.new()
 	body.position = Vector2((max_col - 1) * CELL + CELL * 0.5, height * 0.5 - 6 * CELL)
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(CELL, height)
-	shape.shape = rect
-	body.add_child(shape)
+	body.add_child(MapUtils.rect_shape(Vector2(CELL, height)))
 	add_child(body)
 
 func _add_kill_zone(max_col: int, max_row: int) -> void:
@@ -288,9 +260,5 @@ func _add_kill_zone(max_col: int, max_row: int) -> void:
 	var width := (max_col + 4) * CELL
 	var y := (max_row + 3) * CELL
 	area.position = Vector2(width * 0.5, y)
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(width, CELL)
-	shape.shape = rect
-	area.add_child(shape)
+	area.add_child(MapUtils.rect_shape(Vector2(width, CELL)))
 	add_child(area)

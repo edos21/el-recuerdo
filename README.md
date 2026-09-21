@@ -108,7 +108,6 @@ el-recuerdo/
 │   └── documento_base_diseno.md   Sistemas, Estabilidad, niveles y géneros
 ├── tools/                    Generador de audio (numpy)
 ├── docs/screenshots/         Capturas de este README
-├── TAREAS.md                 Backlog y decisiones tomadas
 └── CLAUDE.md                 Guía del proyecto para trabajar con agentes
 ```
 
@@ -167,4 +166,4 @@ Si tenés los packs originales, los podés poner en `game/assets/` (o regenerar 
 - [ ] Extraer la lógica de Estabilidad y recuerdos del jugador de plataformas
 - [ ] Guion del pueblo, interiores y primer **recuerdo ajeno** en un género distinto
 
-El detalle vive en [`TAREAS.md`](TAREAS.md).
+El backlog vive en los [issues](https://github.com/edos21/el-recuerdo/issues) del repo, con hitos por capítulo ("Pulido del Nivel 1", "Pueblo real", "Primer recuerdo ajeno").

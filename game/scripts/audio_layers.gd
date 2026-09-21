@@ -52,6 +52,10 @@ func set_layer(name: String, db: float, time: float) -> void:
 	var tween := create_tween()
 	tween.tween_property(_layers[name], "volume_db", db, time)
 
+func silence_all(time: float) -> void:
+	for layer_name in _layers:
+		set_layer(layer_name, SILENT_DB, time)
+
 func play_sfx(name: String) -> void:
 	if not SFX.has(name):
 		return

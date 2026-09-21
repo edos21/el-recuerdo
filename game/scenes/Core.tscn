@@ -1,9 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://eenhrwdq2xwg"]
 
-[ext_resource type="Script" path="res://scripts/core.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/hud.gd" id="3"]
-[ext_resource type="Shader" path="res://shaders/world_tint.gdshader" id="5"]
-[ext_resource type="Script" path="res://scripts/audio_layers.gd" id="7"]
+[ext_resource type="Script" uid="uid://byc8n7vxe63ga" path="res://scripts/core.gd" id="1"]
+[ext_resource type="Script" uid="uid://diia8yx4okhq0" path="res://scripts/hud.gd" id="3"]
+[ext_resource type="Shader" uid="uid://cdne24guimi7e" path="res://shaders/world_tint.gdshader" id="5"]
+[ext_resource type="Script" uid="uid://byehncdik8qn7" path="res://scripts/audio_layers.gd" id="7"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_Tint"]
 shader = ExtResource("5")
@@ -14,28 +14,27 @@ shader_parameter/focus_radius = 0.0
 shader_parameter/vignette = 0.0
 shader_parameter/cold_tint = 1.0
 
-[node name="Core" type="Node"]
+[node name="Core" type="Node" unique_id=37751735]
 script = ExtResource("1")
 
-[node name="WorldTint" type="CanvasLayer" parent="."]
-layer = 1
+[node name="WorldTint" type="CanvasLayer" parent="." unique_id=187966107]
 
-[node name="TintRect" type="ColorRect" parent="WorldTint"]
+[node name="TintRect" type="ColorRect" parent="WorldTint" unique_id=2106136284]
 material = SubResource("ShaderMaterial_Tint")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="AudioLayers" type="Node" parent="."]
+[node name="AudioLayers" type="Node" parent="." unique_id=1822826074]
 script = ExtResource("7")
 
-[node name="HUD" type="CanvasLayer" parent="." groups=["hud"]]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1502151502 groups=["hud"]]
 process_mode = 3
 layer = 2
 script = ExtResource("3")
 
-[node name="HealthRow" type="Control" parent="HUD"]
+[node name="HealthRow" type="Control" parent="HUD" unique_id=1748111512]
 visible = false
 layout_mode = 3
 anchors_preset = 0
@@ -44,7 +43,7 @@ offset_top = 8.0
 offset_right = 260.0
 offset_bottom = 48.0
 
-[node name="HealthLabel" type="Label" parent="HUD/HealthRow"]
+[node name="HealthLabel" type="Label" parent="HUD/HealthRow" unique_id=1580254227]
 layout_mode = 0
 offset_right = 240.0
 offset_bottom = 26.0
@@ -54,20 +53,20 @@ theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 22
 text = "Vida"
 
-[node name="HealthBarBg" type="ColorRect" parent="HUD/HealthRow"]
+[node name="HealthBarBg" type="ColorRect" parent="HUD/HealthRow" unique_id=1333880455]
 layout_mode = 0
 offset_top = 24.0
 offset_right = 240.0
 offset_bottom = 40.0
 color = Color(0.15, 0.15, 0.15, 1)
 
-[node name="HealthBarFill" type="ColorRect" parent="HUD/HealthRow/HealthBarBg"]
+[node name="HealthBarFill" type="ColorRect" parent="HUD/HealthRow/HealthBarBg" unique_id=342747584]
 layout_mode = 0
 offset_right = 240.0
 offset_bottom = 16.0
 color = Color(0.8, 0.2, 0.2, 1)
 
-[node name="StabilityRow" type="Control" parent="HUD"]
+[node name="StabilityRow" type="Control" parent="HUD" unique_id=1251117905]
 visible = false
 layout_mode = 3
 anchors_preset = 0
@@ -76,7 +75,7 @@ offset_top = 56.0
 offset_right = 260.0
 offset_bottom = 96.0
 
-[node name="StabilityLabel" type="Label" parent="HUD/StabilityRow"]
+[node name="StabilityLabel" type="Label" parent="HUD/StabilityRow" unique_id=2081766524]
 layout_mode = 0
 offset_right = 240.0
 offset_bottom = 26.0
@@ -86,20 +85,20 @@ theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 22
 text = "Estabilidad"
 
-[node name="StabilityBarBg" type="ColorRect" parent="HUD/StabilityRow"]
+[node name="StabilityBarBg" type="ColorRect" parent="HUD/StabilityRow" unique_id=1001871362]
 layout_mode = 0
 offset_top = 24.0
 offset_right = 240.0
 offset_bottom = 40.0
 color = Color(0.15, 0.15, 0.15, 1)
 
-[node name="StabilityBarFill" type="ColorRect" parent="HUD/StabilityRow/StabilityBarBg"]
+[node name="StabilityBarFill" type="ColorRect" parent="HUD/StabilityRow/StabilityBarBg" unique_id=1446502036]
 layout_mode = 0
 offset_right = 240.0
 offset_bottom = 16.0
 color = Color(0.3, 0.5, 0.85, 1)
 
-[node name="MemoryRow" type="Control" parent="HUD"]
+[node name="MemoryRow" type="Control" parent="HUD" unique_id=626973392]
 layout_mode = 3
 anchors_preset = 1
 anchor_left = 1.0
@@ -108,16 +107,16 @@ offset_left = -260.0
 offset_top = 8.0
 offset_right = -20.0
 offset_bottom = 84.0
+grow_horizontal = 0
 
-[node name="Icons" type="HBoxContainer" parent="HUD/MemoryRow"]
+[node name="Icons" type="HBoxContainer" parent="HUD/MemoryRow" unique_id=1668877416]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 30.0
 offset_right = 240.0
 offset_bottom = 70.0
 alignment = 2
 
-[node name="MemoryLabel" type="Label" parent="HUD/MemoryRow"]
+[node name="MemoryLabel" type="Label" parent="HUD/MemoryRow" unique_id=703640086]
 layout_mode = 0
 offset_right = 240.0
 offset_bottom = 26.0
@@ -125,10 +124,10 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 22
-horizontal_alignment = 2
 text = "Recuerdos 0/4"
+horizontal_alignment = 2
 
-[node name="NarrativeBox" type="ColorRect" parent="HUD"]
+[node name="NarrativeBox" type="ColorRect" parent="HUD" unique_id=937521441]
 visible = false
 offset_left = 200.0
 offset_top = 560.0
@@ -136,7 +135,7 @@ offset_right = 1400.0
 offset_bottom = 872.0
 color = Color(0.05, 0.05, 0.08, 0.85)
 
-[node name="NarrativeLabel" type="Label" parent="HUD/NarrativeBox"]
+[node name="NarrativeLabel" type="Label" parent="HUD/NarrativeBox" unique_id=896269039]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 16.0
@@ -149,7 +148,7 @@ theme_override_font_sizes/font_size = 30
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="DismissHint" type="Label" parent="HUD/NarrativeBox"]
+[node name="DismissHint" type="Label" parent="HUD/NarrativeBox" unique_id=968128445]
 layout_mode = 0
 offset_left = 24.0
 offset_top = 270.0
@@ -162,7 +161,7 @@ theme_override_font_sizes/font_size = 20
 text = "[Enter] continuar"
 horizontal_alignment = 1
 
-[node name="ThoughtLabel" type="Label" parent="HUD"]
+[node name="ThoughtLabel" type="Label" parent="HUD" unique_id=666423044]
 offset_left = 200.0
 offset_top = 780.0
 offset_right = 1400.0
@@ -174,24 +173,27 @@ theme_override_font_sizes/font_size = 30
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
-mouse_filter = 2
 
-[node name="TitleCard" type="Control" parent="HUD"]
+[node name="TitleCard" type="Control" parent="HUD" unique_id=698261819]
 visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="Shade" type="ColorRect" parent="HUD/TitleCard"]
+[node name="Shade" type="ColorRect" parent="HUD/TitleCard" unique_id=690014124]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.02, 0.02, 0.04, 0.55)
 
-[node name="Title" type="Label" parent="HUD/TitleCard"]
+[node name="Title" type="Label" parent="HUD/TitleCard" unique_id=688915060]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -201,7 +203,8 @@ anchor_bottom = 0.5
 offset_left = -400.0
 offset_top = -60.0
 offset_right = 400.0
-offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.95, 0.93, 0.88, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -209,7 +212,7 @@ theme_override_font_sizes/font_size = 52
 text = "El Recuerdo"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="HUD/TitleCard"]
+[node name="Subtitle" type="Label" parent="HUD/TitleCard" unique_id=845561402]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -220,6 +223,8 @@ offset_left = -400.0
 offset_top = 4.0
 offset_right = 400.0
 offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 2

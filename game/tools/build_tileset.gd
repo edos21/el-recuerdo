@@ -12,8 +12,7 @@ const TILE_PX := 18
 
 # Coordenadas (col,row) elegidas a mano mirando la hoja etiquetada.
 const TILES := {
-	"ground_top": Vector2i(1, 6),
-	"ground_fill": Vector2i(1, 6),
+	"ground": Vector2i(1, 6),
 	"platform": Vector2i(8, 2),
 	"spike": Vector2i(8, 3),
 	"sign": Vector2i(4, 4),

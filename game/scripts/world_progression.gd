@@ -117,8 +117,7 @@ func collapse() -> void:
 	add_child(layer)
 	create_tween().tween_property(black, "modulate:a", 1.0, COLLAPSE_FADE_TIME)
 	if _audio:
-		for name in ["wind", "hum", "pad", "melody"]:
-			_audio.set_layer(name, EXPULSION_SILENT_DB, COLLAPSE_FADE_TIME)
+		_audio.silence_all(COLLAPSE_FADE_TIME)
 
 func _advance_beats(ratio: float) -> void:
 	while _beats_fired < EXPULSION_BEATS.size() and ratio <= EXPULSION_BEATS[_beats_fired].ratio:
@@ -150,25 +149,21 @@ func _on_health_changed(current: int, max_value: int) -> void:
 	_set_param("vignette", lerpf(EXPULSION_VIGNETTE_START, 0.95, lost))
 
 func _on_stability_changed(current: float, max_value: float) -> void:
+	var ratio := current / max_value
 	if _expelling:
-		_apply_expulsion(current / max_value)
-		if _audio:
-			_audio.set_muffled((current / max_value) < 0.4)
-		return
-	var low := (current / max_value) < 0.4
+		_apply_expulsion(ratio)
+	var low := ratio < GameState.LOW_STABILITY_RATIO
 	if low == _low_stability:
 		return
 	_low_stability = low
-	_tween("vignette", 0.45 if low else _base_vignette, 0.8)
+	if not _expelling:
+		_tween("vignette", 0.45 if low else _base_vignette, 0.8)
 	if _audio:
 		_audio.set_muffled(low)
 
 func _pulse_vignette() -> void:
 	_base_vignette = 0.15
-	var mat := tint_rect.material as ShaderMaterial
-	var tween := create_tween()
-	tween.tween_method(func(v: float) -> void: mat.set_shader_parameter("vignette", v), 0.0, 0.55, 0.5)
-	tween.tween_method(func(v: float) -> void: mat.set_shader_parameter("vignette", v), 0.55, 0.15, 1.6)
+	_tween("vignette", 0.55, 0.5).tween_callback(_tween.bind("vignette", _base_vignette, 1.6))
 
 func _shake_camera() -> void:
 	if not _player:
@@ -185,8 +180,9 @@ func _shake_camera() -> void:
 func _set_param(param: String, value) -> void:
 	(tint_rect.material as ShaderMaterial).set_shader_parameter(param, value)
 
-func _tween(param: String, target: float, time: float = STAGE_TWEEN) -> void:
+func _tween(param: String, target: float, time: float = STAGE_TWEEN) -> Tween:
 	var mat := tint_rect.material as ShaderMaterial
 	var from: float = mat.get_shader_parameter(param)
 	var tween := create_tween()
 	tween.tween_method(func(v: float) -> void: mat.set_shader_parameter(param, v), from, target, time)
+	return tween

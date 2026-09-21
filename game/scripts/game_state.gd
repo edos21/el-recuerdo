@@ -7,6 +7,9 @@ extends Node
 const ALL_ABILITIES := ["jump", "sprint", "stability", "health", "attack"]
 const MAX_HEALTH := 5
 const MAX_STABILITY := 90.0
+# Por debajo de esta fraccion de la Estabilidad maxima: barra parpadeando, vineta
+# cerrada y musica apagada.
+const LOW_STABILITY_RATIO := 0.4
 # Todavia sin cerrar (historia_lore.md sec. 15): con cuanto despierta en el
 # pueblo real. Placeholder: Vida completa y Estabilidad a media barra.
 const WAKE_STABILITY_RATIO := 0.4
@@ -19,10 +22,6 @@ var came_from_expulsion := false
 
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
-
-func learn(ability: String) -> void:
-	if not abilities.has(ability):
-		abilities.append(ability)
 
 func capture_from_platformer(player: Node) -> void:
 	abilities.clear()

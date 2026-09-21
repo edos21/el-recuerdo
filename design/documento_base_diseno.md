@@ -699,9 +699,10 @@ Dos cambios respecto al diseño original de esta sección:
   Corredor para escapar, y **restos** (varios, chicos, de 1 golpe, rápidos). Esto le da a cada
   habilidad un desafío que de verdad la necesita, no solo enemigos intercambiables por stats.
 
-La pasada de color/parallax/audio de esta sección sigue sin implementarse — ver
-`TAREAS.md` → "Proyecto 1.5" para el detalle de qué falta y qué ya quedó listo como cimiento
-(TileSet con tiles de props, parallax ya recortado, hooks de audio ya puestos en el código).
+La pasada de color/parallax/audio de esta sección ya está implementada: ver
+`game/scripts/world_progression.gd`, `game/shaders/world_tint.gdshader` y
+`game/scripts/audio_layers.gd`. Sus valores numéricos siguen pendientes de ajuste jugando
+(issue "Ajustar color, viñeta y volúmenes").
 
 
 ---
