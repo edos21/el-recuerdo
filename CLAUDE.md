@@ -23,7 +23,7 @@ mal.** Nunca "estar mal te hace fuerte", nunca moraleja simplona.
 |---|---|
 | **Lore e historia** (mundo, la Fractura, protagonista, misterio, filosofía narrativa, arco emocional, preguntas abiertas) | `design/historia_lore.md` |
 | **Diseño de sistemas y mecánicas** (Estabilidad numérica, skills, niveles, arquitectura técnica, sección 15 de progresión visual, sección 16 de géneros) | `design/documento_base_diseno.md` |
-| **Backlog y estado actual** (qué se hizo, qué falta, decisiones tomadas) | `TAREAS.md` |
+| **Backlog y decisiones** (qué falta, por hito) | GitHub Issues: https://github.com/edos21/el-recuerdo/issues (etiquetas por tipo, hitos por capítulo). Con `gh issue list` se consulta desde la terminal |
 | Proyecto Godot | `game/` (abrir esa carpeta desde Godot) |
 | Nivel 1 (fuente de verdad) | `game/levels/level1.txt` (mapa ASCII, 1 carácter = celda de 36 px) |
 | Intérprete del mapa | `game/scripts/level_loader.gd` (leyenda de caracteres en el `match` de `build()`) |
@@ -75,7 +75,7 @@ godot --headless --script res://tools/build_tileset.gd   # si cambiaron coords d
 - Al salir en headless aparecen "8 ObjectDB instances leaked" por los loops de audio: es un
   artefacto del driver de audio simulado, no un bug del juego.
 - `tools/dump_level.gd` cuenta entidades del nivel; tiene un problema conocido con los grupos
-  al correr fuera de `Main.tscn` (ver `TAREAS.md`).
+  al correr fuera de `Main.tscn` (issue #9).
 
 ## Buenas prácticas del proyecto
 
@@ -106,17 +106,17 @@ godot --headless --script res://tools/build_tileset.gd   # si cambiaron coords d
 
 - No editar `.tscn` a mano cuando hay un script que los genera (sprites, tileset): correr el
   generador. Los `.tscn` de `scenes/` sí se editan (a mano o en el editor).
-- No poner IDs de tickets ni fechas en comentarios de código; eso vive en `TAREAS.md`.
+- No poner IDs de tickets ni fechas en comentarios de código; eso vive en los issues de GitHub y en el historial de git.
 - No agregar packs a `game/assets/` sin licencia anotada.
 - No "arreglar" un test o validación para que pase: si el headless falla, es un bug.
 
-## Futuras tareas (resumen; detalle en `TAREAS.md`)
+## Futuras tareas (resumen; detalle en los issues de GitHub)
 
 1. Playtest humano del nivel largo y ajuste de balance/color/audio a ojo y oído.
 2. Datos a `.tres` (recuerdos, enemigos). Núcleo compartido: HUD, tinte y audio ya viven en
    `Core.tscn` y el estado en `GameState`; falta extraer la lógica de Estabilidad/recuerdos
    (hoy en `player.gd`) antes del primer recuerdo ajeno (Proyecto 3, punto 3 abajo).
-3. Proyecto 3 (**arrancado**: pueblo cenital de prueba con NPCs, ver `TAREAS.md`; 2026-09-17, ya no es un "mini dungeon en la cueva" — ver
+3. Proyecto 3 (**arrancado**: pueblo cenital de prueba con NPCs, ver los hitos "Pueblo real" y "Primer recuerdo ajeno"; 2026-09-17, ya no es un "mini dungeon en la cueva" — ver
    `design/documento_base_diseno.md` sección 7 y `design/historia_lore.md` sección 13): la
    secuencia de expulsión del recuerdo propio (Nivel 1) devuelve al jugador al **pueblo real**,
    donde arranca el juego de verdad — explorar, hablar con NPCs, entender el lore de a poco —
@@ -129,9 +129,9 @@ godot --headless --script res://tools/build_tileset.gd   # si cambiaron coords d
 
 ## Convenciones de trabajo con agentes
 
-- Antes de cambiar comportamiento de juego, leer `TAREAS.md` (estado y decisiones ya tomadas)
-  y la sección que corresponda de `design/documento_base_diseno.md` (mecánicas) o
+- Antes de cambiar comportamiento de juego, revisar los issues abiertos y el historial de git
+  (`git log`, estado y decisiones ya tomadas) y la sección que corresponda de `design/documento_base_diseno.md` (mecánicas) o
   `design/historia_lore.md` (lore/historia). Si una decisión de diseño cambia, anotarla ahí.
-- Al terminar una pasada: correr el headless, actualizar `TAREAS.md` (tildar, sumar lo nuevo,
-  registrar desvíos respecto a lo planificado) y decir explícitamente qué **no** se validó
+- Al terminar una pasada: correr el headless, actualizar los issues (cerrar con `Closes #N` en el commit,
+  abrir los nuevos y registrar desvíos respecto a lo planificado) y decir explícitamente qué **no** se validó
   jugando.
