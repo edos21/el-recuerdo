@@ -29,6 +29,9 @@ var _reached_checkpoints := {}
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(SKY_COLOR)
+	# GameState es el dueño de las habilidades: si el Nivel 1 se vuelve a
+	# cargar (F6, otra corrida), no debe arrancar con las de la vez anterior.
+	GameState.reset()
 	player = level_loader.build(LEVEL_PATH)
 	_current_checkpoint = player.global_position
 	world_progression.setup(player, level_loader.props_layer, audio_layers)
@@ -55,7 +58,7 @@ func _ready() -> void:
 		_apply_debug_start()
 
 func _apply_debug_start() -> void:
-	for ability in GameState.ALL_ABILITIES:
+	for ability in GameState.granted_by_default():
 		player.unlock(ability)
 	var last_checkpoint: Node2D
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
@@ -90,9 +93,9 @@ func _on_kill_zone_entered(body: Node2D) -> void:
 
 func _on_respawn_requested() -> void:
 	respawn_sound.play()
-	if player.can_sprint:
+	if GameState.has_ability("sprint"):
 		hud.show_hint_once("fall_with_sprint", "Caminando no llego. Tengo que correr antes de saltar.")
-	elif player.can_jump:
+	elif GameState.has_ability("jump"):
 		hud.show_hint_once("fall_first", "Caí. No pasa nada: el banco me trae de vuelta.")
 	player.global_position = _current_checkpoint
 	player.velocity = Vector2.ZERO
