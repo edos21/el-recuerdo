@@ -4,7 +4,6 @@ extends Node
 # lo actualiza al irse (el jugador de plataformas y el cenital comparten estos
 # numeros, no la fisica).
 
-const ALL_ABILITIES := ["jump", "sprint", "stability", "health", "attack"]
 const MAX_HEALTH := 5
 const MAX_STABILITY := 90.0
 # Por debajo de esta fraccion de la Estabilidad maxima: barra parpadeando, vineta
@@ -23,11 +22,25 @@ var came_from_expulsion := false
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
 
+# Dueño de las habilidades: valida contra MemoryData (un typo o una habilidad
+# inexistente se detecta acá en vez de fallar en silencio) y es idempotente,
+# asi que volver a tocar un recuerdo ya recuperado (p. ej. con
+# debug_start_at_end) no lo cuenta dos veces. Devuelve si la otorgó de nuevo.
+func unlock(ability: String) -> bool:
+	if not MemoryData.LIST.has(ability):
+		push_error("Habilidad desconocida: %s" % ability)
+		return false
+	if abilities.has(ability):
+		return false
+	abilities.append(ability)
+	return true
+
+# Lo que se otorga automáticamente (debug_start_at_end, ensure_defaults):
+# todo salvo lo opcional, como el bonus del camino secundario.
+func granted_by_default() -> Array[String]:
+	return MemoryData.abilities_of([MemoryData.Kind.INNATE, MemoryData.Kind.MEMORY])
+
 func capture_from_platformer(player: Node) -> void:
-	abilities.clear()
-	for ability in ALL_ABILITIES:
-		if player.has_ability(ability):
-			abilities.append(ability)
 	max_stability = player.max_stability
 
 func begin_wake_up() -> void:
@@ -40,5 +53,14 @@ func begin_wake_up() -> void:
 func ensure_defaults() -> void:
 	if not abilities.is_empty():
 		return
-	abilities.assign(ALL_ABILITIES)
+	abilities.assign(granted_by_default())
 	begin_wake_up()
+
+# Al arrancar el Nivel 1 de nuevo (F6, o volver a jugar) el estado no debe
+# heredar habilidades de una corrida anterior.
+func reset() -> void:
+	abilities.clear()
+	health = MAX_HEALTH
+	max_stability = MAX_STABILITY
+	stability = MAX_STABILITY
+	came_from_expulsion = false

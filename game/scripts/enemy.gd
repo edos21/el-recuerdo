@@ -284,7 +284,7 @@ func _flash() -> void:
 func _on_hurt_box_body_entered(body: Node2D) -> void:
 	if behavior == Behavior.CHASE and body.is_in_group("player"):
 		get_tree().call_group("hud", "show_hint_once", "chaser", "A esto no lo puedo enfrentar. Pero sí puedo correr más rápido que él.")
-	if behavior == Behavior.GUARD and body.is_in_group("player") and not body.can_attack:
+	if behavior == Behavior.GUARD and body.is_in_group("player") and not GameState.has_ability("attack"):
 		get_tree().call_group("hud", "show_hint_once", "guard", "No hay forma de rodearlo. Todavía no.")
 	# `killable = false` solo significa que no recibe golpes: el contacto
 	# sigue siendo dano normal con empujon, no una muerte instantanea.

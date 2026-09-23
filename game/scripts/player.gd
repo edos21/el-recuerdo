@@ -56,14 +56,6 @@ const EXHAUSTION_LINES = [
 @export var max_health: int = 5
 @export var max_stability: float = 90.0
 
-# Todo esto arranca bloqueado: el personaje solo puede caminar hasta que
-# recupera cada recuerdo. unlock() es la única forma de habilitarlo.
-var can_jump := false
-var can_sprint := false
-var can_attack := false
-var has_stability := false
-var has_health := false
-
 var health: int = max_health
 var stability: float = max_stability
 
@@ -155,10 +147,10 @@ func _current_speed(direction: float, delta: float) -> float:
 	if _expelling:
 		var progress := clampf(_expulsion_distance / EXPULSION_FULL_DISTANCE, 0.0, 1.0)
 		return WALK_SPEED * lerpf(EXPULSION_START_SPEED_FACTOR, EXPULSION_END_SPEED_FACTOR, progress)
-	var sprinting := can_sprint and direction != 0.0 and Input.is_action_pressed("sprint")
+	var sprinting := GameState.has_ability("sprint") and direction != 0.0 and Input.is_action_pressed("sprint")
 	if not sprinting:
 		return WALK_SPEED
-	if has_stability:
+	if GameState.has_ability("stability"):
 		if stability <= 0.0:
 			return WALK_SPEED
 		stability = maxf(stability - STABILITY_SPRINT_DRAIN * delta, 0.0)
@@ -166,10 +158,10 @@ func _current_speed(direction: float, delta: float) -> float:
 	return RUN_SPEED
 
 func _try_jump() -> void:
-	if not can_jump or not is_on_floor():
+	if not GameState.has_ability("jump") or not is_on_floor():
 		return
 
-	if not has_stability:
+	if not GameState.has_ability("stability"):
 		if _jumps_before_stability < JUMPS_BEFORE_EXHAUSTION:
 			_jumps_before_stability += 1
 			_do_jump()
@@ -195,7 +187,7 @@ func _handle_exhaustion_attempt() -> void:
 		unlock("stability")
 
 func _regen_stability(direction: float, delta: float) -> void:
-	if not has_stability:
+	if not GameState.has_ability("stability"):
 		return
 
 	if not is_on_floor():
@@ -213,20 +205,6 @@ func _regen_stability(direction: float, delta: float) -> void:
 	stability = minf(stability + rate * delta, max_stability)
 	stability_changed.emit(stability, max_stability)
 
-func has_ability(ability: String) -> bool:
-	match ability:
-		"jump":
-			return can_jump
-		"sprint":
-			return can_sprint
-		"stability":
-			return has_stability
-		"health":
-			return has_health
-		"attack":
-			return can_attack
-	return false
-
 func begin_expulsion() -> void:
 	_expelling = true
 
@@ -239,7 +217,7 @@ func _tick_expulsion(direction: float, delta: float) -> void:
 		stability = maxf(stability - drain * delta, 0.0)
 		stability_changed.emit(stability, max_stability)
 		return
-	if not has_health:
+	if not GameState.has_ability("health"):
 		_collapse()
 		return
 	_expulsion_health_timer += delta
@@ -262,18 +240,11 @@ func _collapse() -> void:
 	collapsed.emit()
 
 func unlock(ability: String) -> void:
+	if not GameState.unlock(ability):
+		return
 	match ability:
-		"jump":
-			can_jump = true
-		"sprint":
-			can_sprint = true
-		"stability":
-			has_stability = true
 		"health":
-			has_health = true
 			health = max_health
-		"attack":
-			can_attack = true
 		"stability_boost":
 			# Fijo, no relativo: el punto es que arrancás un 10% más bajo
 			# de lo "normal" y esto te devuelve exactamente a esa base
@@ -282,17 +253,14 @@ func unlock(ability: String) -> void:
 			max_stability += STABILITY_BOOST_AMOUNT
 			stability += STABILITY_BOOST_AMOUNT
 			stability_changed.emit(stability, max_stability)
-		_:
-			push_warning("Recuerdo desconocido: %s" % ability)
-			return
 	ability_unlocked.emit(ability)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("attack") and can_attack and not _attacking and not _collapsed:
+	if event.is_action_pressed("attack") and GameState.has_ability("attack") and not _attacking and not _collapsed:
 		_try_attack()
 
 func _try_attack() -> void:
-	if has_stability:
+	if GameState.has_ability("stability"):
 		if stability < STABILITY_ATTACK_COST:
 			return
 		stability -= STABILITY_ATTACK_COST
@@ -334,11 +302,11 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 	velocity.x = push_direction * KNOCKBACK_FORCE
 	velocity.y = -KNOCKBACK_LIFT
 
-	if not can_attack and not _shown_avoidance_hint:
+	if not GameState.has_ability("attack") and not _shown_avoidance_hint:
 		_shown_avoidance_hint = true
 		_show_avoidance_hint_delayed()
 
-	if not has_health or health <= 0:
+	if not GameState.has_ability("health") or health <= 0:
 		return
 
 	health = maxi(health - amount, 0)

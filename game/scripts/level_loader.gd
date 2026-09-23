@@ -98,7 +98,7 @@ func build(level_path: String) -> Node2D:
 				'X':
 					_add_expulsion_trigger(col, row)
 				'1', '2', '3', '4', '5':
-					memory_pickups[ch] = _add_memory(ch, col, row)
+					memory_pickups[ch] = _add_memory(MemoryData.by_pickup_char(ch), col, row)
 				'z', 'f', 'e', 'g', 'h', 'm':
 					_track_guardian(guarded_by, ch, _add_enemy(ch, col, row))
 
@@ -156,14 +156,14 @@ func _add_hazard(col: int, row: int) -> void:
 	)
 	add_child(area)
 
-func _add_memory(digit: String, col: int, row: int) -> Area2D:
-	var data: Dictionary = MemoryData.LIST[digit]
+func _add_memory(ability: String, col: int, row: int) -> Area2D:
+	var data: Dictionary = MemoryData.LIST[ability]
 	var pickup := MEMORY_SCENE.instantiate()
 	pickup.position = _cell_center(col, row)
-	pickup.ability = data.ability
-	pickup.message = data.message
+	pickup.ability = ability
+	pickup.message = data.pickup.message
 	pickup.icon = load(data.icon)
-	pickup.icon_scale = data.icon_scale
+	pickup.icon_scale = data.pickup.icon_scale
 	add_child(pickup)
 	return pickup
 

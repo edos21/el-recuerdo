@@ -39,8 +39,6 @@ func _restore_hud() -> void:
 		core.hud.show_health_bar()
 	if GameState.has_ability("stability"):
 		core.hud.show_stability_bar()
-	if GameState.max_stability > GameState.MAX_STABILITY:
-		core.hud.note_ability_unlocked("stability_boost")
 
 func _start_ambience() -> void:
 	core.audio.set_muffled(false)

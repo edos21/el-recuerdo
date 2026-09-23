@@ -19,14 +19,14 @@ const COLLAPSE_FADE_TIME := 2.5
 const COLLAPSE_THOUGHT_HOLD := 6.0
 
 # Cada tramo de Estabilidad perdida: un pensamiento (preguntas, no
-# explicaciones) y el recuerdo que se apaga en el HUD, en orden inverso al
-# que se ganaron.
+# explicaciones). Qué recuerdo se apaga en el HUD en cada tramo viene de
+# `MemoryData.LIST[ability].fades_at`, en orden inverso al que se ganaron.
 const EXPULSION_BEATS := [
-	{"ratio": 1.0, "thought": "Algo cambió. No sé qué.", "dim": []},
-	{"ratio": 0.75, "thought": "El aire se siente distinto. Más quieto.", "dim": ["attack", "stability_boost"]},
-	{"ratio": 0.5, "thought": "Conozco este camino. ¿Por qué me cuesta?", "dim": ["health"]},
-	{"ratio": 0.25, "thought": "Los colores se están yendo. ¿Siempre fue tan gris?", "dim": ["sprint"]},
-	{"ratio": 0.0, "thought": "La puerta está ahí. Pero cada paso la aleja.", "dim": ["jump"]},
+	{"ratio": 1.0, "thought": "Algo cambió. No sé qué."},
+	{"ratio": 0.75, "thought": "El aire se siente distinto. Más quieto."},
+	{"ratio": 0.5, "thought": "Conozco este camino. ¿Por qué me cuesta?"},
+	{"ratio": 0.25, "thought": "Los colores se están yendo. ¿Siempre fue tan gris?"},
+	{"ratio": 0.0, "thought": "La puerta está ahí. Pero cada paso la aleja."},
 ]
 
 @export var tint_rect: ColorRect
@@ -42,6 +42,7 @@ var _low_stability := false
 var _expelling := false
 var _cut_layers := {}
 var _beats_fired := 0
+var _dimmed_abilities := {}
 
 func _ready() -> void:
 	_set_param("saturation", 0.12)
@@ -121,11 +122,13 @@ func collapse() -> void:
 
 func _advance_beats(ratio: float) -> void:
 	while _beats_fired < EXPULSION_BEATS.size() and ratio <= EXPULSION_BEATS[_beats_fired].ratio:
-		var beat: Dictionary = EXPULSION_BEATS[_beats_fired]
-		get_tree().call_group("hud", "show_thought", beat.thought)
-		for ability in beat.dim:
-			get_tree().call_group("hud", "dim_memory_icon", ability)
+		get_tree().call_group("hud", "show_thought", EXPULSION_BEATS[_beats_fired].thought)
 		_beats_fired += 1
+	for ability in GameState.abilities:
+		var fades_at: float = MemoryData.LIST[ability].fades_at
+		if fades_at != MemoryData.NO_FADE and ratio <= fades_at and not _dimmed_abilities.has(ability):
+			_dimmed_abilities[ability] = true
+			get_tree().call_group("hud", "dim_memory_icon", ability)
 
 func _apply_expulsion(ratio: float) -> void:
 	_advance_beats(ratio)
