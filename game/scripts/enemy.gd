@@ -30,6 +30,10 @@ const CHARGE_WALL_RECOVERY := 1.5
 const CHARGE_COOLDOWN := 0.8
 const CHARGE_WINDUP_TINT := Color(2.4, 2.4, 2.4, 1)
 const CHARGE_STUN_TINT := Color(0.65, 0.75, 1.4, 1)
+# Al morir se infla un instante y revienta en motas del color de su contorno.
+const POP_INFLATE := 1.35
+const POP_INFLATE_TIME := 0.09
+const POP_FLASH := Color(2.5, 2.5, 2.5, 1)
 
 @export var behavior: Behavior = Behavior.PATROL
 @export var max_health: int = 2
@@ -266,15 +270,32 @@ func _touching_wall() -> bool:
 
 # Devuelve si el golpe realmente hizo efecto (el jugador se cubre solo entonces).
 func take_hit(amount: int = 1) -> bool:
-	if not killable:
+	# Ya reventando: un segundo golpe en el mismo frame no lo mata dos veces.
+	if not killable or health <= 0:
 		return false
 	health -= amount
 	_flash()
 	if health <= 0:
-		Events.sfx_requested.emit("enemy_die")
-		defeated.emit()
-		queue_free()
+		_die()
 	return true
+
+func _die() -> void:
+	Events.sfx_requested.emit("enemy_die")
+	defeated.emit()
+	# Para el juego ya no existe (ni choca ni lastima); lo que queda es solo
+	# la animacion de reventar.
+	set_physics_process(false)
+	set_deferred("collision_layer", 0)
+	hurt_box.set_deferred("monitoring", false)
+	var outline: Color = (sprite.material as ShaderMaterial).get_shader_parameter("outline_color")
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.set_parallel()
+	tween.tween_property(sprite, "scale", sprite.scale * POP_INFLATE, POP_INFLATE_TIME)
+	tween.tween_property(sprite, "modulate", POP_FLASH, POP_INFLATE_TIME)
+	tween.chain().tween_callback(func() -> void:
+		Effects.pop(get_parent(), sprite.global_position, outline)
+		queue_free()
+	)
 
 func _flash() -> void:
 	var tween := create_tween()

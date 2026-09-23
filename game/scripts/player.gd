@@ -50,6 +50,9 @@ const SHAKE_TAKEN_TIME = 0.2
 # quitarle el control). Decae hasta cero para que sea un golpe seco, no un deslizamiento.
 const HIT_RECOIL_SPEED = 170.0
 const HIT_RECOIL_TIME = 0.12
+# Nace en el borde de lo golpeado que da al jugador, a la altura del torso:
+# en el centro del cuerpo el sprite del enemigo lo tapa.
+const HIT_DUST_OFFSET = Vector2(-12, -10)
 
 # Expulsion del recuerdo: la Estabilidad se drena sola (mas rapido si camina),
 # el paso se vuelve pesado y, ya sin Estabilidad, empieza a perder Vida hasta
@@ -402,6 +405,7 @@ func _on_attack_area_body_entered(body: Node2D) -> void:
 		if _knockback_timer <= 0.0:
 			_recoil_timer = HIT_RECOIL_TIME
 			velocity.x = -_facing * HIT_RECOIL_SPEED
+		Effects.hit_dust(get_parent(), body.global_position + HIT_DUST_OFFSET * Vector2(_facing, 1), _facing)
 		_hit_stop(HIT_STOP_CONNECT)
 		camera.shake(SHAKE_CONNECT_STRENGTH, SHAKE_CONNECT_TIME)
 
