@@ -17,10 +17,6 @@ const HOUSE_LIGHT_OFFSET := Vector2(0, 24)
 const PLAYER_LIGHT_ENERGY := 0.25
 const PLAYER_LIGHT_SCALE := 2.4
 
-const GLOW_INTENSITY := 0.7
-const GLOW_BLOOM := 0.04
-const GLOW_THRESHOLD := 0.88
-
 const CONTACT_SHADOW_SIZE := Vector2(34, 12)
 const CONTACT_SHADOW_ALPHA := 0.42
 const HOUSE_SHADOW_ALPHA := 0.28
@@ -50,7 +46,7 @@ var _windows_material: ShaderMaterial
 func build(player: CharacterBody2D) -> void:
 	_build_shared_resources()
 	_add_ambient_light()
-	_add_glow()
+	AtmosphereKit.add_glow(self)
 	for tree in get_tree().get_nodes_in_group("town_trees"):
 		_decorate_tree(tree)
 	for house in get_tree().get_nodes_in_group("town_houses"):
@@ -63,9 +59,9 @@ func build(player: CharacterBody2D) -> void:
 	player.add_child(_motes())
 
 func _build_shared_resources() -> void:
-	_light_texture = _radial_texture(256, Color.WHITE)
-	_shadow_texture = _radial_texture(64, Color(0.04, 0.03, 0.10, CONTACT_SHADOW_ALPHA))
-	_puff_texture = _radial_texture(32, Color.WHITE)
+	_light_texture = AtmosphereKit.radial_texture(256, Color.WHITE)
+	_shadow_texture = AtmosphereKit.radial_texture(64, Color(0.04, 0.03, 0.10, CONTACT_SHADOW_ALPHA))
+	_puff_texture = AtmosphereKit.radial_texture(32, Color.WHITE)
 	_leaf_texture = _make_leaf_texture()
 	_sway_material = ShaderMaterial.new()
 	_sway_material.shader = SWAY_SHADER
@@ -76,19 +72,6 @@ func _add_ambient_light() -> void:
 	var modulate_node := CanvasModulate.new()
 	modulate_node.color = AMBIENT_COLOR
 	add_child(modulate_node)
-
-func _add_glow() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_CANVAS
-	env.background_canvas_max_layer = Core.WORLD_MAX_CANVAS_LAYER
-	env.glow_enabled = true
-	env.glow_intensity = GLOW_INTENSITY
-	env.glow_bloom = GLOW_BLOOM
-	env.glow_hdr_threshold = GLOW_THRESHOLD
-	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-	var world_env := WorldEnvironment.new()
-	world_env.environment = env
-	add_child(world_env)
 
 func _decorate_tree(tree: Sprite2D) -> void:
 	tree.material = _sway_material
@@ -133,7 +116,7 @@ func _player_light() -> PointLight2D:
 # Polen/polvo en suspension alrededor del jugador: se emite en el mundo, asi
 # que las particulas quedan flotando donde nacieron cuando el jugador se aleja.
 func _motes() -> CPUParticles2D:
-	var motes := _particles(MOTES_AMOUNT, 7.0, _pixel_texture(2, Color.WHITE))
+	var motes := AtmosphereKit.particles(MOTES_AMOUNT, 7.0, AtmosphereKit.pixel_texture(2, Color.WHITE))
 	motes.local_coords = false
 	motes.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	motes.emission_rect_extents = MOTES_AREA
@@ -144,13 +127,13 @@ func _motes() -> CPUParticles2D:
 	motes.initial_velocity_max = 12.0
 	motes.scale_amount_min = 0.8
 	motes.scale_amount_max = 1.8
-	motes.color_ramp = _fade_ramp(Color(1.0, 0.92, 0.65), 0.85)
-	motes.material = _additive_unshaded()
+	motes.color_ramp = AtmosphereKit.fade_ramp(Color(1.0, 0.92, 0.65), 0.85)
+	motes.material = AtmosphereKit.additive_unshaded()
 	motes.z_index = 10
 	return motes
 
 func _leaves() -> CPUParticles2D:
-	var leaves := _particles(LEAVES_PER_TREE, 5.0, _leaf_texture)
+	var leaves := AtmosphereKit.particles(LEAVES_PER_TREE, 5.0, _leaf_texture)
 	leaves.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	leaves.emission_rect_extents = CANOPY_EXTENTS
 	leaves.gravity = Vector2(10, 22)
@@ -162,12 +145,12 @@ func _leaves() -> CPUParticles2D:
 	leaves.angle_max = 360.0
 	leaves.scale_amount_min = 2.0
 	leaves.scale_amount_max = 2.0
-	leaves.color_ramp = _fade_ramp(Color.WHITE, 1.0)
+	leaves.color_ramp = AtmosphereKit.fade_ramp(Color.WHITE, 1.0)
 	leaves.z_index = 10
 	return leaves
 
 func _smoke() -> CPUParticles2D:
-	var smoke := _particles(10, 4.5, _puff_texture)
+	var smoke := AtmosphereKit.particles(10, 4.5, _puff_texture)
 	smoke.direction = Vector2(0.3, -1)
 	smoke.spread = 12.0
 	smoke.gravity = Vector2(7, -6)
@@ -180,50 +163,9 @@ func _smoke() -> CPUParticles2D:
 	growth.add_point(Vector2(0, 0.4))
 	growth.add_point(Vector2(1, 1.8))
 	smoke.scale_amount_curve = growth
-	smoke.color_ramp = _fade_ramp(Color(0.85, 0.82, 0.80), 0.35)
+	smoke.color_ramp = AtmosphereKit.fade_ramp(Color(0.85, 0.82, 0.80), 0.35)
 	smoke.z_index = 10
 	return smoke
-
-func _particles(amount: int, lifetime: float, texture: Texture2D) -> CPUParticles2D:
-	var particles := CPUParticles2D.new()
-	particles.amount = amount
-	particles.lifetime = lifetime
-	particles.preprocess = lifetime
-	particles.texture = texture
-	particles.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	return particles
-
-# Aparece, se sostiene y se apaga: ninguna particula nace o muere de golpe.
-func _fade_ramp(color: Color, peak_alpha: float) -> Gradient:
-	var ramp := Gradient.new()
-	ramp.offsets = PackedFloat32Array([0.0, 0.2, 0.75, 1.0])
-	var clear := Color(color, 0.0)
-	var solid := Color(color, peak_alpha)
-	ramp.colors = PackedColorArray([clear, solid, solid, clear])
-	return ramp
-
-func _additive_unshaded() -> CanvasItemMaterial:
-	var mat := CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
-	return mat
-
-func _radial_texture(size: int, center: Color) -> GradientTexture2D:
-	var gradient := Gradient.new()
-	gradient.colors = PackedColorArray([center, Color(center, 0.0)])
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	texture.width = size
-	texture.height = size
-	return texture
-
-func _pixel_texture(size: int, color: Color) -> ImageTexture:
-	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
-	image.fill(color)
-	return ImageTexture.create_from_image(image)
 
 # Hoja de 3x2 px en dos verdes, a la escala del pixel art del pack.
 func _make_leaf_texture() -> ImageTexture:
