@@ -74,3 +74,5 @@ tt = t(0.35); save("sfx_enemy_die", lowpass(rng.normal(0, 1, len(tt)), 900) * np
 tt = t(0.5); ck = note(523.25, 0.5, 1.0, (1.0, 0.3)) * env(len(tt), 0.005, 0.4); ck[int(SR * 0.18):] += note(783.99, 0.5 - 0.18, 0.8, (1.0, 0.3)) * env(len(tt) - int(SR * 0.18), 0.005, 0.3)
 save("sfx_checkpoint", ck)
 tt = t(0.2); save("sfx_spike", np.sign(np.sin(2 * np.pi * 140 * tt)) * env(len(tt), 0.002, 0.15) * np.exp(-tt * 12))
+# Rafaga de aire que sube: al final del archivo para no correr la semilla de `rng` de los demas.
+tt = t(0.16); save("sfx_dash", lowpass(rng.normal(0, 1, len(tt)), 1800) * env(len(tt), 0.01, 0.12) * (0.4 + tt / 0.16) + 0.25 * np.sin(2 * np.pi * (400 + 700 * tt / 0.16) * tt) * env(len(tt), 0.005, 0.1))

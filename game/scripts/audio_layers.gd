@@ -18,6 +18,7 @@ const SFX := {
 	"enemy_die": "res://assets/audio/sfx_enemy_die.wav",
 	"checkpoint": "res://assets/audio/sfx_checkpoint.wav",
 	"spike": "res://assets/audio/sfx_spike.wav",
+	"dash": "res://assets/audio/sfx_dash.wav",
 }
 const SFX_VOICES := 6
 const MUFFLED_CUTOFF := 900.0

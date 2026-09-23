@@ -24,6 +24,11 @@ const HURT_ANIM_TIME = 0.3
 # Pegar no te protege por si solo (si no, spamear el ataque seria una
 # invulnerabilidad gratis): el escudo solo aparece cuando el golpe conecta.
 const HIT_CONFIRM_SHIELD_TIME = 0.3
+# Dash de la Centella: rafaga horizontal corta, sin gravedad. No da
+# invulnerabilidad (eso es otra habilidad): atravesar a un enemigo duele igual.
+const DASH_SPEED = 520.0
+const DASH_DURATION = 0.15
+const DASH_ANIM_SPEED = 2.0
 
 # Expulsion del recuerdo: la Estabilidad se drena sola (mas rapido si camina),
 # el paso se vuelve pesado y, ya sin Estabilidad, empieza a perder Vida hasta
@@ -40,6 +45,7 @@ const STABILITY_HIT_COST = 20.0
 const STABILITY_JUMP_COST = 15.0
 const STABILITY_ATTACK_COST = 15.0
 const STABILITY_SPRINT_DRAIN = 10.0
+const STABILITY_DASH_COST = 10.0
 const STABILITY_REGEN_RATE = 35.0
 # Moverse ya no frena del todo la recuperación (con más saltos en el nivel
 # largo, "quieto o nada" se sentía como un freno constante) — caminar
@@ -59,7 +65,7 @@ const EXHAUSTION_LINES = [
 # Qué está haciendo el cuerpo. Idle/run/jump/fall no son estados: se derivan de
 # la física en _update_animation. Lo que se solapa con cualquier estado (el
 # empujón, el escudo del golpe, la expulsión) va aparte, como modificador.
-enum State { FREE, ATTACK, HURT, COLLAPSED }
+enum State { FREE, ATTACK, DASH, HURT, COLLAPSED }
 
 @export var max_health: int = 5
 @export var max_stability: float = 90.0
@@ -78,6 +84,8 @@ var _state_timer := 0.0
 var _knockback_timer := 0.0
 var _hit_shield_timer := 0.0
 var _expelling := false
+# Un solo dash por salto: se repone al volver a tocar el suelo.
+var _air_dash_available := true
 var _expulsion_health_timer := 0.0
 var _expulsion_distance := 0.0
 var _jumps_before_stability := 0
@@ -102,7 +110,7 @@ func _emit_stability() -> void:
 		low_stability_changed.emit(low)
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
+	if not is_on_floor() and _state != State.DASH:
 		velocity.y += get_gravity().y * delta
 
 	if _state == State.COLLAPSED:
@@ -112,6 +120,8 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("jump"):
 		_try_jump()
+	if Input.is_action_just_pressed("dash"):
+		_try_dash()
 
 	var direction := Input.get_axis("move_left", "move_right")
 
@@ -120,7 +130,7 @@ func _physics_process(delta: float) -> void:
 	# el enemigo cancela el knockback en el mismo frame y nunca llegás a
 	# separarte lo suficiente para volver a tocarlo (el contacto solo se
 	# detecta al "entrar" al área, no mientras seguís adentro).
-	if _knockback_timer <= 0.0:
+	if _knockback_timer <= 0.0 and _state != State.DASH:
 		var speed := _current_speed(direction, delta)
 		if direction:
 			velocity.x = direction * speed
@@ -143,6 +153,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	var on_floor := is_on_floor()
+	if on_floor:
+		_air_dash_available = true
 	if on_floor and not _was_on_floor:
 		Events.sfx_requested.emit("land")
 	_was_on_floor = on_floor
@@ -157,6 +169,8 @@ func _change_state(new_state: State) -> void:
 		# Diferido: el cambio puede llegar desde la señal de un área (un golpe
 		# recibido) y Godot no deja tocar el monitoreo en medio de ese chequeo.
 		attack_area.set_deferred("monitoring", false)
+	elif _state == State.DASH:
+		sprite.speed_scale = 1.0
 	_state = new_state
 	match new_state:
 		State.ATTACK:
@@ -164,6 +178,13 @@ func _change_state(new_state: State) -> void:
 			attack_area.monitoring = true
 			sprite.play("attack")
 			Events.sfx_requested.emit("attack")
+		State.DASH:
+			_state_timer = DASH_DURATION
+			velocity = Vector2(DASH_SPEED * _facing, 0.0)
+			# Placeholder: el pack no trae animación de dash.
+			sprite.play("run")
+			sprite.speed_scale = DASH_ANIM_SPEED
+			Events.sfx_requested.emit("dash")
 		State.HURT:
 			_state_timer = HURT_ANIM_TIME
 			sprite.play("hurt")
@@ -173,7 +194,7 @@ func _change_state(new_state: State) -> void:
 
 func _tick_state(delta: float) -> void:
 	match _state:
-		State.ATTACK, State.HURT:
+		State.ATTACK, State.DASH, State.HURT:
 			_state_timer -= delta
 			if _state_timer <= 0.0:
 				_change_state(State.FREE)
@@ -193,7 +214,7 @@ func _current_speed(direction: float, delta: float) -> float:
 	return RUN_SPEED
 
 func _try_jump() -> void:
-	if not GameState.has_ability("jump") or not is_on_floor():
+	if not GameState.has_ability("jump") or not is_on_floor() or _state == State.DASH:
 		return
 
 	if not GameState.has_ability("stability"):
@@ -208,6 +229,25 @@ func _try_jump() -> void:
 		stability -= STABILITY_JUMP_COST
 		_emit_stability()
 		_do_jump()
+
+# La expulsión es paso pesado y cada vez más lento: una ráfaga la rompería.
+# Tampoco se corta un ataque ni el empujón de un golpe con un dash.
+func _can_dash() -> bool:
+	if not GameState.has_ability("dash") or _state != State.FREE or _expelling or _knockback_timer > 0.0:
+		return false
+	if GameState.has_ability("stability") and stability < STABILITY_DASH_COST:
+		return false
+	return is_on_floor() or _air_dash_available
+
+func _try_dash() -> void:
+	if not _can_dash():
+		return
+	if not is_on_floor():
+		_air_dash_available = false
+	if GameState.has_ability("stability"):
+		stability -= STABILITY_DASH_COST
+		_emit_stability()
+	_change_state(State.DASH)
 
 func _do_jump() -> void:
 	velocity.y = JUMP_VELOCITY

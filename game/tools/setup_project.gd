@@ -15,8 +15,11 @@ func _initialize() -> void:
 	var actions := {
 		"move_left": [KEY_LEFT, KEY_A],
 		"move_right": [KEY_RIGHT, KEY_D],
+		"move_up": [KEY_UP, KEY_W],
+		"move_down": [KEY_DOWN, KEY_S],
 		"jump": [KEY_SPACE],
 		"sprint": [KEY_SHIFT],
+		"dash": [KEY_C],
 		"attack": [KEY_X],
 		"interact": [KEY_ENTER, KEY_KP_ENTER],
 	}

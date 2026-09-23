@@ -12,6 +12,9 @@ class_name MemoryData
 # - MEMORY: slot apagado desde el inicio, cuenta en "Recuerdos X/N".
 # - OPTIONAL: slot que aparece recién al ganarlo, no cuenta (el bonus del
 #   camino secundario).
+# - LATER: se gana fuera del Nivel 1 (en un capítulo que todavía no existe):
+#   no cuenta en el Nivel 1 ni lo otorga `granted_by_default`, así que el
+#   contador y debug_start_at_end no cambian por tenerlo definido.
 #
 # `fades_at` es el ratio de Estabilidad en el que la expulsión apaga el
 # recuerdo (en orden inverso al que se ganaron); `NO_FADE` para lo que nunca
@@ -21,7 +24,7 @@ class_name MemoryData
 # lee como tabla y una entrada incompleta falla al cargar en vez de romper
 # una habilidad en silencio.
 
-enum Kind { INNATE, MEMORY, OPTIONAL }
+enum Kind { INNATE, MEMORY, OPTIONAL, LATER }
 const NO_FADE := -1.0
 
 const LIST := {
@@ -70,6 +73,12 @@ const LIST := {
 			"icon_scale": 3.0,
 			"message": "Una espada corta, con el filo gastado de uso real, no de exhibición. Recuerdo la firmeza de sostenerla, la decisión de no quedarme quieto. Presioná X para atacar. [Recuerdo del Guerrero recuperado]",
 		},
+	},
+	"dash": {
+		"kind": Kind.LATER,
+		"icon": "",
+		"fades_at": NO_FADE,
+		"pickup": {},
 	},
 	"stability_boost": {
 		"kind": Kind.OPTIONAL,
