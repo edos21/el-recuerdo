@@ -56,6 +56,11 @@ const EXHAUSTION_LINES = [
 	"Siento algo en el pecho, como si me faltara el aire. ¿Qué es esto?",
 ]
 
+# Qué está haciendo el cuerpo. Idle/run/jump/fall no son estados: se derivan de
+# la física en _update_animation. Lo que se solapa con cualquier estado (el
+# empujón, el escudo del golpe, la expulsión) va aparte, como modificador.
+enum State { FREE, ATTACK, HURT, COLLAPSED }
+
 @export var max_health: int = 5
 @export var max_stability: float = 90.0
 
@@ -66,13 +71,13 @@ var stability: float = max_stability
 @onready var attack_area: Area2D = $AttackArea
 
 var _facing := 1
-var _attacking := false
-var _attack_timer := 0.0
-var _invulnerable := false
-var _invulnerable_timer := 0.0
+var _state := State.FREE
+var _state_timer := 0.0
+# Empujón al recibir un golpe: mientras dura no se recibe daño y el input
+# horizontal no pisa la velocidad del empujón.
+var _knockback_timer := 0.0
 var _hit_shield_timer := 0.0
 var _expelling := false
-var _collapsed := false
 var _expulsion_health_timer := 0.0
 var _expulsion_distance := 0.0
 var _jumps_before_stability := 0
@@ -80,7 +85,6 @@ var _exhaustion_attempts := 0
 var _idle_timer := 0.0
 var _shown_avoidance_hint := false
 var _was_on_floor := true
-var _hurt_timer := 0.0
 var _low_stability := false
 
 func _ready() -> void:
@@ -101,7 +105,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += get_gravity().y * delta
 
-	if _collapsed:
+	if _state == State.COLLAPSED:
 		velocity.x = 0.0
 		move_and_slide()
 		return
@@ -116,7 +120,7 @@ func _physics_process(delta: float) -> void:
 	# el enemigo cancela el knockback en el mismo frame y nunca llegás a
 	# separarte lo suficiente para volver a tocarlo (el contacto solo se
 	# detecta al "entrar" al área, no mientras seguís adentro).
-	if not _invulnerable:
+	if _knockback_timer <= 0.0:
 		var speed := _current_speed(direction, delta)
 		if direction:
 			velocity.x = direction * speed
@@ -127,19 +131,8 @@ func _physics_process(delta: float) -> void:
 	sprite.flip_h = _facing < 0
 	attack_area.position.x = ATTACK_OFFSET * _facing
 
-	if _attacking:
-		_attack_timer -= delta
-		if _attack_timer <= 0.0:
-			_end_attack()
-
-	if _invulnerable:
-		_invulnerable_timer -= delta
-		if _invulnerable_timer <= 0.0:
-			_invulnerable = false
-
-	if _hurt_timer > 0.0:
-		_hurt_timer -= delta
-
+	_tick_state(delta)
+	_knockback_timer = maxf(_knockback_timer - delta, 0.0)
 	_hit_shield_timer = maxf(_hit_shield_timer - delta, 0.0)
 
 	if _expelling:
@@ -154,8 +147,36 @@ func _physics_process(delta: float) -> void:
 		Events.sfx_requested.emit("land")
 	_was_on_floor = on_floor
 
-	if not _attacking and _hurt_timer <= 0.0 and not _collapsed:
+	if _state == State.FREE:
 		_update_animation()
+
+# Único lugar donde cambia el estado: lo que hay que deshacer al salir de uno y
+# preparar al entrar en otro vive acá, no repartido en cada llamador.
+func _change_state(new_state: State) -> void:
+	if _state == State.ATTACK:
+		# Diferido: el cambio puede llegar desde la señal de un área (un golpe
+		# recibido) y Godot no deja tocar el monitoreo en medio de ese chequeo.
+		attack_area.set_deferred("monitoring", false)
+	_state = new_state
+	match new_state:
+		State.ATTACK:
+			_state_timer = ATTACK_DURATION
+			attack_area.monitoring = true
+			sprite.play("attack")
+			Events.sfx_requested.emit("attack")
+		State.HURT:
+			_state_timer = HURT_ANIM_TIME
+			sprite.play("hurt")
+		State.COLLAPSED:
+			velocity.x = 0.0
+			sprite.play("die")
+
+func _tick_state(delta: float) -> void:
+	match _state:
+		State.ATTACK, State.HURT:
+			_state_timer -= delta
+			if _state_timer <= 0.0:
+				_change_state(State.FREE)
 
 func _current_speed(direction: float, delta: float) -> float:
 	if _expelling:
@@ -245,12 +266,9 @@ func _tick_expulsion(direction: float, delta: float) -> void:
 		_collapse()
 
 func _collapse() -> void:
-	if _collapsed:
+	if _state == State.COLLAPSED:
 		return
-	_collapsed = true
-	velocity.x = 0.0
-	attack_area.monitoring = false
-	sprite.play("die")
+	_change_state(State.COLLAPSED)
 	collapsed.emit()
 
 func unlock(ability: String) -> void:
@@ -270,8 +288,13 @@ func unlock(ability: String) -> void:
 	ability_unlocked.emit(ability)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("attack") and GameState.has_ability("attack") and not _attacking and not _collapsed:
+	if event.is_action_pressed("attack") and _can_attack():
 		_try_attack()
+
+# Se puede atacar recién golpeado (como antes), pero no encadenar un ataque
+# sobre otro ni moverse ya desplomado.
+func _can_attack() -> bool:
+	return GameState.has_ability("attack") and (_state == State.FREE or _state == State.HURT)
 
 func _try_attack() -> void:
 	if GameState.has_ability("stability"):
@@ -279,18 +302,7 @@ func _try_attack() -> void:
 			return
 		stability -= STABILITY_ATTACK_COST
 		_emit_stability()
-	_start_attack()
-
-func _start_attack() -> void:
-	_attacking = true
-	_attack_timer = ATTACK_DURATION
-	attack_area.monitoring = true
-	sprite.play("attack")
-	Events.sfx_requested.emit("attack")
-
-func _end_attack() -> void:
-	_attacking = false
-	attack_area.monitoring = false
+	_change_state(State.ATTACK)
 
 func _on_attack_area_body_entered(body: Node2D) -> void:
 	if body.has_method("take_hit") and body.take_hit():
@@ -300,16 +312,16 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 	# Un golpe que conecta te cubre un instante: el área de ataque y el
 	# hurtbox del enemigo quedan tan cerca que, sin esto, pegarle a alguien
 	# cuerpo a cuerpo te haría daño a vos en el mismo momento.
-	if _invulnerable or _hit_shield_timer > 0.0 or _collapsed:
+	if _knockback_timer > 0.0 or _hit_shield_timer > 0.0 or _state == State.COLLAPSED:
 		return
 
 	# El empujón pasa siempre que te tocan, tengas o no Vida todavía — así
 	# un enemigo nunca se siente como una pared muda. La pérdida de HP en
 	# sí solo aplica una vez que existe la barra de Vida.
-	_invulnerable = true
-	_invulnerable_timer = INVULNERABILITY_TIME
-	_hurt_timer = HURT_ANIM_TIME
-	sprite.play("hurt")
+	# Un golpe recibido corta el ataque en curso: el cuerpo no puede estar
+	# pegando y trastabillando a la vez.
+	_knockback_timer = INVULNERABILITY_TIME
+	_change_state(State.HURT)
 	Events.sfx_requested.emit("hit_take")
 
 	var push_direction := signf(global_position.x - from_position.x)
