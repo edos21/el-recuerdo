@@ -13,8 +13,8 @@ class_name MemoryData
 # - OPTIONAL: slot que aparece recién al ganarlo, no cuenta (el bonus del
 #   camino secundario).
 # - LATER: se gana fuera del Nivel 1 (en un capítulo que todavía no existe):
-#   no cuenta en el Nivel 1 ni lo otorga `granted_by_default`, así que el
-#   contador y debug_start_at_end no cambian por tenerlo definido.
+#   no cuenta en el Nivel 1 ni lo otorga `granted_by_default` (el pueblo no lo
+#   trae de regalo). Solo debug_start_at_end lo da, para poder probarlo.
 #
 # `fades_at` es el ratio de Estabilidad en el que la expulsión apaga el
 # recuerdo (en orden inverso al que se ganaron); `NO_FADE` para lo que nunca
