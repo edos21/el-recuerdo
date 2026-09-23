@@ -14,7 +14,7 @@ uniform vec2 view_size = vec2(1066.0, 600.0);
 uniform float instability : hint_range(0.0, 1.0) = 0.5;
 
 uniform float focus_center = 0.56;
-uniform float focus_band = 0.26;
+uniform float focus_band = 0.32;
 uniform float focus_soft = 0.32;
 uniform float blur_lod_min = 0.6;
 uniform float blur_lod_max = 2.4;

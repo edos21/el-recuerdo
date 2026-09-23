@@ -185,6 +185,11 @@ func _add_npc(ch: String, col: int, row: int) -> void:
 	npc.npc_name = data.name
 	npc.sprite_frames_path = data.frames
 	npc.lines = PackedStringArray(data.lines)
+	npc.attitude = data.attitude
+	npc.wander_radius = data.wander_radius
+	npc.walk_speed = data.walk_speed
+	npc.barks = PackedStringArray(data.barks)
+	npc.idle_emotes = PackedStringArray(data.idle_emotes)
 	npc.position = _feet(col, row)
 	npc.add_to_group("town_characters")
 	objects.add_child(npc)
