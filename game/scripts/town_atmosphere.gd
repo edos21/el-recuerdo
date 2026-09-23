@@ -1,10 +1,10 @@
 extends Node2D
 # Capa de atmosfera del pueblo (prototipo de "look moderno"): luz de tarde,
-# glow, sombras de contacto, viento en los arboles, particulas de ambiente
-# y el post-proceso de town_post.gdshader. No toca la logica del pueblo: lee
-# lo que arma town_loader (grupos town_trees, town_houses, town_characters).
+# glow, sombras de contacto, viento en los arboles y particulas de ambiente.
+# El post-proceso es el de Core (looks/town_look.tres). No toca la logica del
+# pueblo: lee lo que arma town_loader (grupos town_trees, town_houses,
+# town_characters).
 
-const POST_SHADER := preload("res://shaders/town_post.gdshader")
 const SWAY_SHADER := preload("res://shaders/wind_sway.gdshader")
 const WINDOWS_SHADER := preload("res://shaders/house_windows.gdshader")
 
@@ -20,8 +20,6 @@ const PLAYER_LIGHT_SCALE := 2.4
 const GLOW_INTENSITY := 0.7
 const GLOW_BLOOM := 0.04
 const GLOW_THRESHOLD := 0.88
-# El HUD (capa 2) queda fuera del glow y del post-proceso.
-const WORLD_MAX_CANVAS_LAYER := 1
 
 const CONTACT_SHADOW_SIZE := Vector2(34, 12)
 const CONTACT_SHADOW_ALPHA := 0.42
@@ -40,9 +38,6 @@ const CANOPY_CENTER := Vector2(0, -150)
 const CANOPY_EXTENTS := Vector2(56, 40)
 const CHIMNEY_OFFSET := Vector2(136, -222)
 
-var _post_material: ShaderMaterial
-var _camera: Camera2D
-
 # Recursos compartidos: todas las casas, arboles y personajes usan la misma
 # instancia (menos texturas en GPU y el batcher 2D puede agrupar los dibujos).
 var _light_texture: GradientTexture2D
@@ -52,15 +47,10 @@ var _leaf_texture: ImageTexture
 var _sway_material: ShaderMaterial
 var _windows_material: ShaderMaterial
 
-func _ready() -> void:
-	set_process(false)
-
 func build(player: CharacterBody2D) -> void:
-	_camera = player.camera
 	_build_shared_resources()
 	_add_ambient_light()
 	_add_glow()
-	_add_post_process()
 	for tree in get_tree().get_nodes_in_group("town_trees"):
 		_decorate_tree(tree)
 	for house in get_tree().get_nodes_in_group("town_houses"):
@@ -71,21 +61,6 @@ func build(player: CharacterBody2D) -> void:
 		character.move_child(shadow, 0)
 	player.add_child(_player_light())
 	player.add_child(_motes())
-	_add_cloud_noise()
-	player.stability_changed.connect(_on_stability_changed)
-	get_viewport().size_changed.connect(_update_view_size)
-	_update_view_size()
-	set_process(true)
-
-func _process(_delta: float) -> void:
-	var view_size: Vector2 = _post_material.get_shader_parameter("view_size")
-	_post_material.set_shader_parameter("view_origin", _camera.get_screen_center_position() - view_size * 0.5)
-
-func _update_view_size() -> void:
-	_post_material.set_shader_parameter("view_size", get_viewport_rect().size / _camera.zoom)
-
-func _on_stability_changed(current: float, max_value: float) -> void:
-	_post_material.set_shader_parameter("instability", 1.0 - current / max_value)
 
 func _build_shared_resources() -> void:
 	_light_texture = _radial_texture(256, Color.WHITE)
@@ -105,7 +80,7 @@ func _add_ambient_light() -> void:
 func _add_glow() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CANVAS
-	env.background_canvas_max_layer = WORLD_MAX_CANVAS_LAYER
+	env.background_canvas_max_layer = Core.WORLD_MAX_CANVAS_LAYER
 	env.glow_enabled = true
 	env.glow_intensity = GLOW_INTENSITY
 	env.glow_bloom = GLOW_BLOOM
@@ -114,30 +89,6 @@ func _add_glow() -> void:
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
 	add_child(world_env)
-
-func _add_post_process() -> void:
-	_post_material = ShaderMaterial.new()
-	_post_material.shader = POST_SHADER
-	var layer := CanvasLayer.new()
-	layer.layer = WORLD_MAX_CANVAS_LAYER
-	var rect := ColorRect.new()
-	rect.material = _post_material
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(rect)
-	add_child(layer)
-
-func _add_cloud_noise() -> void:
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	noise.frequency = 0.012
-	noise.fractal_octaves = 4
-	var texture := NoiseTexture2D.new()
-	texture.width = 256
-	texture.height = 256
-	texture.seamless = true
-	texture.noise = noise
-	_post_material.set_shader_parameter("cloud_noise", texture)
 
 func _decorate_tree(tree: Sprite2D) -> void:
 	tree.material = _sway_material
