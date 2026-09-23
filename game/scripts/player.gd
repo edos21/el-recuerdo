@@ -132,11 +132,12 @@ func _physics_process(delta: float) -> void:
 
 	var direction := Input.get_axis("move_left", "move_right")
 
-	# Mientras dura el empujón (que además da invulnerabilidad), no dejamos que el input del jugador
-	# pise la velocidad del empujón: si no, mantener la tecla apretada hacia
-	# el enemigo cancela el knockback en el mismo frame y nunca llegás a
-	# separarte lo suficiente para volver a tocarlo (el contacto solo se
-	# detecta al "entrar" al área, no mientras seguís adentro).
+	# Mientras dura el empujón (que además da invulnerabilidad), no dejamos
+	# que el input del jugador pise la velocidad del empujón: si no, mantener
+	# la tecla apretada hacia el enemigo cancela el knockback en el mismo
+	# frame y nunca llegás a separarte lo suficiente para volver a tocarlo
+	# (el contacto solo se detecta al "entrar" al área, no mientras seguís
+	# adentro).
 	if _knockback_timer <= 0.0:
 		var speed := _current_speed(direction, delta)
 		if direction:
@@ -258,6 +259,11 @@ func _try_dash() -> void:
 		return
 	# En el suelo se repone al final del frame; solo en el aire queda gastado.
 	_dash_available = false
+	# La dirección de este frame todavía no se leyó: sin esto, girar y dashear
+	# a la vez saldría hacia el lado anterior, sin poder corregirlo.
+	var direction := Input.get_axis("move_left", "move_right")
+	if direction:
+		_facing = 1 if direction > 0 else -1
 	_change_state(State.DASH)
 
 func _do_jump() -> void:
