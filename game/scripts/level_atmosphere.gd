@@ -27,6 +27,11 @@ const PLAYER_LIGHT_OFFSET := Vector2(0, -8)
 const PLAYER_LIGHT_SCALE_MIN := 0.9
 const PLAYER_LIGHT_SCALE_MAX := 2.6
 const PLAYER_LIGHT_FOLLOW_SPEED := 3.0
+# Los personajes dibujan en la capa de luz 2 (ver Player.tscn/Enemy.tscn): las
+# luces del mundo no los tocan, asi el brillo de un recuerdo no los lava. La
+# del jugador si ilumina ambas capas.
+const WORLD_LIGHT_MASK := 1
+const CHARACTER_LIGHT_MASK := 2
 
 const MEMORY_LIGHT_COLOR := Color(1.0, 0.9, 0.62)
 const MEMORY_LIGHT_BASE_ENERGY := 0.45
@@ -42,10 +47,13 @@ const BENCH_LIGHT_ACTIVE_ENERGY := 0.6
 const BENCH_LIGHT_SCALE := 1.2
 const BENCH_LIGHT_OFFSET := Vector2(0, -12)
 
-# Tierra que se funde en niebla: el mundo no termina en el cielo de abajo.
+# La tierra sigue unas filas bajo el piso y se hunde en niebla: el mundo no
+# termina en el cielo de abajo ni en un corte negro. Donde no hay piso (los
+# pozos) no hay tierra: queda la niebla sola.
+const DIRT_ROWS := 3
 const UNDERGROUND_DEPTH := 320.0
-const UNDERGROUND_TOP := Color(0.12, 0.11, 0.15)
-const UNDERGROUND_BOTTOM := Color(0.26, 0.28, 0.34)
+const UNDERGROUND_FOG := Color(0.2, 0.21, 0.27)
+const UNDERGROUND_DEEP := Color(0.25, 0.27, 0.33)
 const UNDERGROUND_MARGIN := 1200.0
 # Cuanto relleno deja ver la camara bajo el piso: poco, para que el encuadre
 # le de el espacio al horizonte y no a la tierra (tampoco baja al caer a un pozo).
@@ -101,6 +109,7 @@ func build(player: CharacterBody2D, foreground: CanvasItem) -> void:
 
 	_player_light = _make_light(PLAYER_LIGHT_COLOR, PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE_MAX)
 	_player_light.position = PLAYER_LIGHT_OFFSET
+	_player_light.range_item_cull_mask = WORLD_LIGHT_MASK | CHARACTER_LIGHT_MASK
 	player.add_child(_player_light)
 	player.add_child(_motes())
 	_fog = _make_fog()
@@ -156,17 +165,40 @@ func _make_light(color: Color, energy: float, texture_scale: float) -> PointLigh
 	light.color = color
 	light.energy = energy
 	light.texture_scale = texture_scale
+	light.range_item_cull_mask = WORLD_LIGHT_MASK
 	return light
 
 # Devuelve la Y (mundo) donde empieza el relleno: el borde de abajo del piso
 # mas bajo.
 func _add_underground(ground: TileMapLayer) -> float:
 	var used := ground.get_used_rect()
-	var top := (used.end.y) * LevelLoader.CELL
+	var top := used.end.y * LevelLoader.CELL
 	var left := used.position.x * LevelLoader.CELL - UNDERGROUND_MARGIN
 	var width := used.size.x * LevelLoader.CELL + UNDERGROUND_MARGIN * 2.0
+	# Fondo de niebla detras de todo el relleno (es lo que se ve en los pozos).
+	var fog := _vertical_band(Rect2(left, top, width, UNDERGROUND_DEPTH), UNDERGROUND_FOG, UNDERGROUND_DEEP)
+	fog.z_index = -3
+	add_child(fog)
+	var dirt := TileMapLayer.new()
+	dirt.tile_set = ground.tile_set
+	dirt.scale = ground.scale
+	dirt.modulate = ground.modulate
+	dirt.z_index = -2
+	var bottom_row := used.end.y - 1
+	for cell in ground.get_used_cells():
+		if cell.y == bottom_row and ground.get_cell_atlas_coords(cell) == LevelLoader.ATLAS.ground:
+			for depth in range(1, DIRT_ROWS + 1):
+				dirt.set_cell(cell + Vector2i(0, depth), 0, LevelLoader.ATLAS.ground)
+	add_child(dirt)
+	# Mas abajo, mas niebla: la tierra se pierde en vez de cortarse.
+	var fade := _vertical_band(Rect2(left, top, width, DIRT_ROWS * LevelLoader.CELL), Color(UNDERGROUND_FOG, 0.0), UNDERGROUND_FOG)
+	fade.z_index = -2
+	add_child(fade)
+	return top
+
+func _vertical_band(area: Rect2, from: Color, to: Color) -> Sprite2D:
 	var gradient := Gradient.new()
-	gradient.colors = PackedColorArray([UNDERGROUND_TOP, UNDERGROUND_BOTTOM])
+	gradient.colors = PackedColorArray([from, to])
 	var texture := GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.fill_from = Vector2(0, 0)
@@ -177,12 +209,9 @@ func _add_underground(ground: TileMapLayer) -> float:
 	band.texture = texture
 	band.centered = false
 	band.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	band.position = Vector2(left, top)
-	band.scale = Vector2(width / texture.width, UNDERGROUND_DEPTH / texture.height)
-	# Delante de las colinas del parallax y detras de los tiles y los props.
-	band.z_index = -2
-	add_child(band)
-	return top
+	band.position = area.position
+	band.scale = area.size / Vector2(texture.width, texture.height)
+	return band
 
 # Matas sobre el suelo firme, en la capa de props: aparecen con el Recuerdo
 # de Vida, como el resto del detalle del mundo.
