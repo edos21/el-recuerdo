@@ -12,6 +12,8 @@ const CELL := 36.0          # 18px de tile * escala 2
 const TILE_SCALE := Vector2(2, 2)
 const GROUND_TINT := Color(0.58, 0.55, 0.66)
 const PROPS_TINT := Color(0.7, 0.68, 0.78)
+# Aire entre los pies y el piso al nacer: el cuerpo cae ese pixel y apoya.
+const SPAWN_CLEARANCE := 1.0
 
 const TILE_SET := preload("res://assets/tiles/platformer.tres")
 const PLAYER_SCENE := preload("res://scenes/Player.tscn")
@@ -94,7 +96,7 @@ func build(level_path: String) -> Node2D:
 					_add_door(col, row)
 				'P':
 					player = PLAYER_SCENE.instantiate()
-					player.position = _cell_center(col, row)
+					player.position = _standing_on_cell(player, col, row)
 				'C':
 					var checkpoint := CHECKPOINT_SCENE.instantiate()
 					checkpoint.position = _cell_center(col, row)
@@ -121,6 +123,14 @@ func build(level_path: String) -> Node2D:
 
 func _cell_center(col: int, row: int) -> Vector2:
 	return Vector2((col + 0.5) * CELL, (row + 0.5) * CELL)
+
+# Apoya los pies del cuerpo justo sobre el borde de abajo de su celda. Si
+# naciera un poco hundido, un piso solido lo empujaria arriba, pero una
+# plataforma de un solo sentido lo ignora y lo deja caer.
+func _standing_on_cell(body: Node2D, col: int, row: int) -> Vector2:
+	var shape := body.get_node("CollisionShape2D") as CollisionShape2D
+	var feet := shape.position.y + (shape.shape as RectangleShape2D).size.y * 0.5
+	return Vector2((col + 0.5) * CELL, (row + 1) * CELL - feet - SPAWN_CLEARANCE)
 
 func _build_collision_runs(runs: Dictionary, one_way: bool) -> void:
 	for row in runs:
@@ -177,7 +187,7 @@ func _add_memory(ability: String, col: int, row: int) -> Area2D:
 func _add_enemy(ch: String, col: int, row: int) -> Enemy:
 	var data: Dictionary = EnemyData.LIST[ch]
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
-	enemy.position = _cell_center(col, row)
+	enemy.position = _standing_on_cell(enemy, col, row)
 	enemy.sprite_frames_path = data.frames
 	enemy.behavior = data.behavior
 	enemy.speed = data.speed
