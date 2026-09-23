@@ -4,7 +4,9 @@ extends Node2D
 # generadas en vez de dibujadas a mano) + enemigos + recuerdos + checkpoints
 # + zona de expulsion + zona de muerte. Todo lo que main.gd necesita
 # despues queda accesible por grupo ("player", "checkpoints", "expulsion_trigger",
-# "kill_zone") o por lo que devuelve build().
+# "kill_zone") o por lo que devuelve build(). La atmosfera (level_atmosphere.gd)
+# decora lo que se marca con los grupos "level_ground", "level_props",
+# "level_plants" y "level_memories"; aca no se mete ningun efecto.
 
 const CELL := 36.0          # 18px de tile * escala 2
 const TILE_SCALE := Vector2(2, 2)
@@ -18,14 +20,14 @@ const MEMORY_SCENE := preload("res://scenes/MemoryPickup.tscn")
 const CHECKPOINT_SCENE := preload("res://scenes/Checkpoint.tscn")
 
 const DOOR_TEXTURE := preload("res://assets/props/door.png")
+const PINE_TEXTURE := preload("res://assets/props/plant_pine.png")
+const SPROUT_TEXTURE := preload("res://assets/props/plant_sprout.png")
 
 const ATLAS := {
 	"ground": Vector2i(1, 6),
 	"platform": Vector2i(8, 2),
 	"spike": Vector2i(8, 3),
 	"sign": Vector2i(4, 4),
-	"tree": Vector2i(6, 6),
-	"bush": Vector2i(4, 6),
 }
 
 var tilemap: TileMapLayer
@@ -40,6 +42,7 @@ func build(level_path: String) -> Node2D:
 	# Tierra oscura y fria en vez del pasto de Kenney: el nivel no es una
 	# tarde de verano ni cuando recupera el color.
 	tilemap.modulate = GROUND_TINT
+	tilemap.add_to_group("level_ground")
 	add_child(tilemap)
 	# Los objetos de fondo van en su propia capa para poder aparecerlos
 	# recien con el Recuerdo de Vida (WorldProgression le anima el alpha).
@@ -49,6 +52,7 @@ func build(level_path: String) -> Node2D:
 	props_layer.scale = TILE_SCALE
 	props_layer.z_index = -1
 	props_layer.modulate = PROPS_TINT
+	props_layer.add_to_group("level_props")
 	add_child(props_layer)
 
 	var solid_runs := {}   # row -> array de columnas con '#'
@@ -83,9 +87,9 @@ func build(level_path: String) -> Node2D:
 				's':
 					props_layer.set_cell(Vector2i(col, row), 0, ATLAS.sign)
 				't':
-					props_layer.set_cell(Vector2i(col, row), 0, ATLAS.tree)
+					_add_plant(PINE_TEXTURE, col, row)
 				'o':
-					props_layer.set_cell(Vector2i(col, row), 0, ATLAS.bush)
+					_add_plant(SPROUT_TEXTURE, col, row)
 				'd':
 					_add_door(col, row)
 				'P':
@@ -164,6 +168,7 @@ func _add_memory(ability: String, col: int, row: int) -> Area2D:
 	pickup.message = data.pickup.message
 	pickup.icon = load(data.icon)
 	pickup.icon_scale = data.pickup.icon_scale
+	pickup.add_to_group("level_memories")
 	add_child(pickup)
 	return pickup
 
@@ -236,6 +241,19 @@ func _add_door(col: int, row: int) -> void:
 	# La capa de props ya escala x2, asi que las coordenadas van en unidades de tile.
 	door.position = Vector2((col + 0.5) * CELL / 2.0 - size.x / 2.0, (row + 1) * CELL / 2.0 - size.y)
 	props_layer.add_child(door)
+
+# Las plantas son sprites y no celdas para que el viento pueda moverlas una
+# por una. Cuelgan de la capa de props (aparecen con ella) y apoyan los pies
+# en el fondo de su celda, igual que la puerta.
+func _add_plant(texture: Texture2D, col: int, row: int) -> void:
+	var plant := Sprite2D.new()
+	plant.texture = texture
+	plant.centered = false
+	plant.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var size := texture.get_size()
+	plant.position = Vector2((col + 0.5) * CELL / 2.0 - size.x / 2.0, (row + 1) * CELL / 2.0 - size.y)
+	plant.add_to_group("level_plants")
+	props_layer.add_child(plant)
 
 # Sin borde de mapa, el jugador debilitado de la expulsion caminaria hasta
 # caerse al vacio antes de desplomarse.

@@ -1,5 +1,7 @@
-# Genera las capas de colinas del fondo (siluetas frias con transparencia real).
-# Periodicas en X para que el Parallax2D las repita sin costura.
+# Genera las capas de colinas del fondo (siluetas frias con transparencia real)
+# y el pasto de primer plano. Periodicas en X para que el Parallax2D las repita
+# sin costura. Perspectiva atmosferica: cuanto mas lejos, mas clara y mas
+# cerca del color del cielo.
 # Reproducible: python3 tools/gen_parallax.py
 from PIL import Image
 import math, os, random
@@ -35,8 +37,34 @@ def layer(color, base, waves, trees=0, tree_h=(14, 26)):
                     px[x, y] = color
     return im
 
-far = layer((66, 76, 98, 255), 84, [(18, 1, 0.0), (10, 3, 1.3), (4, 7, 0.4)])
+# Pasto y ramas oscuras que pasan delante de la camara: matas sueltas con
+# huecos grandes entre si, para enmarcar sin tapar el juego.
+FRONT_H = 60
+
+def front(color, clumps):
+    im = Image.new("RGBA", (W, FRONT_H), (0, 0, 0, 0))
+    px = im.load()
+    for _ in range(clumps):
+        cx = random.randrange(W)
+        width = random.randint(10, 26)
+        tallest = random.randint(18, FRONT_H - 6)
+        for dx in range(-width // 2, width // 2 + 1):
+            if random.random() < 0.45:
+                continue
+            h = int(tallest * (1.0 - abs(dx) / (width * 0.7)) * random.uniform(0.55, 1.0))
+            lean = random.choice((-1, 0, 1))
+            for i in range(h):
+                x = (cx + dx + (lean if i > h * 0.6 else 0)) % W
+                px[x, FRONT_H - 1 - i] = color
+    return im
+
+far = layer((96, 106, 128, 255), 84, [(18, 1, 0.0), (10, 3, 1.3), (4, 7, 0.4)])
 near = layer((46, 54, 74, 255), 112, [(9, 2, 2.1), (5, 5, 0.7), (2, 11, 1.9)], trees=26)
+# Despues de `near` para no cambiarle la semilla a sus arboles.
+mid = layer((72, 82, 104, 255), 98, [(13, 2, 0.9), (7, 4, 2.4), (3, 9, 0.2)], trees=14, tree_h=(10, 18))
+fore = front((22, 24, 32, 255), 7)
 far.save(OUT + "parallax_far.png")
+mid.save(OUT + "parallax_mid.png")
 near.save(OUT + "parallax_near.png")
+fore.save(OUT + "parallax_front.png")
 print("ok")
