@@ -46,7 +46,6 @@ const HOUSE_BODY := Vector2(272, 150)
 const WALL_THICKNESS := 64.0
 
 var objects: Node2D
-var bounds: Rect2
 var _rows: Array = []
 
 func build(level_path: String) -> CharacterBody2D:
@@ -83,7 +82,7 @@ func build(level_path: String) -> CharacterBody2D:
 					player.position = _feet(col, row)
 					player.add_to_group("town_characters")
 
-	bounds = Rect2(0, 0, cols * CELL, _rows.size() * CELL)
+	var bounds := Rect2(0, 0, cols * CELL, _rows.size() * CELL)
 	_add_boundary(bounds)
 	objects.add_child(player)
 	player.set_camera_limits(bounds)
@@ -182,14 +181,7 @@ func _add_house(col: int, row: int) -> void:
 func _add_npc(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = TownNpcData.LIST[ch]
 	var npc := NPC_SCENE.instantiate()
-	npc.npc_name = data.name
-	npc.sprite_frames_path = data.frames
-	npc.lines = PackedStringArray(data.lines)
-	npc.attitude = data.attitude
-	npc.wander_radius = data.wander_radius
-	npc.walk_speed = data.walk_speed
-	npc.barks = PackedStringArray(data.barks)
-	npc.idle_emotes = PackedStringArray(data.idle_emotes)
+	npc.configure(data)
 	npc.position = _feet(col, row)
 	npc.add_to_group("town_characters")
 	objects.add_child(npc)

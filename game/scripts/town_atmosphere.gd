@@ -41,12 +41,23 @@ const CANOPY_EXTENTS := Vector2(56, 40)
 const CHIMNEY_OFFSET := Vector2(136, -222)
 
 var _post_material: ShaderMaterial
-var _player: Node2D
 var _camera: Camera2D
 
-func build(player: Node2D) -> void:
-	_player = player
-	_camera = player.get_node("Camera2D")
+# Recursos compartidos: todas las casas, arboles y personajes usan la misma
+# instancia (menos texturas en GPU y el batcher 2D puede agrupar los dibujos).
+var _light_texture: GradientTexture2D
+var _shadow_texture: GradientTexture2D
+var _puff_texture: GradientTexture2D
+var _leaf_texture: ImageTexture
+var _sway_material: ShaderMaterial
+var _windows_material: ShaderMaterial
+
+func _ready() -> void:
+	set_process(false)
+
+func build(player: CharacterBody2D) -> void:
+	_camera = player.camera
+	_build_shared_resources()
 	_add_ambient_light()
 	_add_glow()
 	_add_post_process()
@@ -61,15 +72,30 @@ func build(player: Node2D) -> void:
 	player.add_child(_player_light())
 	player.add_child(_motes())
 	_add_cloud_noise()
+	player.stability_changed.connect(_on_stability_changed)
+	get_viewport().size_changed.connect(_update_view_size)
+	_update_view_size()
+	set_process(true)
 
 func _process(_delta: float) -> void:
-	if _player == null:
-		return
-	var view_size := get_viewport_rect().size / _camera.zoom
-	var origin := _camera.get_screen_center_position() - view_size * 0.5
-	_post_material.set_shader_parameter("view_origin", origin)
-	_post_material.set_shader_parameter("view_size", view_size)
-	_post_material.set_shader_parameter("instability", 1.0 - _player.stability / _player.max_stability)
+	var view_size: Vector2 = _post_material.get_shader_parameter("view_size")
+	_post_material.set_shader_parameter("view_origin", _camera.get_screen_center_position() - view_size * 0.5)
+
+func _update_view_size() -> void:
+	_post_material.set_shader_parameter("view_size", get_viewport_rect().size / _camera.zoom)
+
+func _on_stability_changed(current: float, max_value: float) -> void:
+	_post_material.set_shader_parameter("instability", 1.0 - current / max_value)
+
+func _build_shared_resources() -> void:
+	_light_texture = _radial_texture(256, Color.WHITE)
+	_shadow_texture = _radial_texture(64, Color(0.04, 0.03, 0.10, CONTACT_SHADOW_ALPHA))
+	_puff_texture = _radial_texture(32, Color.WHITE)
+	_leaf_texture = _make_leaf_texture()
+	_sway_material = ShaderMaterial.new()
+	_sway_material.shader = SWAY_SHADER
+	_windows_material = ShaderMaterial.new()
+	_windows_material.shader = WINDOWS_SHADER
 
 func _add_ambient_light() -> void:
 	var modulate_node := CanvasModulate.new()
@@ -114,24 +140,20 @@ func _add_cloud_noise() -> void:
 	_post_material.set_shader_parameter("cloud_noise", texture)
 
 func _decorate_tree(tree: Sprite2D) -> void:
-	var sway := ShaderMaterial.new()
-	sway.shader = SWAY_SHADER
-	tree.material = sway
+	tree.material = _sway_material
 	var leaves := _leaves()
 	leaves.position = tree.position + CANOPY_CENTER
 	add_child(leaves)
 
 func _decorate_house(house: Sprite2D) -> void:
-	var windows := ShaderMaterial.new()
-	windows.shader = WINDOWS_SHADER
-	house.material = windows
+	house.material = _windows_material
 	var shadow := Polygon2D.new()
 	shadow.polygon = PackedVector2Array(HOUSE_SHADOW_POLYGON)
 	shadow.color = Color(0.05, 0.04, 0.12, HOUSE_SHADOW_ALPHA)
 	shadow.show_behind_parent = true
 	house.add_child(shadow)
 	var light := PointLight2D.new()
-	light.texture = _radial_texture(256, Color.WHITE)
+	light.texture = _light_texture
 	light.color = HOUSE_LIGHT_COLOR
 	light.energy = HOUSE_LIGHT_ENERGY
 	light.texture_scale = HOUSE_LIGHT_SCALE
@@ -143,14 +165,14 @@ func _decorate_house(house: Sprite2D) -> void:
 
 func _contact_shadow() -> Sprite2D:
 	var shadow := Sprite2D.new()
-	shadow.texture = _radial_texture(64, Color(0.04, 0.03, 0.10, CONTACT_SHADOW_ALPHA))
+	shadow.texture = _shadow_texture
 	shadow.scale = CONTACT_SHADOW_SIZE / 64.0
 	shadow.show_behind_parent = true
 	return shadow
 
 func _player_light() -> PointLight2D:
 	var light := PointLight2D.new()
-	light.texture = _radial_texture(256, Color.WHITE)
+	light.texture = _light_texture
 	light.color = Color(1.0, 0.9, 0.75)
 	light.energy = PLAYER_LIGHT_ENERGY
 	light.texture_scale = PLAYER_LIGHT_SCALE
@@ -177,7 +199,7 @@ func _motes() -> CPUParticles2D:
 	return motes
 
 func _leaves() -> CPUParticles2D:
-	var leaves := _particles(LEAVES_PER_TREE, 5.0, _leaf_texture())
+	var leaves := _particles(LEAVES_PER_TREE, 5.0, _leaf_texture)
 	leaves.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	leaves.emission_rect_extents = CANOPY_EXTENTS
 	leaves.gravity = Vector2(10, 22)
@@ -194,7 +216,7 @@ func _leaves() -> CPUParticles2D:
 	return leaves
 
 func _smoke() -> CPUParticles2D:
-	var smoke := _particles(10, 4.5, _radial_texture(32, Color.WHITE))
+	var smoke := _particles(10, 4.5, _puff_texture)
 	smoke.direction = Vector2(0.3, -1)
 	smoke.spread = 12.0
 	smoke.gravity = Vector2(7, -6)
@@ -253,7 +275,7 @@ func _pixel_texture(size: int, color: Color) -> ImageTexture:
 	return ImageTexture.create_from_image(image)
 
 # Hoja de 3x2 px en dos verdes, a la escala del pixel art del pack.
-func _leaf_texture() -> ImageTexture:
+func _make_leaf_texture() -> ImageTexture:
 	var image := Image.create(3, 2, false, Image.FORMAT_RGBA8)
 	var light := Color(0.55, 0.78, 0.30)
 	var dark := Color(0.28, 0.52, 0.22)

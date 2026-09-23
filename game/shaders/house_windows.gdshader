@@ -4,7 +4,6 @@ shader_type canvas_item;
 
 uniform vec3 window_color = vec3(0.094, 0.094, 0.157);
 uniform vec3 lit_color : source_color = vec3(1.0, 0.78, 0.42);
-uniform float lit_energy = 1.0;
 uniform float flicker = 0.08;
 
 varying float phase;
@@ -18,6 +17,6 @@ void vertex() {
 void fragment() {
 	if (distance(texture(TEXTURE, UV).rgb, window_color) < 0.012) {
 		float f = 1.0 + flicker * sin(TIME * 7.0 + phase) * sin(TIME * 3.1 + phase * 2.0);
-		COLOR.rgb = lit_color * lit_energy * f;
+		COLOR.rgb = lit_color * f;
 	}
 }

@@ -66,6 +66,17 @@ var _hop_tween: Tween
 @onready var bark: Label = $Bark
 @onready var talk_zone: Area2D = $TalkZone
 
+# Los datos vienen de data/town_npcs.gd: cada campo nuevo se agrega aca, no en el loader.
+func configure(data: Dictionary) -> void:
+	npc_name = data.name
+	sprite_frames_path = data.frames
+	lines = PackedStringArray(data.lines)
+	attitude = data.attitude
+	wander_radius = data.wander_radius
+	walk_speed = data.walk_speed
+	barks = PackedStringArray(data.barks)
+	idle_emotes = PackedStringArray(data.idle_emotes)
+
 func _ready() -> void:
 	if sprite_frames_path != "":
 		sprite.sprite_frames = load(sprite_frames_path)
@@ -93,10 +104,13 @@ func _physics_process(delta: float) -> void:
 			_process_walk()
 		State.NOTICE:
 			_process_notice()
+	sprite.play(("walk_" if _state == State.WALK else "idle_") + _facing)
 	_breathe(delta)
 
 func interact(player: Node2D) -> void:
 	_face_towards(player.global_position)
+	# El dialogo pausa el arbol: hay que girar ya, no en el proximo frame.
+	sprite.play("idle_" + _facing)
 	_hop()
 	for i in lines.size():
 		var text := lines[i]
@@ -124,12 +138,11 @@ func _on_player_noticed() -> void:
 			_hop()
 		Attitude.EVASIVE:
 			_show_emote("...")
-			_face(_facing_from(global_position - _player.global_position))
+			_face(Facing.from_direction(global_position - _player.global_position))
 			_state_time = EVADE_DELAY
 	_try_bark()
 
 func _process_notice() -> void:
-	sprite.play("idle_" + _facing)
 	# El curioso sigue al jugador con la mirada; el evasivo ya miro para otro lado.
 	if attitude == Attitude.CURIOUS:
 		_face_towards(_player.global_position)
@@ -137,7 +150,6 @@ func _process_notice() -> void:
 		_start_walk(_home - _player.global_position)
 
 func _process_idle() -> void:
-	sprite.play("idle_" + _facing)
 	if _state_time > 0.0:
 		return
 	if randf() < GLANCE_CHANCE:
@@ -166,8 +178,7 @@ func _process_walk() -> void:
 		return
 	velocity = offset.normalized() * walk_speed
 	move_and_slide()
-	_facing = _facing_from(velocity)
-	sprite.play("walk_" + _facing)
+	_facing = Facing.from_direction(velocity)
 
 func _enter_idle() -> void:
 	_state = State.IDLE
@@ -183,10 +194,8 @@ func _breathe(delta: float) -> void:
 	sprite.scale = _base_scale * Vector2(1.0 - stretch * 0.5, 1.0 + stretch)
 
 func _hop() -> void:
-	if _hop_tween and _hop_tween.is_valid():
-		_hop_tween.kill()
 	sprite.position = _base_offset
-	_hop_tween = create_tween()
+	_hop_tween = _restart(_hop_tween)
 	_hop_tween.tween_property(sprite, "position:y", _base_offset.y - HOP_HEIGHT, 0.09) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_hop_tween.tween_property(sprite, "position:y", _base_offset.y, 0.14) \
@@ -194,13 +203,11 @@ func _hop() -> void:
 
 # El globo aparece con un rebote (escala de 0 a un poco mas de 1) y se desvanece.
 func _show_emote(symbol: String) -> void:
-	if _emote_tween and _emote_tween.is_valid():
-		_emote_tween.kill()
 	emote.text = symbol
 	emote.pivot_offset = emote.size * 0.5
 	emote.scale = Vector2.ZERO
 	emote.modulate.a = 1.0
-	_emote_tween = create_tween()
+	_emote_tween = _restart(_emote_tween)
 	_emote_tween.tween_property(emote, "scale", Vector2.ONE, 0.25) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_emote_tween.tween_interval(1.2)
@@ -210,34 +217,32 @@ func _try_bark() -> void:
 	if barks.is_empty() or _bark_cooldown > 0.0:
 		return
 	_bark_cooldown = BARK_COOLDOWN
-	if _bark_tween and _bark_tween.is_valid():
-		_bark_tween.kill()
 	bark.text = barks[randi() % barks.size()]
 	bark.modulate.a = 0.0
-	_bark_tween = create_tween()
+	_bark_tween = _restart(_bark_tween)
 	_bark_tween.tween_interval(0.4)
 	_bark_tween.tween_property(bark, "modulate:a", 1.0, 0.25)
 	_bark_tween.tween_interval(BARK_HOLD)
 	_bark_tween.tween_property(bark, "modulate:a", 0.0, 0.5)
 
+# Un tween por efecto: el nuevo reemplaza al anterior en vez de pelearse con el.
+func _restart(previous: Tween) -> Tween:
+	if previous:
+		previous.kill()
+	return create_tween()
+
 func _face_towards(target: Vector2) -> void:
-	_face(_facing_from(target - global_position))
+	_face(Facing.from_direction(target - global_position))
 
 func _face(dir: String) -> void:
 	_facing = dir
-	sprite.play("idle_" + dir)
 
-# En diagonal gana el eje mas marcado, igual que el jugador.
-func _facing_from(direction: Vector2) -> String:
-	if absf(direction.x) > absf(direction.y):
-		return "right" if direction.x > 0.0 else "left"
-	return "down" if direction.y > 0.0 else "up"
 
 # El area de interaccion del jugador es la que "entra" en la zona del NPC.
 func _on_zone_area_entered(area: Area2D) -> void:
 	if area.get_parent().is_in_group("player"):
 		hint.visible = true
-		if _bark_tween and _bark_tween.is_valid():
+		if _bark_tween:
 			_bark_tween.kill()
 		bark.modulate.a = 0.0
 

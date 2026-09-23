@@ -16,6 +16,7 @@ const CAMERA_LOOKAHEAD_SPEED := 2.5
 const STEP_BOB_HEIGHT := 2.0
 const STEP_SQUASH := 0.06
 const STEP_FREQUENCY := 11.0
+const STEP_SETTLE_SPEED := 12.0
 
 var health: int
 var max_health := GameState.MAX_HEALTH
@@ -57,7 +58,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	var walking := direction != Vector2.ZERO
 	if walking:
-		_facing = _facing_from(direction)
+		_facing = Facing.from_direction(direction)
 		sprite.play("walk_" + _facing)
 	else:
 		sprite.play("idle_" + _facing)
@@ -69,8 +70,9 @@ func _physics_process(delta: float) -> void:
 func _animate_step(walking: bool, delta: float) -> void:
 	if not walking:
 		_step_time = 0.0
-		sprite.scale = sprite.scale.lerp(_base_scale, 1.0 - exp(-12.0 * delta))
-		sprite.position = sprite.position.lerp(_base_offset, 1.0 - exp(-12.0 * delta))
+		var settle := 1.0 - exp(-STEP_SETTLE_SPEED * delta)
+		sprite.scale = sprite.scale.lerp(_base_scale, settle)
+		sprite.position = sprite.position.lerp(_base_offset, settle)
 		return
 	_step_time += delta * STEP_FREQUENCY
 	var bounce := absf(sin(_step_time))
@@ -78,11 +80,6 @@ func _animate_step(walking: bool, delta: float) -> void:
 	var squash := (1.0 - bounce) * STEP_SQUASH
 	sprite.scale = _base_scale * Vector2(1.0 + squash, 1.0 - squash)
 
-# En diagonal gana el eje mas marcado; en empate, el horizontal.
-func _facing_from(direction: Vector2) -> String:
-	if absf(direction.x) >= absf(direction.y):
-		return "right" if direction.x > 0.0 else "left"
-	return "down" if direction.y > 0.0 else "up"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("interact"):
