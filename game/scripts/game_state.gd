@@ -40,8 +40,9 @@ func unlock(ability: String) -> bool:
 	abilities.append(ability)
 	return true
 
-# Lo que se otorga automáticamente (debug_start_at_end, ensure_defaults):
-# todo salvo lo opcional, como el bonus del camino secundario.
+# Lo que se da por ganado al llegar al pueblo (ensure_defaults) y la base de
+# debug_start_at_end: todo lo del Nivel 1 salvo lo opcional, como el bonus del
+# camino secundario.
 func granted_by_default() -> Array[String]:
 	return MemoryData.abilities_of([MemoryData.Kind.INNATE, MemoryData.Kind.MEMORY])
 

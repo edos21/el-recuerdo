@@ -59,7 +59,9 @@ func _ready() -> void:
 		_apply_debug_start()
 
 func _apply_debug_start() -> void:
-	for ability in GameState.granted_by_default():
+	# Lo que se gana fuera del Nivel 1 (LATER) no tiene objeto en el mapa: sin
+	# esto no habría forma de probarlo jugando.
+	for ability in GameState.granted_by_default() + MemoryData.abilities_of([MemoryData.Kind.LATER]):
 		player.unlock(ability)
 	var last_checkpoint: Node2D
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
