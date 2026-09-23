@@ -35,7 +35,7 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 
 	body.unlock(ability)
-	get_tree().call_group("hud", "show_message", message)
+	Events.message_requested.emit(message)
 
 	# Frenamos la detección y escondemos el objeto ya, pero esperamos a que
 	# termine de sonar el jingle antes de destruirnos: si liberáramos el nodo

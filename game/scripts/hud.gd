@@ -48,7 +48,6 @@ const TITLE_FADE = 1.0
 
 var _message_queue: Array[String] = []
 var _memories_found := 0
-var _low_stability := false
 var _last_health := -1
 var _last_stability := -1.0
 var _last_max_stability := -1.0
@@ -66,6 +65,10 @@ func _ready() -> void:
 		_make_icon_slot(ability).modulate = ICON_OFF_TINT
 	memory_icons.add_theme_constant_override("separation", int(ICON_GAP))
 	thought_label.modulate.a = 0.0
+	Events.hint_requested.connect(_on_hint_requested)
+	Events.message_requested.connect(_on_message_requested)
+	Events.thought_requested.connect(_on_thought_requested)
+	Events.memory_dimmed.connect(_on_memory_dimmed)
 
 # Tarjeta de titulo de una escena: cada una decide si la muestra y con que texto.
 func play_title_card(title: String = "", subtitle: String = "") -> void:
@@ -116,10 +119,9 @@ func set_stability(current: float, max_value: float) -> void:
 		_flash(stability_fill, Color(1.1, 1.3, 1.8, 1))
 	_last_stability = current
 
-	var low := (current / max_value) < GameState.LOW_STABILITY_RATIO
-	if low != _low_stability:
-		_low_stability = low
-		_set_stability_flicker(low)
+# Dueño del umbral: player.gd (unico emisor de low_stability_changed).
+func set_low_stability(is_low: bool) -> void:
+	_set_stability_flicker(is_low)
 
 # El tramo nuevo de la barra es oscuro sobre fondo oscuro: sin esto, ampliar la
 # Estabilidad maxima pasa desapercibido.
@@ -163,7 +165,7 @@ func note_ability_unlocked(ability: String) -> void:
 	tween.tween_property(slot, "modulate", Color.WHITE, 0.4)
 
 # Los recuerdos se pierden: el ícono se apaga y el contador baja.
-func dim_memory_icon(ability: String) -> void:
+func _on_memory_dimmed(ability: String) -> void:
 	if not _icon_slots.has(ability):
 		return
 	var slot: TextureRect = _icon_slots[ability]
@@ -173,8 +175,8 @@ func dim_memory_icon(ability: String) -> void:
 		memory_label.text = "Recuerdos %d/%d" % [_memories_found, MemoryData.memory_count()]
 
 # Pensamiento del personaje: subtítulo que aparece y se va solo, sin pausar el
-# juego (a diferencia de show_message, que frena todo hasta apretar Enter).
-func show_thought(text: String, hold: float = 4.0) -> void:
+# juego (a diferencia de _on_message_requested, que frena todo hasta apretar Enter).
+func _on_thought_requested(text: String, hold: float) -> void:
 	if _thought_tween and _thought_tween.is_valid():
 		_thought_tween.kill()
 	thought_label.text = text
@@ -188,16 +190,16 @@ func show_thought(text: String, hold: float = 4.0) -> void:
 func set_checkpoints_reached(count: int) -> void:
 	_checkpoints_reached = count
 
-func show_hint_once(key: String, text: String) -> void:
+func _on_hint_requested(key: String, text: String) -> void:
 	if _shown_hints.has(key):
 		return
 	if HINT_LAST_STAGE.has(key) and _checkpoints_reached > HINT_LAST_STAGE[key]:
 		_shown_hints[key] = true
 		return
 	_shown_hints[key] = true
-	show_message(text)
+	_on_message_requested(text)
 
-func show_message(text: String) -> void:
+func _on_message_requested(text: String) -> void:
 	_message_queue.append(text)
 	if not narrative_box.visible:
 		_show_next_message()

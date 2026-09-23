@@ -5,6 +5,7 @@ extends CharacterBody2D
 
 signal health_changed(current: int, max_value: int)
 signal stability_changed(current: float, max_value: float)
+signal low_stability_changed(is_low: bool)
 
 const SPEED := 130.0
 const CAMERA_ZOOM := 2.0
@@ -45,6 +46,7 @@ func _ready() -> void:
 	_base_camera = camera.position
 	health_changed.emit(health, max_health)
 	stability_changed.emit(stability, max_stability)
+	low_stability_changed.emit(GameState.is_low_stability(stability, max_stability))
 
 func set_camera_limits(bounds: Rect2) -> void:
 	camera.limit_left = int(bounds.position.x)

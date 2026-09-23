@@ -27,11 +27,13 @@ func _ready() -> void:
 	_start_ambience()
 	player.health_changed.connect(core.hud.set_health)
 	player.stability_changed.connect(core.hud.set_stability)
+	player.low_stability_changed.connect(core.hud.set_low_stability)
 	player.health_changed.emit(player.health, player.max_health)
 	player.stability_changed.emit(player.stability, player.max_stability)
+	player.low_stability_changed.emit(GameState.is_low_stability(player.stability, player.max_stability))
 	if GameState.came_from_expulsion:
 		await get_tree().create_timer(WAKE_THOUGHT_DELAY).timeout
-		core.hud.show_thought(WAKE_THOUGHT)
+		Events.thought_requested.emit(WAKE_THOUGHT, Events.DEFAULT_THOUGHT_HOLD)
 
 # Los recuerdos ya recuperados siguen encendidos en el HUD.
 func _restore_hud() -> void:

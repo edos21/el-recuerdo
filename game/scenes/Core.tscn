@@ -29,7 +29,7 @@ mouse_filter = 2
 [node name="AudioLayers" type="Node" parent="." unique_id=1822826074]
 script = ExtResource("7")
 
-[node name="HUD" type="CanvasLayer" parent="." unique_id=1502151502 groups=["hud"]]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1502151502]
 process_mode = 3
 layer = 2
 script = ExtResource("3")

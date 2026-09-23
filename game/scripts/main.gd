@@ -39,6 +39,7 @@ func _ready() -> void:
 
 	player.health_changed.connect(hud.set_health)
 	player.stability_changed.connect(hud.set_stability)
+	player.low_stability_changed.connect(hud.set_low_stability)
 	player.ability_unlocked.connect(_on_ability_unlocked)
 	player.respawn_requested.connect(_on_respawn_requested)
 	player.died.connect(_on_player_died)
@@ -94,9 +95,9 @@ func _on_kill_zone_entered(body: Node2D) -> void:
 func _on_respawn_requested() -> void:
 	respawn_sound.play()
 	if GameState.has_ability("sprint"):
-		hud.show_hint_once("fall_with_sprint", "Caminando no llego. Tengo que correr antes de saltar.")
+		Events.hint_requested.emit("fall_with_sprint", "Caminando no llego. Tengo que correr antes de saltar.")
 	elif GameState.has_ability("jump"):
-		hud.show_hint_once("fall_first", "Caí. No pasa nada: el banco me trae de vuelta.")
+		Events.hint_requested.emit("fall_first", "Caí. No pasa nada: el banco me trae de vuelta.")
 	player.global_position = _current_checkpoint
 	player.velocity = Vector2.ZERO
 	player.restore_vitals()
@@ -105,7 +106,7 @@ func _on_player_died() -> void:
 	# Con un nivel de 15 minutos, recargar la escena entera al morir era
 	# perder todo el progreso: la muerte te devuelve al ultimo banco, igual
 	# que caer al vacio, pero con un mensaje propio.
-	hud.show_hint_once("died", "Todo se apaga un momento. Cuando vuelvo a abrir los ojos estoy en el banco otra vez.")
+	Events.hint_requested.emit("died", "Todo se apaga un momento. Cuando vuelvo a abrir los ojos estoy en el banco otra vez.")
 	_on_respawn_requested()
 
 # El recuerdo expulsa al protagonista: no hay puerta que cruzar, solo el

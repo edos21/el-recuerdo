@@ -38,7 +38,6 @@ var _props_layer: CanvasItem
 var _audio: Node
 var _focus_active := false
 var _base_vignette := 0.0
-var _low_stability := false
 var _expelling := false
 var _cut_layers := {}
 var _beats_fired := 0
@@ -60,6 +59,7 @@ func setup(player: Node2D, props_layer: CanvasItem, audio: Node) -> void:
 	if _audio:
 		_audio.set_layer("wind", -14.0, 0.1)
 	player.stability_changed.connect(_on_stability_changed)
+	player.low_stability_changed.connect(_on_low_stability_changed)
 	player.health_changed.connect(_on_health_changed)
 
 func _process(_delta: float) -> void:
@@ -104,7 +104,7 @@ func begin_expulsion() -> void:
 	_advance_beats(1.0)
 
 func collapse() -> void:
-	get_tree().call_group("hud", "show_thought", "Todavía no estoy listo.", COLLAPSE_THOUGHT_HOLD)
+	Events.thought_requested.emit("Todavía no estoy listo.", COLLAPSE_THOUGHT_HOLD)
 	var layer := CanvasLayer.new()
 	# Debajo del HUD (capa 2): el pensamiento final se lee sobre el negro.
 	layer.layer = 1
@@ -122,13 +122,13 @@ func collapse() -> void:
 
 func _advance_beats(ratio: float) -> void:
 	while _beats_fired < EXPULSION_BEATS.size() and ratio <= EXPULSION_BEATS[_beats_fired].ratio:
-		get_tree().call_group("hud", "show_thought", EXPULSION_BEATS[_beats_fired].thought)
+		Events.thought_requested.emit(EXPULSION_BEATS[_beats_fired].thought, Events.DEFAULT_THOUGHT_HOLD)
 		_beats_fired += 1
 	for ability in GameState.abilities:
 		var fades_at: float = MemoryData.LIST[ability].fades_at
 		if fades_at != MemoryData.NO_FADE and ratio <= fades_at and not _dimmed_abilities.has(ability):
 			_dimmed_abilities[ability] = true
-			get_tree().call_group("hud", "dim_memory_icon", ability)
+			Events.memory_dimmed.emit(ability)
 
 func _apply_expulsion(ratio: float) -> void:
 	_advance_beats(ratio)
@@ -152,17 +152,16 @@ func _on_health_changed(current: int, max_value: int) -> void:
 	_set_param("vignette", lerpf(EXPULSION_VIGNETTE_START, 0.95, lost))
 
 func _on_stability_changed(current: float, max_value: float) -> void:
-	var ratio := current / max_value
 	if _expelling:
-		_apply_expulsion(ratio)
-	var low := ratio < GameState.LOW_STABILITY_RATIO
-	if low == _low_stability:
-		return
-	_low_stability = low
+		_apply_expulsion(current / max_value)
+
+# El jugador es el unico dueno del umbral (GameState.is_low_stability): acá
+# solo reaccionamos al cruce, ya no lo recalculamos.
+func _on_low_stability_changed(is_low: bool) -> void:
 	if not _expelling:
-		_tween("vignette", 0.45 if low else _base_vignette, 0.8)
+		_tween("vignette", 0.45 if is_low else _base_vignette, 0.8)
 	if _audio:
-		_audio.set_muffled(low)
+		_audio.set_muffled(is_low)
 
 func _pulse_vignette() -> void:
 	_base_vignette = 0.15
