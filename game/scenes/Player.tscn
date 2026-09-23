@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/player.gd" id="1"]
 [ext_resource type="SpriteFrames" path="res://assets/characters/player_frames.tres" id="2"]
 [ext_resource type="Script" path="res://scripts/camera_feel.gd" id="3"]
+[ext_resource type="Shader" path="res://shaders/character_outline.gdshader" id="4"]
 
 [sub_resource type="Gradient" id="Gradient_DustFade"]
 offsets = PackedFloat32Array(0, 0.25, 1)
@@ -19,22 +20,27 @@ fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(1, 0.5)
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_Outline"]
+shader = ExtResource("4")
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
-size = Vector2(26, 34)
+size = Vector2(26, 48)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_Attack"]
-size = Vector2(22, 30)
+size = Vector2(22, 44)
 
 [node name="Player" type="CharacterBody2D" groups=["player"]]
 script = ExtResource("1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, 3)
+position = Vector2(0, -4)
 shape = SubResource("RectangleShape2D_1")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-position = Vector2(0, -4)
-scale = Vector2(1.3, 1.3)
+light_mask = 2
+material = SubResource("ShaderMaterial_Outline")
+position = Vector2(0, -17)
+scale = Vector2(2, 2)
 sprite_frames = ExtResource("2")
 animation = &"idle"
 
@@ -79,7 +85,7 @@ scale_amount_max = 1.2
 color_ramp = SubResource("Gradient_DustFade")
 
 [node name="AttackArea" type="Area2D" parent="."]
-position = Vector2(22, 0)
+position = Vector2(22, -4)
 collision_mask = 2
 monitorable = false
 
