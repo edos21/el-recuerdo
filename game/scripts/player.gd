@@ -19,7 +19,7 @@ const KNOCKBACK_FORCE = 220.0
 const KNOCKBACK_LIFT = 150.0
 # Espera antes del aviso de evitar: primero se siente el empujon, despues el texto.
 const AVOIDANCE_HINT_DELAY = 0.45
-const INVULNERABILITY_TIME = 0.6
+const KNOCKBACK_TIME = 0.6
 const HURT_ANIM_TIME = 0.3
 # Pegar no te protege por si solo (si no, spamear el ataque seria una
 # invulnerabilidad gratis): el escudo solo aparece cuando el golpe conecta.
@@ -79,13 +79,11 @@ var stability: float = max_stability
 var _facing := 1
 var _state := State.FREE
 var _state_timer := 0.0
-# Empujón al recibir un golpe: mientras dura no se recibe daño y el input
-# horizontal no pisa la velocidad del empujón.
 var _knockback_timer := 0.0
 var _hit_shield_timer := 0.0
 var _expelling := false
 # Un solo dash por salto: se repone al volver a tocar el suelo.
-var _air_dash_available := true
+var _dash_available := true
 var _expulsion_health_timer := 0.0
 var _expulsion_distance := 0.0
 var _jumps_before_stability := 0
@@ -110,7 +108,18 @@ func _emit_stability() -> void:
 		low_stability_changed.emit(low)
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor() and _state != State.DASH:
+	# Antes de la rama del dash, para que el primer frame ya sea ráfaga pura
+	# y no lo frene la locomoción normal.
+	if Input.is_action_just_pressed("dash"):
+		_try_dash()
+	# La ráfaga es un compromiso: ni gravedad, ni input, ni salto hasta que
+	# termine. Por eso se resuelve aparte y no con excepciones en el resto.
+	if _state == State.DASH:
+		_tick_state(delta)
+		move_and_slide()
+		return
+
+	if not is_on_floor():
 		velocity.y += get_gravity().y * delta
 
 	if _state == State.COLLAPSED:
@@ -120,17 +129,15 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("jump"):
 		_try_jump()
-	if Input.is_action_just_pressed("dash"):
-		_try_dash()
 
 	var direction := Input.get_axis("move_left", "move_right")
 
-	# Mientras dura la invulnerabilidad, no dejamos que el input del jugador
+	# Mientras dura el empujón (que además da invulnerabilidad), no dejamos que el input del jugador
 	# pise la velocidad del empujón: si no, mantener la tecla apretada hacia
 	# el enemigo cancela el knockback en el mismo frame y nunca llegás a
 	# separarte lo suficiente para volver a tocarlo (el contacto solo se
 	# detecta al "entrar" al área, no mientras seguís adentro).
-	if _knockback_timer <= 0.0 and _state != State.DASH:
+	if _knockback_timer <= 0.0:
 		var speed := _current_speed(direction, delta)
 		if direction:
 			velocity.x = direction * speed
@@ -154,7 +161,7 @@ func _physics_process(delta: float) -> void:
 
 	var on_floor := is_on_floor()
 	if on_floor:
-		_air_dash_available = true
+		_dash_available = true
 	if on_floor and not _was_on_floor:
 		Events.sfx_requested.emit("land")
 	_was_on_floor = on_floor
@@ -214,7 +221,7 @@ func _current_speed(direction: float, delta: float) -> float:
 	return RUN_SPEED
 
 func _try_jump() -> void:
-	if not GameState.has_ability("jump") or not is_on_floor() or _state == State.DASH:
+	if not GameState.has_ability("jump") or not is_on_floor():
 		return
 
 	if not GameState.has_ability("stability"):
@@ -225,28 +232,32 @@ func _try_jump() -> void:
 			_handle_exhaustion_attempt()
 		return
 
-	if stability >= STABILITY_JUMP_COST:
-		stability -= STABILITY_JUMP_COST
-		_emit_stability()
+	if _spend_stability(STABILITY_JUMP_COST):
 		_do_jump()
+
+# Antes de descubrir la Estabilidad las acciones no cuestan nada: la barra
+# todavía no existe para el jugador.
+func _spend_stability(cost: float) -> bool:
+	if not GameState.has_ability("stability"):
+		return true
+	if stability < cost:
+		return false
+	stability -= cost
+	_emit_stability()
+	return true
 
 # La expulsión es paso pesado y cada vez más lento: una ráfaga la rompería.
 # Tampoco se corta un ataque ni el empujón de un golpe con un dash.
 func _can_dash() -> bool:
 	if not GameState.has_ability("dash") or _state != State.FREE or _expelling or _knockback_timer > 0.0:
 		return false
-	if GameState.has_ability("stability") and stability < STABILITY_DASH_COST:
-		return false
-	return is_on_floor() or _air_dash_available
+	return _dash_available
 
 func _try_dash() -> void:
-	if not _can_dash():
+	if not _can_dash() or not _spend_stability(STABILITY_DASH_COST):
 		return
-	if not is_on_floor():
-		_air_dash_available = false
-	if GameState.has_ability("stability"):
-		stability -= STABILITY_DASH_COST
-		_emit_stability()
+	# En el suelo se repone al final del frame; solo en el aire queda gastado.
+	_dash_available = false
 	_change_state(State.DASH)
 
 func _do_jump() -> void:
@@ -331,18 +342,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("attack") and _can_attack():
 		_try_attack()
 
-# Se puede atacar recién golpeado (como antes), pero no encadenar un ataque
-# sobre otro ni moverse ya desplomado.
+# Se puede contraatacar mientras dura la animación del golpe (el empujón
+# sigue), pero no encadenar un ataque sobre otro.
 func _can_attack() -> bool:
 	return GameState.has_ability("attack") and (_state == State.FREE or _state == State.HURT)
 
 func _try_attack() -> void:
-	if GameState.has_ability("stability"):
-		if stability < STABILITY_ATTACK_COST:
-			return
-		stability -= STABILITY_ATTACK_COST
-		_emit_stability()
-	_change_state(State.ATTACK)
+	if _spend_stability(STABILITY_ATTACK_COST):
+		_change_state(State.ATTACK)
 
 func _on_attack_area_body_entered(body: Node2D) -> void:
 	if body.has_method("take_hit") and body.take_hit():
@@ -358,9 +365,9 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 	# El empujón pasa siempre que te tocan, tengas o no Vida todavía — así
 	# un enemigo nunca se siente como una pared muda. La pérdida de HP en
 	# sí solo aplica una vez que existe la barra de Vida.
-	# Un golpe recibido corta el ataque en curso: el cuerpo no puede estar
-	# pegando y trastabillando a la vez.
-	_knockback_timer = INVULNERABILITY_TIME
+	_knockback_timer = KNOCKBACK_TIME
+	# Corta el ataque o el dash en curso: el cuerpo no puede estar pegando y
+	# trastabillando a la vez.
 	_change_state(State.HURT)
 	Events.sfx_requested.emit("hit_take")
 
