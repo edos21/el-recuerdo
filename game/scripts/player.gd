@@ -45,6 +45,11 @@ const SHAKE_CONNECT_STRENGTH = 2.5
 const SHAKE_CONNECT_TIME = 0.1
 const SHAKE_TAKEN_STRENGTH = 5.0
 const SHAKE_TAKEN_TIME = 0.2
+# Retroceso al conectar un golpe: el impacto empuja tambien a quien pega, pero
+# mucho menos que un golpe recibido (sin salto, sin inmunidad, casi sin
+# quitarle el control). Decae hasta cero para que sea un golpe seco, no un deslizamiento.
+const HIT_RECOIL_SPEED = 170.0
+const HIT_RECOIL_TIME = 0.12
 
 # Expulsion del recuerdo: la Estabilidad se drena sola (mas rapido si camina),
 # el paso se vuelve pesado y, ya sin Estabilidad, empieza a perder Vida hasta
@@ -99,6 +104,7 @@ var _facing := 1
 var _state := State.FREE
 var _state_timer := 0.0
 var _knockback_timer := 0.0
+var _recoil_timer := 0.0
 var _hit_shield_timer := 0.0
 var _expelling := false
 # Un solo dash por salto: se repone al volver a tocar el suelo.
@@ -161,7 +167,9 @@ func _physics_process(delta: float) -> void:
 	# frame y nunca llegás a separarte lo suficiente para volver a tocarlo
 	# (el contacto solo se detecta al "entrar" al área, no mientras seguís
 	# adentro).
-	if _knockback_timer <= 0.0:
+	if _recoil_timer > 0.0:
+		velocity.x = move_toward(velocity.x, 0.0, HIT_RECOIL_SPEED / HIT_RECOIL_TIME * delta)
+	elif _knockback_timer <= 0.0:
 		var speed := _current_speed(direction, delta)
 		if direction:
 			velocity.x = direction * speed
@@ -174,6 +182,7 @@ func _physics_process(delta: float) -> void:
 
 	_tick_state(delta)
 	_knockback_timer = maxf(_knockback_timer - delta, 0.0)
+	_recoil_timer = maxf(_recoil_timer - delta, 0.0)
 	_hit_shield_timer = maxf(_hit_shield_timer - delta, 0.0)
 
 	if _expelling:
@@ -389,6 +398,10 @@ func _try_attack() -> void:
 func _on_attack_area_body_entered(body: Node2D) -> void:
 	if body.has_method("take_hit") and body.take_hit():
 		_hit_shield_timer = HIT_CONFIRM_SHIELD_TIME
+		# Un golpe recibido manda sobre el retroceso: no se suman.
+		if _knockback_timer <= 0.0:
+			_recoil_timer = HIT_RECOIL_TIME
+			velocity.x = -_facing * HIT_RECOIL_SPEED
 		_hit_stop(HIT_STOP_CONNECT)
 		camera.shake(SHAKE_CONNECT_STRENGTH, SHAKE_CONNECT_TIME)
 
