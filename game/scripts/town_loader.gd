@@ -11,7 +11,11 @@ const TILE_SCALE := 2
 const CELL := float(TILE * TILE_SCALE)
 
 const GROUND_TEXTURE := preload("res://assets/town/ground.png")
-const HOUSE_TEXTURE := preload("res://assets/town/house.png")
+const HOUSE_TEXTURES := [
+	preload("res://assets/town/house_a.png"),
+	preload("res://assets/town/house_b.png"),
+	preload("res://assets/town/house_c.png"),
+]
 const TREE_TEXTURES := [
 	preload("res://assets/town/tree_a.png"),
 	preload("res://assets/town/tree_b.png"),
@@ -37,8 +41,8 @@ const MOBILE_OBJECTS := ['P', 'n', 'N']
 # de cada sprite queda en sus pies, para que el orden por Y (y_sort) funcione.
 const TREE_FEET := Vector2(40, 100)
 const TREE_TRUNK := Vector2(16, 8)
-const HOUSE_FEET := Vector2(40, 78)
-const HOUSE_BODY := Vector2(134, 64)
+const HOUSE_FEET := Vector2(72, 198)
+const HOUSE_BODY := Vector2(272, 150)
 const WALL_THICKNESS := 64.0
 
 var objects: Node2D
@@ -165,7 +169,7 @@ func _add_tree(col: int, row: int) -> void:
 
 func _add_house(col: int, row: int) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = HOUSE_TEXTURE
+	sprite.texture = HOUSE_TEXTURES[_hash(col, row) % HOUSE_TEXTURES.size()]
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
 	sprite.offset = -HOUSE_FEET

@@ -26,11 +26,10 @@ const WORLD_MAX_CANVAS_LAYER := 1
 const CONTACT_SHADOW_SIZE := Vector2(34, 12)
 const CONTACT_SHADOW_ALPHA := 0.42
 const HOUSE_SHADOW_ALPHA := 0.28
-# Silueta de la sombra de la casa en px de textura, relativa a sus pies: el sol
-# viene de arriba a la izquierda, como en las sombras ya pintadas de los arboles.
+# Sombra al pie de la casa en px de textura, relativa a sus pies: corrida a la
+# derecha, como las sombras ya pintadas de los arboles (sol de arriba a la izquierda).
 const HOUSE_SHADOW_POLYGON := [
-	Vector2(-36, 0), Vector2(38, 0), Vector2(38, -36), Vector2(50, -30),
-	Vector2(50, 6), Vector2(-30, 6),
+	Vector2(-66, -2), Vector2(86, -2), Vector2(98, 6), Vector2(-58, 6),
 ]
 
 const MOTES_AMOUNT := 70
@@ -39,7 +38,7 @@ const LEAVES_PER_TREE := 2
 # Copa del arbol en px de mundo, relativa a sus pies.
 const CANOPY_CENTER := Vector2(0, -150)
 const CANOPY_EXTENTS := Vector2(56, 40)
-const CHIMNEY_OFFSET := Vector2(44, -140)
+const CHIMNEY_OFFSET := Vector2(136, -222)
 
 var _post_material: ShaderMaterial
 var _player: Node2D

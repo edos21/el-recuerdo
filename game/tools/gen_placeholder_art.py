@@ -96,6 +96,20 @@ for name, canopy in (("tree_a", (70, 130, 60, 255)), ("tree_b", (50, 110, 80, 25
     td.ellipse((8, 4, 72, 76), fill=canopy)
     save("town/%s.png" % name, tree)
 
+# Casas: mismo tamano que las del kit (156x198) y la misma posicion de los
+# vidrios de las ventanas, para que el shader de ventanas encendidas funcione.
+for name, roof in (("house_a", (214, 182, 72, 255)), ("house_b", (170, 196, 170, 255)), ("house_c", (226, 160, 110, 255))):
+    house = Image.new("RGBA", (156, 198), (0, 0, 0, 0))
+    hd = ImageDraw.Draw(house)
+    hd.rectangle((8, 150, 135, 197), fill=(232, 218, 176, 255))
+    hd.rectangle((8, 182, 135, 197), fill=(130, 130, 130, 255))
+    hd.rectangle((52, 150, 91, 181), fill=(90, 110, 160, 255))
+    for x0 in (18, 110):
+        hd.rectangle((x0, 158, x0 + 12, 170), fill=(24, 24, 40, 255))
+    hd.polygon([(0, 150), (40, 20), (104, 20), (144, 150)], fill=roof)
+    hd.rectangle((126, 90, 150, 181), fill=(200, 200, 190, 255))
+    save("town/%s.png" % name, house)
+
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):
     sheet = Image.new("RGBA", (64, 64), (0, 0, 0, 0))

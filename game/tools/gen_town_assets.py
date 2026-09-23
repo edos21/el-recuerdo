@@ -2,7 +2,7 @@
 # Reproducible: python3 tools/gen_town_assets.py  (RPG_BUNDLE=ruta si no esta en
 # ~/Downloads/rpg_bundle). Solo recorta/copia lo que usa el juego; los packs
 # originales NO viven en el repo (ver assets/town/SOURCE.md).
-from PIL import Image, ImageDraw
+from PIL import Image
 import os, shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -42,32 +42,62 @@ for src, name in (("Male Characters/mhap_male_hero_02.png", "hero"),
                   ("Male Characters/mhap_male_cultivator_01.png", "npc_b")):
     shutil.copyfile(os.path.join(HEROES, src), OUT + name + ".png")
 
-# --- Casa de prueba, dibujada a mano (placeholder hasta tener arte de casas) ---
-W, H = 80, 80
-OUTLINE = (58, 44, 58, 255)
-THATCH, THATCH_DK, THATCH_HI = (214, 182, 72, 255), (170, 138, 52, 255), (240, 214, 112, 255)
-WALL, BEAM = (232, 218, 176, 255), (128, 88, 60, 255)
-DOOR, GLASS = (96, 64, 48, 255), (150, 190, 210, 255)
-house = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-d = ImageDraw.Draw(house)
-d.rectangle((6, 44, 73, 77), fill=OUTLINE)                     # muro
-d.rectangle((7, 45, 72, 76), fill=WALL)
-d.rectangle((7, 45, 10, 76), fill=BEAM)
-d.rectangle((69, 45, 72, 76), fill=BEAM)
-d.rectangle((6, 76, 73, 77), fill=BEAM)
-d.rectangle((33, 52, 46, 77), fill=OUTLINE)                    # puerta
-d.rectangle((34, 53, 45, 77), fill=DOOR)
-d.point((43, 66), fill=(214, 180, 120, 255))
-for x0 in (14, 54):                                            # ventanas
-    d.rectangle((x0, 54, x0 + 12, 66), fill=OUTLINE)
-    d.rectangle((x0 + 1, 55, x0 + 11, 65), fill=GLASS)
-    d.line((x0 + 6, 55, x0 + 6, 65), fill=BEAM)
-    d.line((x0 + 1, 60, x0 + 11, 60), fill=BEAM)
-d.polygon([(0, 46), (12, 8), (67, 8), (79, 46)], fill=OUTLINE)  # techo
-d.polygon([(2, 44), (13, 10), (66, 10), (77, 44)], fill=THATCH)
-for y in range(12, 44, 5):                                     # paja
-    d.line((13 - (y - 10) * 0.33 + 1, y, 66 + (y - 10) * 0.33 - 1, y), fill=THATCH_DK)
-    d.line((13 - (y - 10) * 0.33 + 3, y + 1, 66 + (y - 10) * 0.33 - 3, y + 1), fill=THATCH_HI)
-d.rectangle((2, 44, 77, 46), fill=OUTLINE)                     # alero
-house.save(OUT + "house.png")
+# --- Casas: armadas con el kit modular "Thatch Roof Home" de Mana Seed ---
+# El kit trae piezas sueltas (techo, muros, puerta, cimiento) que se encajan en
+# una grilla de 16 px; aca se arma una casa de una planta con puerta al centro,
+# una ventana a cada lado y chimenea lateral. v1/v2/v3 son variantes de color
+# del mismo kit, asi cada casa del pueblo puede ser distinta sin redibujar nada.
+HOMES = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "20.01b - Thatch Roof Home", "packaged")
+ROOF_W = 9 * T          # el techo manda el ancho: el muro va 1 tile mas angosto
+EAVE_Y = 150            # donde arranca la planta baja, debajo del alero central
+CHIMNEY_X = ROOF_W - 20
+HOUSE_W = CHIMNEY_X + 2 * T
+# El vidrio del kit comparte color con las rendijas de la puerta y la chimenea;
+# en las ventanas se corre un punto para que el shader de ventanas encendidas
+# (shaders/house_windows.gdshader) las encuentre solo a ellas.
+KIT_GLASS = (24, 24, 32)
+LIT_GLASS = (24, 24, 40)
+# Restos de otras piezas que caen dentro del recorte del techo (x0, y0, x1, y1).
+ROOF_JUNK = ((0, 0, 34, 64), (32, 0, 64, 16), (128, 0, 144, 16))
+
+def kit_piece(sheet, x0, y0, x1, y1):
+    return sheet.crop((x0 * T, y0 * T, x1 * T, y1 * T))
+
+def mark_glass(piece):
+    pixels = piece.load()
+    for y in range(piece.height):
+        for x in range(piece.width):
+            if pixels[x, y][:3] == KIT_GLASS and pixels[x, y][3]:
+                pixels[x, y] = LIT_GLASS + (255,)
+    return piece
+
+def strip(pieces, height):
+    out = Image.new("RGBA", (sum(p.width for p in pieces), height), (0, 0, 0, 0))
+    x = 0
+    for p in pieces:
+        out.paste(p, (x, 0))
+        x += p.width
+    return out
+
+for variant, name in (("v1", "house_a"), ("v2", "house_b"), ("v3", "house_c")):
+    kit = Image.open(os.path.join(HOMES, "home exteriors, thatch roof %s.png" % variant)).convert("RGBA")
+    roof = kit_piece(kit, 0, 0, 9, 10)
+    for box in ROOF_JUNK:
+        roof.paste(Image.new("RGBA", (box[2] - box[0], box[3] - box[1]), (0, 0, 0, 0)), box[:2])
+    wall = strip([mark_glass(kit_piece(kit, 11, 25, 13, 27)), kit_piece(kit, 22, 25, 26, 27),
+                  mark_glass(kit_piece(kit, 19, 27, 21, 29))], 2 * T)
+    # Muro liso detras del alero: tapa el hueco entre el alero lateral y la planta baja.
+    backing = strip([kit_piece(kit, 14, 19, 16, 21)] * 4, 2 * T)
+    foundation = strip([kit_piece(kit, 10, 30, 12, 31), kit_piece(kit, 22, 30, 26, 31),
+                        kit_piece(kit, 18, 30, 20, 31)], T)
+    chimney = kit.crop((17 * T, 0, 19 * T, 6 * T))
+    height = EAVE_Y + 3 * T
+    house = Image.new("RGBA", (HOUSE_W, height), (0, 0, 0, 0))
+    wall_x = (ROOF_W - wall.width) // 2
+    house.alpha_composite(backing, (wall_x, EAVE_Y - 28))
+    house.alpha_composite(wall, (wall_x, EAVE_Y))
+    house.alpha_composite(foundation, (wall_x, EAVE_Y + 2 * T))
+    house.alpha_composite(chimney, (CHIMNEY_X, height - chimney.height - T))
+    house.alpha_composite(roof, (0, 0))
+    house.save(OUT + name + ".png")
 print("ok")

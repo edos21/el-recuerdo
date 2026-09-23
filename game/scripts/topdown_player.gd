@@ -7,7 +7,7 @@ signal health_changed(current: int, max_value: int)
 signal stability_changed(current: float, max_value: float)
 
 const SPEED := 130.0
-const CAMERA_ZOOM := 1.5
+const CAMERA_ZOOM := 2.0
 # La camara mira un poco hacia donde camina el jugador, y vuelve sola al parar.
 const CAMERA_LOOKAHEAD := 48.0
 const CAMERA_LOOKAHEAD_SPEED := 2.5
