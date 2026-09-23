@@ -42,6 +42,7 @@ const HOUSE_BODY := Vector2(134, 64)
 const WALL_THICKNESS := 64.0
 
 var objects: Node2D
+var bounds: Rect2
 var _rows: Array = []
 
 func build(level_path: String) -> CharacterBody2D:
@@ -76,8 +77,9 @@ func build(level_path: String) -> CharacterBody2D:
 				'P':
 					player = PLAYER_SCENE.instantiate()
 					player.position = _feet(col, row)
+					player.add_to_group("town_characters")
 
-	var bounds := Rect2(0, 0, cols * CELL, _rows.size() * CELL)
+	bounds = Rect2(0, 0, cols * CELL, _rows.size() * CELL)
 	_add_boundary(bounds)
 	objects.add_child(player)
 	player.set_camera_limits(bounds)
@@ -157,6 +159,7 @@ func _add_tree(col: int, row: int) -> void:
 	sprite.offset = -TREE_FEET
 	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	sprite.position = _feet(col, row)
+	sprite.add_to_group("town_trees")
 	objects.add_child(sprite)
 	_add_blocker(_feet(col, row), TREE_TRUNK * TILE_SCALE)
 
@@ -168,6 +171,7 @@ func _add_house(col: int, row: int) -> void:
 	sprite.offset = -HOUSE_FEET
 	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	sprite.position = _feet(col, row)
+	sprite.add_to_group("town_houses")
 	objects.add_child(sprite)
 	_add_blocker(_feet(col, row), HOUSE_BODY)
 
@@ -178,6 +182,7 @@ func _add_npc(ch: String, col: int, row: int) -> void:
 	npc.sprite_frames_path = data.frames
 	npc.lines = PackedStringArray(data.lines)
 	npc.position = _feet(col, row)
+	npc.add_to_group("town_characters")
 	objects.add_child(npc)
 
 # Cuerpo estatico apoyado en `base` (el centro de su borde inferior), para
