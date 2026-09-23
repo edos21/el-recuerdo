@@ -11,7 +11,11 @@ const TILE_SCALE := 2
 const CELL := float(TILE * TILE_SCALE)
 
 const GROUND_TEXTURE := preload("res://assets/town/ground.png")
-const HOUSE_TEXTURE := preload("res://assets/town/house.png")
+const HOUSE_TEXTURES := [
+	preload("res://assets/town/house_a.png"),
+	preload("res://assets/town/house_b.png"),
+	preload("res://assets/town/house_c.png"),
+]
 const TREE_TEXTURES := [
 	preload("res://assets/town/tree_a.png"),
 	preload("res://assets/town/tree_b.png"),
@@ -37,8 +41,8 @@ const MOBILE_OBJECTS := ['P', 'n', 'N']
 # de cada sprite queda en sus pies, para que el orden por Y (y_sort) funcione.
 const TREE_FEET := Vector2(40, 100)
 const TREE_TRUNK := Vector2(16, 8)
-const HOUSE_FEET := Vector2(40, 78)
-const HOUSE_BODY := Vector2(134, 64)
+const HOUSE_FEET := Vector2(72, 198)
+const HOUSE_BODY := Vector2(272, 150)
 const WALL_THICKNESS := 64.0
 
 var objects: Node2D
@@ -76,6 +80,7 @@ func build(level_path: String) -> CharacterBody2D:
 				'P':
 					player = PLAYER_SCENE.instantiate()
 					player.position = _feet(col, row)
+					player.add_to_group("town_characters")
 
 	var bounds := Rect2(0, 0, cols * CELL, _rows.size() * CELL)
 	_add_boundary(bounds)
@@ -157,27 +162,28 @@ func _add_tree(col: int, row: int) -> void:
 	sprite.offset = -TREE_FEET
 	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	sprite.position = _feet(col, row)
+	sprite.add_to_group("town_trees")
 	objects.add_child(sprite)
 	_add_blocker(_feet(col, row), TREE_TRUNK * TILE_SCALE)
 
 func _add_house(col: int, row: int) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = HOUSE_TEXTURE
+	sprite.texture = HOUSE_TEXTURES[_hash(col, row) % HOUSE_TEXTURES.size()]
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
 	sprite.offset = -HOUSE_FEET
 	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	sprite.position = _feet(col, row)
+	sprite.add_to_group("town_houses")
 	objects.add_child(sprite)
 	_add_blocker(_feet(col, row), HOUSE_BODY)
 
 func _add_npc(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = TownNpcData.LIST[ch]
 	var npc := NPC_SCENE.instantiate()
-	npc.npc_name = data.name
-	npc.sprite_frames_path = data.frames
-	npc.lines = PackedStringArray(data.lines)
+	npc.configure(data)
 	npc.position = _feet(col, row)
+	npc.add_to_group("town_characters")
 	objects.add_child(npc)
 
 # Cuerpo estatico apoyado en `base` (el centro de su borde inferior), para

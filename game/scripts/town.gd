@@ -12,6 +12,7 @@ const AMBIENT_PAD_DB := -24.0
 
 @onready var core: Node = $Core
 @onready var town_loader: Node2D = $TownLoader
+@onready var atmosphere: Node2D = $Atmosphere
 
 var player: CharacterBody2D
 
@@ -19,6 +20,7 @@ func _ready() -> void:
 	RenderingServer.set_default_clear_color(GRASS_COLOR)
 	GameState.ensure_defaults()
 	player = town_loader.build(LEVEL_PATH)
+	atmosphere.build(player)
 	# Mundo real: color pleno, sin el frio ni la vineta del recuerdo.
 	core.set_world_look(1.0, 0.0, 0.0)
 	_restore_hud()
