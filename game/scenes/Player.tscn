@@ -1,7 +1,23 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1"]
 [ext_resource type="SpriteFrames" path="res://assets/characters/player_frames.tres" id="2"]
+[ext_resource type="Script" path="res://scripts/camera_feel.gd" id="3"]
+
+[sub_resource type="Gradient" id="Gradient_DustFade"]
+offsets = PackedFloat32Array(0, 0.25, 1)
+colors = PackedColorArray(0.62, 0.6, 0.68, 0, 0.62, 0.6, 0.68, 0.5, 0.62, 0.6, 0.68, 0)
+
+[sub_resource type="Gradient" id="Gradient_DustPuff"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_DustPuff"]
+gradient = SubResource("Gradient_DustPuff")
+width = 16
+height = 16
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
 size = Vector2(26, 34)
@@ -22,6 +38,46 @@ scale = Vector2(1.3, 1.3)
 sprite_frames = ExtResource("2")
 animation = &"idle"
 
+[node name="RunDust" type="CPUParticles2D" parent="."]
+show_behind_parent = true
+position = Vector2(0, 19)
+emitting = false
+amount = 10
+lifetime = 0.5
+local_coords = false
+texture = SubResource("GradientTexture2D_DustPuff")
+emission_shape = 3
+emission_rect_extents = Vector2(8, 2)
+direction = Vector2(0, -1)
+spread = 60.0
+gravity = Vector2(0, -10)
+initial_velocity_min = 6.0
+initial_velocity_max = 14.0
+scale_amount_min = 0.5
+scale_amount_max = 1.0
+color_ramp = SubResource("Gradient_DustFade")
+
+[node name="LandDust" type="CPUParticles2D" parent="."]
+show_behind_parent = true
+position = Vector2(0, 19)
+emitting = false
+amount = 12
+lifetime = 0.45
+one_shot = true
+explosiveness = 1.0
+local_coords = false
+texture = SubResource("GradientTexture2D_DustPuff")
+emission_shape = 3
+emission_rect_extents = Vector2(10, 1)
+direction = Vector2(0, -1)
+spread = 80.0
+gravity = Vector2(0, 30)
+initial_velocity_min = 25.0
+initial_velocity_max = 50.0
+scale_amount_min = 0.6
+scale_amount_max = 1.2
+color_ramp = SubResource("Gradient_DustFade")
+
 [node name="AttackArea" type="Area2D" parent="."]
 position = Vector2(22, 0)
 collision_mask = 2
@@ -32,4 +88,5 @@ shape = SubResource("RectangleShape2D_Attack")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
-zoom = Vector2(1.6, 1.6)
+zoom = Vector2(1.9, 1.9)
+script = ExtResource("3")
