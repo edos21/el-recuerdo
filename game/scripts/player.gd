@@ -2,6 +2,9 @@ extends CharacterBody2D
 
 signal health_changed(current: int, max_value: int)
 signal stability_changed(current: float, max_value: float)
+# Unico dueno del umbral de Estabilidad baja (GameState.is_low_stability):
+# el HUD y world_progression solo reaccionan a este cruce, no lo recalculan.
+signal low_stability_changed(is_low: bool)
 signal ability_unlocked(ability: String)
 signal respawn_requested
 signal died
@@ -78,10 +81,21 @@ var _idle_timer := 0.0
 var _shown_avoidance_hint := false
 var _was_on_floor := true
 var _hurt_timer := 0.0
+var _low_stability := false
 
 func _ready() -> void:
 	attack_area.monitoring = false
 	attack_area.body_entered.connect(_on_attack_area_body_entered)
+
+# Unico punto que emite stability_changed: ademas del valor, avisa si el
+# cambio cruzo el umbral de Estabilidad baja (antes cada listener lo
+# recalculaba por su cuenta y podian desincronizarse).
+func _emit_stability() -> void:
+	stability_changed.emit(stability, max_stability)
+	var low := GameState.is_low_stability(stability, max_stability)
+	if low != _low_stability:
+		_low_stability = low
+		low_stability_changed.emit(low)
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -137,7 +151,7 @@ func _physics_process(delta: float) -> void:
 
 	var on_floor := is_on_floor()
 	if on_floor and not _was_on_floor:
-		get_tree().call_group("audio", "play_sfx", "land")
+		Events.sfx_requested.emit("land")
 	_was_on_floor = on_floor
 
 	if not _attacking and _hurt_timer <= 0.0 and not _collapsed:
@@ -154,7 +168,7 @@ func _current_speed(direction: float, delta: float) -> float:
 		if stability <= 0.0:
 			return WALK_SPEED
 		stability = maxf(stability - STABILITY_SPRINT_DRAIN * delta, 0.0)
-		stability_changed.emit(stability, max_stability)
+		_emit_stability()
 	return RUN_SPEED
 
 func _try_jump() -> void:
@@ -171,17 +185,17 @@ func _try_jump() -> void:
 
 	if stability >= STABILITY_JUMP_COST:
 		stability -= STABILITY_JUMP_COST
-		stability_changed.emit(stability, max_stability)
+		_emit_stability()
 		_do_jump()
 
 func _do_jump() -> void:
 	velocity.y = JUMP_VELOCITY
-	get_tree().call_group("audio", "play_sfx", "jump")
+	Events.sfx_requested.emit("jump")
 
 func _handle_exhaustion_attempt() -> void:
 	if _exhaustion_attempts >= EXHAUSTION_LINES.size():
 		return
-	get_tree().call_group("hud", "show_message", EXHAUSTION_LINES[_exhaustion_attempts])
+	Events.message_requested.emit(EXHAUSTION_LINES[_exhaustion_attempts])
 	_exhaustion_attempts += 1
 	if _exhaustion_attempts == EXHAUSTION_LINES.size():
 		unlock("stability")
@@ -203,7 +217,7 @@ func _regen_stability(direction: float, delta: float) -> void:
 		rate *= STABILITY_WALK_REGEN_FACTOR
 
 	stability = minf(stability + rate * delta, max_stability)
-	stability_changed.emit(stability, max_stability)
+	_emit_stability()
 
 func begin_expulsion() -> void:
 	_expelling = true
@@ -215,7 +229,7 @@ func _tick_expulsion(direction: float, delta: float) -> void:
 		if direction != 0.0:
 			drain += EXPULSION_WALK_DRAIN
 		stability = maxf(stability - drain * delta, 0.0)
-		stability_changed.emit(stability, max_stability)
+		_emit_stability()
 		return
 	if not GameState.has_ability("health"):
 		_collapse()
@@ -226,7 +240,7 @@ func _tick_expulsion(direction: float, delta: float) -> void:
 	_expulsion_health_timer = 0.0
 	health = maxi(health - 1, 0)
 	health_changed.emit(health, max_health)
-	get_tree().call_group("audio", "play_sfx", "hit_take")
+	Events.sfx_requested.emit("hit_take")
 	if health <= 0:
 		_collapse()
 
@@ -252,7 +266,7 @@ func unlock(ability: String) -> void:
 			# que deberías estar, no te da una ventaja extra.
 			max_stability += STABILITY_BOOST_AMOUNT
 			stability += STABILITY_BOOST_AMOUNT
-			stability_changed.emit(stability, max_stability)
+			_emit_stability()
 	ability_unlocked.emit(ability)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -264,7 +278,7 @@ func _try_attack() -> void:
 		if stability < STABILITY_ATTACK_COST:
 			return
 		stability -= STABILITY_ATTACK_COST
-		stability_changed.emit(stability, max_stability)
+		_emit_stability()
 	_start_attack()
 
 func _start_attack() -> void:
@@ -272,7 +286,7 @@ func _start_attack() -> void:
 	_attack_timer = ATTACK_DURATION
 	attack_area.monitoring = true
 	sprite.play("attack")
-	get_tree().call_group("audio", "play_sfx", "attack")
+	Events.sfx_requested.emit("attack")
 
 func _end_attack() -> void:
 	_attacking = false
@@ -296,7 +310,7 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 	_invulnerable_timer = INVULNERABILITY_TIME
 	_hurt_timer = HURT_ANIM_TIME
 	sprite.play("hurt")
-	get_tree().call_group("audio", "play_sfx", "hit_take")
+	Events.sfx_requested.emit("hit_take")
 
 	var push_direction := signf(global_position.x - from_position.x)
 	velocity.x = push_direction * KNOCKBACK_FORCE
@@ -312,7 +326,7 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 	health = maxi(health - amount, 0)
 	stability = maxf(stability - STABILITY_HIT_COST, 0.0)
 	health_changed.emit(health, max_health)
-	stability_changed.emit(stability, max_stability)
+	_emit_stability()
 
 	if health <= 0:
 		if _expelling:
@@ -325,7 +339,7 @@ func _show_avoidance_hint_delayed() -> void:
 	# mensaje (que pausa el juego) apareciera en el mismo frame del golpe,
 	# se comería la reacción física.
 	await get_tree().create_timer(AVOIDANCE_HINT_DELAY).timeout
-	get_tree().call_group("hud", "show_hint_once", "avoidance", "No estoy en condiciones de enfrentar esto todavía. No pasa nada — a veces evitarlo es la decisión correcta.")
+	Events.hint_requested.emit("avoidance", "No estoy en condiciones de enfrentar esto todavía. No pasa nada — a veces evitarlo es la decisión correcta.")
 
 func request_respawn() -> void:
 	respawn_requested.emit()
@@ -336,7 +350,7 @@ func restore_vitals() -> void:
 	health = max_health
 	stability = max_stability
 	health_changed.emit(health, max_health)
-	stability_changed.emit(stability, max_stability)
+	_emit_stability()
 
 func _update_animation() -> void:
 	if not is_on_floor():

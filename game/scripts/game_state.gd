@@ -22,6 +22,11 @@ var came_from_expulsion := false
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
 
+# Unico calculo del umbral de Estabilidad baja: antes se repetia en hud.gd y
+# world_progression.gd, cada uno con su propio estado, y podian desincronizarse.
+func is_low_stability(current: float, max_value: float) -> bool:
+	return (current / max_value) < LOW_STABILITY_RATIO
+
 # Dueño de las habilidades: valida contra MemoryData (un typo o una habilidad
 # inexistente se detecta acá en vez de fallar en silencio) y es idempotente,
 # asi que volver a tocar un recuerdo ya recuperado (p. ej. con

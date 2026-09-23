@@ -1,7 +1,7 @@
 extends Node
 # Capas de ambiente/musica (loops que suben de volumen con cada recuerdo) y
-# reproductor de SFX. Esta en el grupo "audio": cualquier nodo dispara un
-# efecto con get_tree().call_group("audio", "play_sfx", "jump").
+# reproductor de SFX. Se conecta una vez a Events.sfx_requested: cualquier
+# nodo dispara un efecto con Events.sfx_requested.emit("jump").
 
 const SILENT_DB := -80.0
 const LAYERS := {
@@ -28,7 +28,7 @@ var _sfx_pool: Array[AudioStreamPlayer] = []
 var _sfx_next := 0
 
 func _ready() -> void:
-	add_to_group("audio")
+	Events.sfx_requested.connect(play_sfx)
 	for name in LAYERS:
 		var player := AudioStreamPlayer.new()
 		var stream: AudioStreamWAV = load(LAYERS[name][0])
@@ -58,6 +58,7 @@ func silence_all(time: float) -> void:
 
 func play_sfx(name: String) -> void:
 	if not SFX.has(name):
+		push_error("SFX desconocido: %s" % name)
 		return
 	var voice := _sfx_pool[_sfx_next]
 	_sfx_next = (_sfx_next + 1) % SFX_VOICES

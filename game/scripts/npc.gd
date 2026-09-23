@@ -116,7 +116,7 @@ func interact(player: Node2D) -> void:
 		var text := lines[i]
 		if i == 0 and npc_name != "":
 			text = "%s: %s" % [npc_name, text]
-		get_tree().call_group("hud", "show_message", text)
+		Events.message_requested.emit(text)
 
 func _update_awareness() -> void:
 	if _player == null:

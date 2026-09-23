@@ -152,7 +152,7 @@ func _add_hazard(col: int, row: int) -> void:
 	area.body_entered.connect(func(body: Node2D) -> void:
 		if body.has_method("take_damage"):
 			body.take_damage(1, area.global_position + Vector2(0, -40))
-			get_tree().call_group("audio", "play_sfx", "spike")
+			Events.sfx_requested.emit("spike")
 	)
 	add_child(area)
 
