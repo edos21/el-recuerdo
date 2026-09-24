@@ -61,9 +61,8 @@ script = ExtResource("2")
 
 [node name="Core" parent="." instance=ExtResource("10")]
 
-[node name="WorldProgression" type="Node" parent="." node_paths=PackedStringArray("tint_rect", "parallax")]
+[node name="WorldProgression" type="Node" parent="." node_paths=PackedStringArray("parallax")]
 script = ExtResource("6")
-tint_rect = NodePath("../Core/WorldTint/TintRect")
 parallax = NodePath("../Parallax")
 
 [node name="RespawnSound" type="AudioStreamPlayer" parent="."]

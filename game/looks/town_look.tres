@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WorldLook" format=3]
+
+[ext_resource type="Script" path="res://scripts/world_look.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+saturation = 1.0
+cold_tint = 0.0
+vignette = 0.3
+grade_strength = 1.0
+blur_lod_min = 0.6
+blur_lod_max = 2.4
+aberration_px = 2.5
+cloud_strength = 0.75
+ray_strength = 0.07

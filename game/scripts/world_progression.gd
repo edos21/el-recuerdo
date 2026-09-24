@@ -1,7 +1,8 @@
 extends Node
 # Consumidor de `ability_unlocked`: traduce cada recuerdo en una etapa visual y
-# sonora (seccion 27 del documento base). No toca la geometria del nivel;
-# solo el shader de tinte, el parallax, la capa de props y las capas de audio.
+# sonora (seccion 15 del documento base). No toca la geometria del nivel;
+# solo el post-proceso de Core, el parallax, la capa de props y las capas de
+# audio. El punto de partida (gris y frio) es el look del Nivel 1.
 
 const STAGE_TWEEN := 1.8
 
@@ -29,11 +30,11 @@ const EXPULSION_BEATS := [
 	{"ratio": 0.0, "thought": "La puerta está ahí. Pero cada paso la aleja."},
 ]
 
-@export var tint_rect: ColorRect
 @export var parallax: Node2D
 @export var camera_shake_strength := 4.0
 
 var _player: Node2D
+var _world_material: ShaderMaterial
 var _props_layer: CanvasItem
 var _audio: Node
 var _focus_active := false
@@ -44,14 +45,12 @@ var _beats_fired := 0
 var _dimmed_abilities := {}
 
 func _ready() -> void:
-	_set_param("saturation", 0.12)
-	_set_param("focus_radius", 0.0)
-	_set_param("vignette", 0.0)
 	if parallax:
 		parallax.modulate.a = 0.0
 
-func setup(player: Node2D, props_layer: CanvasItem, audio: Node) -> void:
+func setup(player: Node2D, props_layer: CanvasItem, audio: Node, world_material: ShaderMaterial) -> void:
 	_player = player
+	_world_material = world_material
 	_props_layer = props_layer
 	_audio = audio
 	if _props_layer:
@@ -106,8 +105,8 @@ func begin_expulsion() -> void:
 func collapse() -> void:
 	Events.thought_requested.emit("Todavía no estoy listo.", COLLAPSE_THOUGHT_HOLD)
 	var layer := CanvasLayer.new()
-	# Debajo del HUD (capa 2): el pensamiento final se lee sobre el negro.
-	layer.layer = 1
+	# Debajo del HUD: el pensamiento final se lee sobre el negro.
+	layer.layer = Core.WORLD_OVERLAY_LAYER
 	var black := ColorRect.new()
 	black.color = Color.BLACK
 	black.anchor_right = 1.0
@@ -180,11 +179,10 @@ func _shake_camera() -> void:
 	tween.tween_property(camera, "offset", Vector2.ZERO, 0.08)
 
 func _set_param(param: String, value) -> void:
-	(tint_rect.material as ShaderMaterial).set_shader_parameter(param, value)
+	_world_material.set_shader_parameter(param, value)
 
 func _tween(param: String, target: float, time: float = STAGE_TWEEN) -> Tween:
-	var mat := tint_rect.material as ShaderMaterial
-	var from: float = mat.get_shader_parameter(param)
+	var from: float = _world_material.get_shader_parameter(param)
 	var tween := create_tween()
-	tween.tween_method(func(v: float) -> void: mat.set_shader_parameter(param, v), from, target, time)
+	tween.tween_method(func(v: float) -> void: _world_material.set_shader_parameter(param, v), from, target, time)
 	return tween

@@ -1,8 +1,10 @@
 extends Node2D
 
 const LEVEL_PATH := "res://levels/level1.txt"
+const LEVEL1_LOOK := preload("res://looks/level1_look.tres")
 
 @onready var level_loader: Node2D = $LevelLoader
+@onready var core: Core = $Core
 @onready var hud := $Core/HUD
 @onready var respawn_sound: AudioStreamPlayer = $RespawnSound
 @onready var world_progression: Node = $WorldProgression
@@ -34,7 +36,9 @@ func _ready() -> void:
 	GameState.reset()
 	player = level_loader.build(LEVEL_PATH)
 	_current_checkpoint = player.global_position
-	world_progression.setup(player, level_loader.props_layer, audio_layers)
+	core.apply_look(LEVEL1_LOOK)
+	core.bind_player(player, player.camera)
+	world_progression.setup(player, level_loader.props_layer, audio_layers, core.world_material)
 	hud.play_title_card()
 
 	player.health_changed.connect(hud.set_health)

@@ -75,6 +75,7 @@ var stability: float = max_stability
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var attack_area: Area2D = $AttackArea
+@onready var camera: Camera2D = $Camera2D
 
 var _facing := 1
 var _state := State.FREE

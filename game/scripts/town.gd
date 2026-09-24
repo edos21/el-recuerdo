@@ -9,8 +9,9 @@ const WAKE_THOUGHT := "Todo se ve... distinto. Como si me faltara algo."
 const WAKE_THOUGHT_DELAY := 2.0
 const AMBIENT_WIND_DB := -20.0
 const AMBIENT_PAD_DB := -24.0
+const TOWN_LOOK := preload("res://looks/town_look.tres")
 
-@onready var core: Node = $Core
+@onready var core: Core = $Core
 @onready var town_loader: Node2D = $TownLoader
 @onready var atmosphere: Node2D = $Atmosphere
 
@@ -21,8 +22,9 @@ func _ready() -> void:
 	GameState.ensure_defaults()
 	player = town_loader.build(LEVEL_PATH)
 	atmosphere.build(player)
-	# Mundo real: color pleno, sin el frio ni la vineta del recuerdo.
-	core.set_world_look(1.0, 0.0, 0.0)
+	# Mundo real: color pleno, sin el frio del recuerdo.
+	core.apply_look(TOWN_LOOK)
+	core.bind_player(player, player.camera)
 	_restore_hud()
 	_start_ambience()
 	player.health_changed.connect(core.hud.set_health)
