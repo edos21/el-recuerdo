@@ -30,6 +30,15 @@ const CHARGE_WALL_RECOVERY := 1.5
 const CHARGE_COOLDOWN := 0.8
 const CHARGE_WINDUP_TINT := Color(2.4, 2.4, 2.4, 1)
 const CHARGE_STUN_TINT := Color(0.65, 0.75, 1.4, 1)
+# Choque contra la pared: el cuerpo se aplasta contra el muro y vuelve.
+const WALL_SQUASH := Vector2(0.72, 1.18)
+const WALL_SQUASH_TIME := 0.25
+const WALL_DUST_OFFSET := Vector2(13, -10)
+# Tambaleo mientras esta aturdido (radianes y segundos por vaiven).
+const STUN_WOBBLE := 0.09
+const STUN_WOBBLE_TIME := 0.22
+# Donde orbitan las estrellitas, en texels del frame sobre su centro.
+const STUN_HEAD_TEXELS := Vector2(0, -22)
 # Altos en texels del frame: el cuerpo que choca y el area que lastima.
 const BODY_HEIGHT_TEXELS := 22.0
 const HURT_BOX_HEIGHT_TEXELS := 26.0
@@ -61,6 +70,7 @@ var _charge_origin_x := 0.0
 var _charge_cooldown := 0.0
 var _striking := false
 var _strike_cooldown := 0.0
+var _stun_tween: Tween
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var hurt_box: Area2D = $HurtBox
@@ -223,6 +233,8 @@ func _process_dash() -> void:
 	# Si te alcanza, la embestida termina ahi: seguir empujando contra el
 	# jugador la dejaria trabada en el mismo lugar.
 	if connected or hit_wall or not _has_floor_ahead(_charge_direction) or traveled >= CHARGE_MAX_DISTANCE:
+		if hit_wall:
+			_crash_into_wall()
 		_start_recovery(CHARGE_WALL_RECOVERY if hit_wall else CHARGE_RECOVERY)
 
 func _start_recovery(duration: float) -> void:
@@ -231,11 +243,26 @@ func _start_recovery(duration: float) -> void:
 	velocity.x = 0.0
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", CHARGE_STUN_TINT, 0.1)
+	var head := CharacterScale.frame_rect(Rect2(STUN_HEAD_TEXELS, Vector2.ZERO), sprite.scale.x).position
+	Effects.stun_stars(self, head, duration)
+	_stun_tween = create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_stun_tween.tween_property(sprite, "rotation", STUN_WOBBLE, STUN_WOBBLE_TIME)
+	_stun_tween.tween_property(sprite, "rotation", -STUN_WOBBLE, STUN_WOBBLE_TIME)
 
 func _end_recovery() -> void:
 	_charge_state = ChargeState.IDLE
 	_charge_cooldown = CHARGE_COOLDOWN
+	_stun_tween.kill()
+	sprite.rotation = 0.0
 	create_tween().tween_property(sprite, "modulate", Color.WHITE, 0.15)
+
+func _crash_into_wall() -> void:
+	Events.sfx_requested.emit("land")
+	Effects.hit_dust(get_parent(), global_position + WALL_DUST_OFFSET * Vector2(_charge_direction, 1), -_charge_direction)
+	var base := sprite.scale
+	sprite.scale = base * WALL_SQUASH
+	create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT) \
+			.tween_property(sprite, "scale", base, WALL_SQUASH_TIME)
 
 # El perseguidor solo persigue mientras el jugador esta en su misma plataforma:
 # si te "ve" desde otra, o se tira al vacio o te espera pegado al borde y no
