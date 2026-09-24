@@ -122,7 +122,17 @@ func _physics_process(delta: float) -> void:
 	if not _home_floor:
 		_home_floor = _floor_of(self)
 	if not _striking:
-		sprite.play("walk")
+		sprite.play(_current_animation())
+
+# Si el enemigo tiene "idle", lo usa mientras no esta atacando. El elite lo
+# necesita: su "walk" es un ciclo de ataque y parado pareceria que golpea.
+func _current_animation() -> StringName:
+	if not sprite.sprite_frames.has_animation(&"idle"):
+		return &"walk"
+	if behavior == Behavior.CHARGE:
+		var attacking := _charge_state == ChargeState.WINDUP or _charge_state == ChargeState.DASH
+		return &"walk" if attacking else &"idle"
+	return &"walk" if velocity.x != 0.0 else &"idle"
 
 func _process_patrol() -> void:
 	if global_position.x - _start_x > patrol_distance:
@@ -187,7 +197,13 @@ func _floor_of(body: CharacterBody2D) -> Object:
 func _process_charge(delta: float) -> void:
 	match _charge_state:
 		ChargeState.IDLE:
-			_process_patrol()
+			# Espera parado en su arena: recien ataca cuando el jugador la pisa,
+			# no mientras lo ve desde abajo.
+			velocity.x = 0.0
+			_update_player_on_home_floor()
+			if not _player_on_home_floor:
+				return
+			sprite.flip_h = _player.global_position.x < global_position.x
 			_charge_cooldown = maxf(_charge_cooldown - delta, 0.0)
 			if _charge_cooldown <= 0.0 and _player_in_charge_range():
 				_start_windup()
@@ -269,8 +285,7 @@ func _crash_into_wall() -> void:
 # hay forma de evitarlo. En el aire se conserva el ultimo estado, asi un salto
 # o una caida no lo apagan a mitad de camino.
 func _process_chase() -> void:
-	if _home_floor and _player and _player.is_on_floor():
-		_player_on_home_floor = _floor_of(_player) == _home_floor
+	_update_player_on_home_floor()
 	if not _player_on_home_floor:
 		_process_patrol()
 		return
@@ -286,6 +301,12 @@ func _process_chase() -> void:
 
 	sprite.flip_h = _direction < 0
 	_bounce_off_walls()
+
+# Solo se actualiza con el jugador en el piso: un salto o una caida no cambian
+# en que plataforma esta.
+func _update_player_on_home_floor() -> void:
+	if _home_floor and _player and _player.is_on_floor():
+		_player_on_home_floor = _floor_of(_player) == _home_floor
 
 func _bounce_off_walls() -> void:
 	# Si el calculo de distancia de patrulla no alcanza a darle la vuelta a
