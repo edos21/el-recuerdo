@@ -4,12 +4,16 @@ extends Node2D
 # generadas en vez de dibujadas a mano) + enemigos + recuerdos + checkpoints
 # + zona de expulsion + zona de muerte. Todo lo que main.gd necesita
 # despues queda accesible por grupo ("player", "checkpoints", "expulsion_trigger",
-# "kill_zone") o por lo que devuelve build().
+# "kill_zone") o por lo que devuelve build(). La atmosfera (level_atmosphere.gd)
+# decora lo que se marca con los grupos "level_ground", "level_props",
+# "level_plants" y "level_memories"; aca no se mete ningun efecto.
 
 const CELL := 36.0          # 18px de tile * escala 2
 const TILE_SCALE := Vector2(2, 2)
 const GROUND_TINT := Color(0.58, 0.55, 0.66)
 const PROPS_TINT := Color(0.7, 0.68, 0.78)
+# Aire entre los pies y el piso al nacer: el cuerpo cae ese pixel y apoya.
+const SPAWN_CLEARANCE := 1.0
 
 const TILE_SET := preload("res://assets/tiles/platformer.tres")
 const PLAYER_SCENE := preload("res://scenes/Player.tscn")
@@ -18,14 +22,14 @@ const MEMORY_SCENE := preload("res://scenes/MemoryPickup.tscn")
 const CHECKPOINT_SCENE := preload("res://scenes/Checkpoint.tscn")
 
 const DOOR_TEXTURE := preload("res://assets/props/door.png")
+const PINE_TEXTURE := preload("res://assets/props/plant_pine.png")
+const SPROUT_TEXTURE := preload("res://assets/props/plant_sprout.png")
 
 const ATLAS := {
 	"ground": Vector2i(1, 6),
 	"platform": Vector2i(8, 2),
 	"spike": Vector2i(8, 3),
 	"sign": Vector2i(4, 4),
-	"tree": Vector2i(6, 6),
-	"bush": Vector2i(4, 6),
 }
 
 var tilemap: TileMapLayer
@@ -40,6 +44,7 @@ func build(level_path: String) -> Node2D:
 	# Tierra oscura y fria en vez del pasto de Kenney: el nivel no es una
 	# tarde de verano ni cuando recupera el color.
 	tilemap.modulate = GROUND_TINT
+	tilemap.add_to_group("level_ground")
 	add_child(tilemap)
 	# Los objetos de fondo van en su propia capa para poder aparecerlos
 	# recien con el Recuerdo de Vida (WorldProgression le anima el alpha).
@@ -49,10 +54,10 @@ func build(level_path: String) -> Node2D:
 	props_layer.scale = TILE_SCALE
 	props_layer.z_index = -1
 	props_layer.modulate = PROPS_TINT
+	props_layer.add_to_group("level_props")
 	add_child(props_layer)
 
-	var solid_runs := {}   # row -> array de columnas con '#'
-	var platform_runs := {}
+	var floor_cells := {}   # row -> {col: es_de_un_solo_sentido}
 	var memory_pickups := {}   # caracter de recuerdo -> Area2D
 	var guarded_by := {}       # caracter de recuerdo -> Array de enemigos que lo custodian
 	var player: Node2D = null
@@ -68,14 +73,10 @@ func build(level_path: String) -> Node2D:
 				continue
 			match ch:
 				'#':
-					if not solid_runs.has(row):
-						solid_runs[row] = []
-					solid_runs[row].append(col)
+					_mark_floor(floor_cells, row, col, false)
 					tilemap.set_cell(Vector2i(col, row), 0, ATLAS.ground)
 				'=':
-					if not platform_runs.has(row):
-						platform_runs[row] = []
-					platform_runs[row].append(col)
+					_mark_floor(floor_cells, row, col, true)
 					tilemap.set_cell(Vector2i(col, row), 0, ATLAS.platform)
 				'^':
 					tilemap.set_cell(Vector2i(col, row), 0, ATLAS.spike)
@@ -83,14 +84,14 @@ func build(level_path: String) -> Node2D:
 				's':
 					props_layer.set_cell(Vector2i(col, row), 0, ATLAS.sign)
 				't':
-					props_layer.set_cell(Vector2i(col, row), 0, ATLAS.tree)
+					_add_plant(PINE_TEXTURE, col, row)
 				'o':
-					props_layer.set_cell(Vector2i(col, row), 0, ATLAS.bush)
+					_add_plant(SPROUT_TEXTURE, col, row)
 				'd':
 					_add_door(col, row)
 				'P':
 					player = PLAYER_SCENE.instantiate()
-					player.position = _cell_center(col, row)
+					player.position = _standing_on_cell(col, row)
 				'C':
 					var checkpoint := CHECKPOINT_SCENE.instantiate()
 					checkpoint.position = _cell_center(col, row)
@@ -106,8 +107,7 @@ func build(level_path: String) -> Node2D:
 		if memory_pickups.has(memory_ch):
 			_lock_until_defeated(memory_pickups[memory_ch], guarded_by[memory_ch])
 
-	_build_collision_runs(solid_runs, false)
-	_build_collision_runs(platform_runs, true)
+	_build_floor_bodies(floor_cells)
 	_add_kill_zone(max_col, max_row)
 	_add_end_wall(max_col, max_row)
 
@@ -118,29 +118,58 @@ func build(level_path: String) -> Node2D:
 func _cell_center(col: int, row: int) -> Vector2:
 	return Vector2((col + 0.5) * CELL, (row + 0.5) * CELL)
 
-func _build_collision_runs(runs: Dictionary, one_way: bool) -> void:
-	for row in runs:
-		var cols: Array = runs[row]
-		cols.sort()
-		var run_start = cols[0]
-		var prev = cols[0]
-		for i in range(1, cols.size() + 1):
-			var col = cols[i] if i < cols.size() else -999
-			if col != prev + 1:
-				_add_solid_body(run_start, prev, row, one_way)
-				run_start = col
-			prev = col
+# Apoya los pies del cuerpo justo sobre el borde de abajo de su celda. Si
+# naciera un poco hundido, un piso solido lo empujaria arriba, pero una
+# plataforma de un solo sentido lo ignora y lo deja caer.
+func _standing_on_cell(col: int, row: int) -> Vector2:
+	return Vector2((col + 0.5) * CELL, (row + 1) * CELL - CharacterScale.FEET_Y - SPAWN_CLEARANCE)
 
-func _add_solid_body(col_start: int, col_end: int, row: int, one_way: bool) -> void:
+# Sprite suelto de la capa de props (que escala x2, asi que se mide en
+# unidades de tile) con los pies en el borde de abajo de su celda.
+static func bottom_anchored_sprite(texture: Texture2D, col: int, row: int) -> Sprite2D:
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.centered = false
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var size := texture.get_size()
+	var tile := CELL / TILE_SCALE.x
+	sprite.position = Vector2((col + 0.5) * tile - size.x / 2.0, (row + 1) * tile - size.y)
+	return sprite
+
+func _mark_floor(floor_cells: Dictionary, row: int, col: int, one_way: bool) -> void:
+	if not floor_cells.has(row):
+		floor_cells[row] = {}
+	floor_cells[row][col] = one_way
+
+# Un cuerpo por tramo continuo de piso, aunque mezcle suelo firme y
+# plataformas: para los enemigos "su plataforma" es el cuerpo que pisan, y un
+# piso partido en dos cuerpos los dejaria ciegos a la mitad. Cada sub-tramo de
+# un mismo tipo es una forma dentro de ese cuerpo.
+func _build_floor_bodies(floor_cells: Dictionary) -> void:
+	for row: int in floor_cells:
+		var cells: Dictionary = floor_cells[row]
+		var cols: Array = cells.keys()
+		cols.sort()
+		var body: StaticBody2D = null
+		var shape_start: int = cols[0]
+		for i in range(cols.size()):
+			var col: int = cols[i]
+			if i == 0 or col != cols[i - 1] + 1:
+				body = StaticBody2D.new()
+				add_child(body)
+			var next_col: int = cols[i + 1] if i + 1 < cols.size() else -999
+			if next_col != col + 1 or cells[next_col] != cells[col]:
+				_add_floor_shape(body, shape_start, col, row, cells[col])
+				shape_start = next_col
+
+func _add_floor_shape(body: StaticBody2D, col_start: int, col_end: int, row: int, one_way: bool) -> void:
 	var width := float(col_end - col_start + 1) * CELL
-	var body := StaticBody2D.new()
-	body.position = Vector2(col_start * CELL + width * 0.5, row * CELL + CELL * 0.5)
 	var shape := MapUtils.rect_shape(Vector2(width, CELL if not one_way else 10.0))
+	shape.position = Vector2(col_start * CELL + width * 0.5, row * CELL + CELL * 0.5)
 	if one_way:
 		shape.one_way_collision = true
-		shape.position.y = -CELL * 0.5 + 5.0
+		shape.position.y += -CELL * 0.5 + 5.0
 	body.add_child(shape)
-	add_child(body)
 
 func _add_hazard(col: int, row: int) -> void:
 	var area := Area2D.new()
@@ -164,6 +193,7 @@ func _add_memory(ability: String, col: int, row: int) -> Area2D:
 	pickup.message = data.pickup.message
 	pickup.icon = load(data.icon)
 	pickup.icon_scale = data.pickup.icon_scale
+	pickup.add_to_group("level_memories")
 	add_child(pickup)
 	return pickup
 
@@ -172,7 +202,7 @@ func _add_memory(ability: String, col: int, row: int) -> Area2D:
 func _add_enemy(ch: String, col: int, row: int) -> Enemy:
 	var data: Dictionary = EnemyData.LIST[ch]
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
-	enemy.position = _cell_center(col, row)
+	enemy.position = _standing_on_cell(col, row)
 	enemy.sprite_frames_path = data.frames
 	enemy.behavior = data.behavior
 	enemy.speed = data.speed
@@ -228,14 +258,15 @@ func _add_expulsion_trigger(col: int, row: int) -> void:
 # La puerta no es un tile del atlas (el tile que se usaba era una llave): es un
 # sprite propio, hijo de la capa de props para heredar su aparicion gradual.
 func _add_door(col: int, row: int) -> void:
-	var door := Sprite2D.new()
-	door.texture = DOOR_TEXTURE
-	door.centered = false
-	door.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var size := DOOR_TEXTURE.get_size()
-	# La capa de props ya escala x2, asi que las coordenadas van en unidades de tile.
-	door.position = Vector2((col + 0.5) * CELL / 2.0 - size.x / 2.0, (row + 1) * CELL / 2.0 - size.y)
-	props_layer.add_child(door)
+	props_layer.add_child(bottom_anchored_sprite(DOOR_TEXTURE, col, row))
+
+# Las plantas son sprites y no celdas para que el viento pueda moverlas una
+# por una. Cuelgan de la capa de props (aparecen con ella) y apoyan los pies
+# en el fondo de su celda, igual que la puerta.
+func _add_plant(texture: Texture2D, col: int, row: int) -> void:
+	var plant := bottom_anchored_sprite(texture, col, row)
+	plant.add_to_group("level_plants")
+	props_layer.add_child(plant)
 
 # Sin borde de mapa, el jugador debilitado de la expulsion caminaria hasta
 # caerse al vacio antes de desplomarse.

@@ -14,7 +14,12 @@ const WALK_SPEED = 150.0
 const RUN_SPEED = 260.0
 const JUMP_VELOCITY = -450.0
 const ATTACK_DURATION = 0.25
-const ATTACK_OFFSET = 22.0
+# Alcance de la espada en texels desde el centro del frame, mirando a la
+# derecha: el arco mas largo de la animacion (attack1-02). El area de golpe
+# se arma con esto y la escala del personaje, asi coincide con lo que se ve.
+const ATTACK_ARC_TEXELS = Rect2(-2, -18.5, 25, 31)
+# Alto del cuerpo en texels (de los pies a los hombros; el pelo no choca).
+const BODY_HEIGHT_TEXELS = 24.0
 const KNOCKBACK_FORCE = 220.0
 const KNOCKBACK_LIFT = 150.0
 # Espera antes del aviso de evitar: primero se siente el empujon, despues el texto.
@@ -29,6 +34,30 @@ const HIT_CONFIRM_SHIELD_TIME = 0.3
 const DASH_SPEED = 520.0
 const DASH_DURATION = 0.15
 const DASH_ANIM_SPEED = 2.0
+
+# Game feel: el cuerpo responde a cada accion (seccion 17 del documento base).
+# Las deformaciones son relativas a la escala base del sprite.
+const JUMP_STRETCH = Vector2(0.84, 1.18)
+const LAND_SQUASH = Vector2(1.22, 0.8)
+const SQUASH_RECOVER_TIME = 0.18
+# Caidas mas cortas que esto (bajar un escalon) no aplastan ni levantan polvo.
+const LAND_FEEL_MIN_FALL_SPEED = 220.0
+# Congelado breve: el golpe que conecta pesa; el que se recibe pesa mas.
+const HIT_STOP_TIME_SCALE = 0.05
+const HIT_STOP_CONNECT = 0.06
+const HIT_STOP_TAKEN = 0.09
+const SHAKE_CONNECT_STRENGTH = 2.5
+const SHAKE_CONNECT_TIME = 0.1
+const SHAKE_TAKEN_STRENGTH = 5.0
+const SHAKE_TAKEN_TIME = 0.2
+# Retroceso al conectar un golpe: el impacto empuja tambien a quien pega, pero
+# mucho menos que un golpe recibido (sin salto, sin inmunidad, casi sin
+# quitarle el control). Decae hasta cero para que sea un golpe seco, no un deslizamiento.
+const HIT_RECOIL_SPEED = 170.0
+const HIT_RECOIL_TIME = 0.12
+# Nace en el borde de lo golpeado que da al jugador, a la altura del torso:
+# en el centro del cuerpo el sprite del enemigo lo tapa.
+const HIT_DUST_OFFSET = Vector2(-12, -10)
 
 # Expulsion del recuerdo: la Estabilidad se drena sola (mas rapido si camina),
 # el paso se vuelve pesado y, ya sin Estabilidad, empieza a perder Vida hasta
@@ -76,11 +105,18 @@ var stability: float = max_stability
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var attack_area: Area2D = $AttackArea
 @onready var camera: Camera2D = $Camera2D
+@onready var run_dust: CPUParticles2D = $RunDust
+@onready var land_dust: CPUParticles2D = $LandDust
 
 var _facing := 1
+var _attack_offset := 0.0
+# Cada ataque golpea una sola vez a cada enemigo: con el retroceso, el enemigo
+# puede salir y volver a entrar al area en el mismo golpe.
+var _hit_this_swing: Array[Node2D] = []
 var _state := State.FREE
 var _state_timer := 0.0
 var _knockback_timer := 0.0
+var _recoil_timer := 0.0
 var _hit_shield_timer := 0.0
 var _expelling := false
 # Un solo dash por salto: se repone al volver a tocar el suelo.
@@ -93,8 +129,12 @@ var _idle_timer := 0.0
 var _shown_avoidance_hint := false
 var _was_on_floor := true
 var _low_stability := false
+var _base_sprite_scale: Vector2
+var _squash_tween: Tween
+var _hit_stop_serial := 0
 
 func _ready() -> void:
+	_apply_character_scale()
 	attack_area.monitoring = false
 	attack_area.body_entered.connect(_on_attack_area_body_entered)
 
@@ -139,7 +179,9 @@ func _physics_process(delta: float) -> void:
 	# frame y nunca llegás a separarte lo suficiente para volver a tocarlo
 	# (el contacto solo se detecta al "entrar" al área, no mientras seguís
 	# adentro).
-	if _knockback_timer <= 0.0:
+	if _recoil_timer > 0.0:
+		velocity.x = move_toward(velocity.x, 0.0, HIT_RECOIL_SPEED / HIT_RECOIL_TIME * delta)
+	elif _knockback_timer <= 0.0:
 		var speed := _current_speed(direction, delta)
 		if direction:
 			velocity.x = direction * speed
@@ -148,10 +190,11 @@ func _physics_process(delta: float) -> void:
 			velocity.x = move_toward(velocity.x, 0, speed)
 
 	sprite.flip_h = _facing < 0
-	attack_area.position.x = ATTACK_OFFSET * _facing
+	attack_area.position.x = _attack_offset * _facing
 
 	_tick_state(delta)
 	_knockback_timer = maxf(_knockback_timer - delta, 0.0)
+	_recoil_timer = maxf(_recoil_timer - delta, 0.0)
 	_hit_shield_timer = maxf(_hit_shield_timer - delta, 0.0)
 
 	if _expelling:
@@ -159,6 +202,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		_regen_stability(direction, delta)
 
+	var fall_speed := velocity.y
 	move_and_slide()
 
 	var on_floor := is_on_floor()
@@ -166,7 +210,11 @@ func _physics_process(delta: float) -> void:
 		_dash_available = true
 	if on_floor and not _was_on_floor:
 		Events.sfx_requested.emit("land")
+		if fall_speed >= LAND_FEEL_MIN_FALL_SPEED:
+			_squash(LAND_SQUASH)
+			land_dust.restart()
 	_was_on_floor = on_floor
+	run_dust.emitting = on_floor and absf(velocity.x) > WALK_SPEED
 
 	if _state == State.FREE:
 		_update_animation()
@@ -184,6 +232,7 @@ func _change_state(new_state: State) -> void:
 	match new_state:
 		State.ATTACK:
 			_state_timer = ATTACK_DURATION
+			_hit_this_swing.clear()
 			attack_area.monitoring = true
 			sprite.play("attack")
 			Events.sfx_requested.emit("attack")
@@ -270,6 +319,7 @@ func _try_dash() -> void:
 func _do_jump() -> void:
 	velocity.y = JUMP_VELOCITY
 	Events.sfx_requested.emit("jump")
+	_squash(JUMP_STRETCH)
 
 func _handle_exhaustion_attempt() -> void:
 	if _exhaustion_attempts >= EXHAUSTION_LINES.size():
@@ -359,8 +409,18 @@ func _try_attack() -> void:
 		_change_state(State.ATTACK)
 
 func _on_attack_area_body_entered(body: Node2D) -> void:
+	if body in _hit_this_swing:
+		return
+	_hit_this_swing.append(body)
 	if body.has_method("take_hit") and body.take_hit():
 		_hit_shield_timer = HIT_CONFIRM_SHIELD_TIME
+		# Un golpe recibido manda sobre el retroceso: no se suman.
+		if _knockback_timer <= 0.0:
+			_recoil_timer = HIT_RECOIL_TIME
+			velocity.x = -_facing * HIT_RECOIL_SPEED
+		Effects.hit_dust(get_parent(), body.global_position + HIT_DUST_OFFSET * Vector2(_facing, 1), _facing)
+		_hit_stop(HIT_STOP_CONNECT)
+		camera.shake(SHAKE_CONNECT_STRENGTH, SHAKE_CONNECT_TIME)
 
 func take_damage(amount: int, from_position: Vector2) -> void:
 	# Un golpe que conecta te cubre un instante: el área de ataque y el
@@ -377,6 +437,8 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 	# trastabillando a la vez.
 	_change_state(State.HURT)
 	Events.sfx_requested.emit("hit_take")
+	_hit_stop(HIT_STOP_TAKEN)
+	camera.shake(SHAKE_TAKEN_STRENGTH, SHAKE_TAKEN_TIME)
 
 	var push_direction := signf(global_position.x - from_position.x)
 	velocity.x = push_direction * KNOCKBACK_FORCE
@@ -417,6 +479,40 @@ func restore_vitals() -> void:
 	stability = max_stability
 	health_changed.emit(health, max_health)
 	_emit_stability()
+
+func _apply_character_scale() -> void:
+	var scale := CharacterScale.PLATFORMER
+	CharacterScale.place_sprite(sprite, scale)
+	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, scale)
+	var arc := CharacterScale.frame_rect(ATTACK_ARC_TEXELS, scale)
+	var attack_shape := attack_area.get_node("CollisionShape2D") as CollisionShape2D
+	(attack_shape.shape as RectangleShape2D).size = arc.size
+	_attack_offset = arc.get_center().x
+	attack_area.position = Vector2(_attack_offset * _facing, arc.get_center().y)
+	_base_sprite_scale = sprite.scale
+
+# Deforma el sprite y lo devuelve a su escala con rebote: cada salto y cada
+# aterrizaje se ven, no solo se oyen.
+func _squash(factor: Vector2) -> void:
+	if _squash_tween:
+		_squash_tween.kill()
+	sprite.scale = _base_sprite_scale * factor
+	_squash_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_squash_tween.tween_property(sprite, "scale", _base_sprite_scale, SQUASH_RECOVER_TIME)
+
+# Si dos congelados se pisan, solo el ultimo devuelve el tiempo: el primero
+# no lo puede cortar a la mitad.
+func _hit_stop(duration: float) -> void:
+	_hit_stop_serial += 1
+	var serial := _hit_stop_serial
+	Engine.time_scale = HIT_STOP_TIME_SCALE
+	await get_tree().create_timer(duration, true, false, true).timeout
+	if serial == _hit_stop_serial:
+		Engine.time_scale = 1.0
+
+# Si la escena cambia en pleno congelado, el juego no puede quedar en camara lenta.
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 func _update_animation() -> void:
 	if not is_on_floor():

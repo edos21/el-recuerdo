@@ -5,6 +5,8 @@ extends Node
 # audio. El punto de partida (gris y frio) es el look del Nivel 1.
 
 const STAGE_TWEEN := 1.8
+const STABILITY_SHAKE_STRENGTH := 4.0
+const STABILITY_SHAKE_TIME := 0.32
 
 # Expulsion: el color, el parallax y las capas de audio se van apagando en
 # orden inverso al que aparecieron, a medida que baja la Estabilidad.
@@ -31,7 +33,8 @@ const EXPULSION_BEATS := [
 ]
 
 @export var parallax: Node2D
-@export var camera_shake_strength := 4.0
+# Pasto de primer plano: aparece con los props, cuando el mundo recupera detalle.
+@export var foreground: CanvasItem
 
 var _player: Node2D
 var _world_material: ShaderMaterial
@@ -47,6 +50,8 @@ var _dimmed_abilities := {}
 func _ready() -> void:
 	if parallax:
 		parallax.modulate.a = 0.0
+	if foreground:
+		foreground.modulate.a = 0.0
 
 func setup(player: Node2D, props_layer: CanvasItem, audio: Node, world_material: ShaderMaterial) -> void:
 	_player = player
@@ -88,6 +93,8 @@ func advance_to(stage: String) -> void:
 			_tween("saturation", 0.85)
 			if _props_layer:
 				create_tween().tween_property(_props_layer, "modulate:a", 1.0, 2.5)
+			if foreground:
+				create_tween().tween_property(foreground, "modulate:a", 1.0, 2.5)
 			if _audio:
 				_audio.set_layer("pad", -16.0, 4.0)
 		"attack":
@@ -167,16 +174,8 @@ func _pulse_vignette() -> void:
 	_tween("vignette", 0.55, 0.5).tween_callback(_tween.bind("vignette", _base_vignette, 1.6))
 
 func _shake_camera() -> void:
-	if not _player:
-		return
-	var camera: Camera2D = _player.get_node_or_null("Camera2D")
-	if not camera:
-		return
-	var tween := create_tween()
-	for i in range(6):
-		var off := Vector2(randf_range(-1, 1), randf_range(-1, 1)) * camera_shake_strength
-		tween.tween_property(camera, "offset", off, 0.05)
-	tween.tween_property(camera, "offset", Vector2.ZERO, 0.08)
+	if _player:
+		_player.camera.shake(STABILITY_SHAKE_STRENGTH, STABILITY_SHAKE_TIME)
 
 func _set_param(param: String, value) -> void:
 	_world_material.set_shader_parameter(param, value)

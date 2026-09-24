@@ -5,6 +5,8 @@ const LEVEL1_LOOK := preload("res://looks/level1_look.tres")
 
 @onready var level_loader: Node2D = $LevelLoader
 @onready var core: Core = $Core
+@onready var atmosphere: Node2D = $Atmosphere
+@onready var foreground: CanvasItem = $Foreground
 @onready var hud := $Core/HUD
 @onready var respawn_sound: AudioStreamPlayer = $RespawnSound
 @onready var world_progression: Node = $WorldProgression
@@ -39,6 +41,7 @@ func _ready() -> void:
 	core.apply_look(LEVEL1_LOOK)
 	core.bind_player(player, player.camera)
 	world_progression.setup(player, level_loader.props_layer, audio_layers, core.world_material)
+	atmosphere.build(player, foreground)
 	hud.play_title_card()
 
 	player.health_changed.connect(hud.set_health)

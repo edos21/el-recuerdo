@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/level_loader.gd" id="2"]
@@ -7,6 +7,9 @@
 [ext_resource type="PackedScene" path="res://scenes/Core.tscn" id="10"]
 [ext_resource type="Texture2D" path="res://assets/tiles/parallax_far.png" id="8"]
 [ext_resource type="Texture2D" path="res://assets/tiles/parallax_near.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/tiles/parallax_mid.png" id="11"]
+[ext_resource type="Texture2D" path="res://assets/tiles/parallax_front.png" id="12"]
+[ext_resource type="Script" path="res://scripts/level_atmosphere.gd" id="13"]
 
 [sub_resource type="Gradient" id="Gradient_Sky"]
 colors = PackedColorArray(0.2, 0.23, 0.32, 1, 0.5, 0.54, 0.63, 1)
@@ -33,9 +36,10 @@ texture = SubResource("GradientTexture2D_Sky")
 expand_mode = 1
 
 [node name="Parallax" type="Node2D" parent="."]
+z_index = -5
 
 [node name="Far" type="Parallax2D" parent="Parallax"]
-scroll_scale = Vector2(0.2, 1)
+scroll_scale = Vector2(0.15, 1)
 repeat_size = Vector2(1280, 0)
 repeat_times = 6
 
@@ -43,6 +47,17 @@ repeat_times = 6
 position = Vector2(0, -20)
 scale = Vector2(2, 2)
 texture = ExtResource("8")
+centered = false
+
+[node name="Mid" type="Parallax2D" parent="Parallax"]
+scroll_scale = Vector2(0.3, 1)
+repeat_size = Vector2(1280, 0)
+repeat_times = 6
+
+[node name="Hills" type="Sprite2D" parent="Parallax/Mid"]
+position = Vector2(0, -20)
+scale = Vector2(2, 2)
+texture = ExtResource("11")
 centered = false
 
 [node name="Near" type="Parallax2D" parent="Parallax"]
@@ -59,11 +74,28 @@ centered = false
 [node name="LevelLoader" type="Node2D" parent="."]
 script = ExtResource("2")
 
+[node name="Atmosphere" type="Node2D" parent="."]
+script = ExtResource("13")
+
+[node name="Foreground" type="Parallax2D" parent="."]
+z_index = 20
+scroll_scale = Vector2(1.25, 1)
+repeat_size = Vector2(1280, 0)
+repeat_times = 6
+
+[node name="Grass" type="Sprite2D" parent="Foreground"]
+use_parent_material = true
+position = Vector2(0, 336)
+scale = Vector2(2, 2)
+texture = ExtResource("12")
+centered = false
+
 [node name="Core" parent="." instance=ExtResource("10")]
 
-[node name="WorldProgression" type="Node" parent="." node_paths=PackedStringArray("parallax")]
+[node name="WorldProgression" type="Node" parent="." node_paths=PackedStringArray("parallax", "foreground")]
 script = ExtResource("6")
 parallax = NodePath("../Parallax")
+foreground = NodePath("../Foreground")
 
 [node name="RespawnSound" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("4")

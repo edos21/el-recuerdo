@@ -4,3 +4,5 @@
 
 [resource]
 script = ExtResource("1")
+saturation = 0.12
+cold_tint = 1.0

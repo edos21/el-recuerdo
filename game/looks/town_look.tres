@@ -4,8 +4,6 @@
 
 [resource]
 script = ExtResource("1")
-saturation = 1.0
-cold_tint = 0.0
 vignette = 0.3
 grade_strength = 1.0
 blur_lod_min = 0.6
