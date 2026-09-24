@@ -30,6 +30,9 @@ const CHARGE_WALL_RECOVERY := 1.5
 const CHARGE_COOLDOWN := 0.8
 const CHARGE_WINDUP_TINT := Color(2.4, 2.4, 2.4, 1)
 const CHARGE_STUN_TINT := Color(0.65, 0.75, 1.4, 1)
+# Altos en texels del frame: el cuerpo que choca y el area que lastima.
+const BODY_HEIGHT_TEXELS := 22.0
+const HURT_BOX_HEIGHT_TEXELS := 26.0
 # Al morir se infla un instante y revienta en motas del color de su contorno.
 const POP_INFLATE := 1.35
 const POP_INFLATE_TIME := 0.09
@@ -64,12 +67,18 @@ var _strike_cooldown := 0.0
 @onready var edge_ray: RayCast2D = $RayDown
 
 func _ready() -> void:
+	set_character_scale(CharacterScale.PLATFORMER)
 	health = max_health
 	_start_x = global_position.x
 	if sprite_frames_path != "":
 		sprite.sprite_frames = load(sprite_frames_path)
 		sprite.play("walk")
 	hurt_box.body_entered.connect(_on_hurt_box_body_entered)
+
+func set_character_scale(scale: float) -> void:
+	CharacterScale.place_sprite(sprite, scale)
+	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, scale)
+	CharacterScale.fit_height(hurt_box.get_node("CollisionShape2D"), HURT_BOX_HEIGHT_TEXELS, scale)
 
 # Rayo hacia abajo un paso adelante en `direction`: sin piso ahi, hay un borde.
 func _has_floor_ahead(direction: int) -> bool:

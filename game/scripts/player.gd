@@ -14,7 +14,12 @@ const WALK_SPEED = 150.0
 const RUN_SPEED = 260.0
 const JUMP_VELOCITY = -450.0
 const ATTACK_DURATION = 0.25
-const ATTACK_OFFSET = 22.0
+# Alcance de la espada en texels desde el centro del frame, mirando a la
+# derecha: el arco mas largo de la animacion (attack1-02). El area de golpe
+# se arma con esto y la escala del personaje, asi coincide con lo que se ve.
+const ATTACK_ARC_TEXELS = Rect2(-2, -18.5, 25, 31)
+# Alto del cuerpo en texels (de los pies a los hombros; el pelo no choca).
+const BODY_HEIGHT_TEXELS = 24.0
 const KNOCKBACK_FORCE = 220.0
 const KNOCKBACK_LIFT = 150.0
 # Espera antes del aviso de evitar: primero se siente el empujon, despues el texto.
@@ -104,6 +109,7 @@ var stability: float = max_stability
 @onready var land_dust: CPUParticles2D = $LandDust
 
 var _facing := 1
+var _attack_offset := 0.0
 var _state := State.FREE
 var _state_timer := 0.0
 var _knockback_timer := 0.0
@@ -125,7 +131,7 @@ var _squash_tween: Tween
 var _hit_stop_serial := 0
 
 func _ready() -> void:
-	_base_sprite_scale = sprite.scale
+	set_character_scale(CharacterScale.PLATFORMER)
 	attack_area.monitoring = false
 	attack_area.body_entered.connect(_on_attack_area_body_entered)
 
@@ -181,7 +187,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = move_toward(velocity.x, 0, speed)
 
 	sprite.flip_h = _facing < 0
-	attack_area.position.x = ATTACK_OFFSET * _facing
+	attack_area.position.x = _attack_offset * _facing
 
 	_tick_state(delta)
 	_knockback_timer = maxf(_knockback_timer - delta, 0.0)
@@ -466,6 +472,16 @@ func restore_vitals() -> void:
 	stability = max_stability
 	health_changed.emit(health, max_health)
 	_emit_stability()
+
+func set_character_scale(scale: float) -> void:
+	CharacterScale.place_sprite(sprite, scale)
+	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, scale)
+	var arc := CharacterScale.frame_rect(ATTACK_ARC_TEXELS, scale)
+	var attack_shape := attack_area.get_node("CollisionShape2D") as CollisionShape2D
+	(attack_shape.shape as RectangleShape2D).size = arc.size
+	_attack_offset = arc.get_center().x
+	attack_area.position = Vector2(_attack_offset * _facing, arc.get_center().y)
+	_base_sprite_scale = sprite.scale
 
 # Deforma el sprite y lo devuelve a su escala con rebote: cada salto y cada
 # aterrizaje se ven, no solo se oyen.
