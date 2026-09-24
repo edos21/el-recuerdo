@@ -6,7 +6,7 @@ class_name CharacterScale
 # Los anchos de los cuerpos no escalan a proposito: el espaciado horizontal
 # y los alcances del guardian estan balanceados con ellos.
 
-const PLATFORMER := 2.0
+const PLATFORMER := 1.65
 # Los pies de todo cuerpo quedan a esta altura de su origen (la usa el loader
 # para apoyarlos sobre el piso).
 const FEET_Y := 20.0

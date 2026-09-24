@@ -9,10 +9,10 @@ shader = ExtResource("3")
 shader_parameter/outline_color = Color(0.72, 0.78, 0.94, 0.85)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
-size = Vector2(26, 44)
+size = Vector2(26, 36.3)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_HurtBox"]
-size = Vector2(34, 52)
+size = Vector2(34, 42.9)
 
 [node name="Enemy" type="CharacterBody2D"]
 collision_layer = 2
@@ -20,21 +20,21 @@ collision_mask = 1
 script = ExtResource("1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -2)
+position = Vector2(0, 1.85)
 shape = SubResource("RectangleShape2D_1")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 light_mask = 2
 material = SubResource("ShaderMaterial_Outline")
-position = Vector2(0, -17)
-scale = Vector2(2, 2)
+position = Vector2(0, -10.52)
+scale = Vector2(1.65, 1.65)
 sprite_frames = ExtResource("2")
 animation = &"walk"
 
 [node name="HurtBox" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
-position = Vector2(0, -7)
+position = Vector2(0, -1.45)
 shape = SubResource("RectangleShape2D_HurtBox")
 
 [node name="RayDown" type="RayCast2D" parent="."]

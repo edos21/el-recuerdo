@@ -110,6 +110,9 @@ var stability: float = max_stability
 
 var _facing := 1
 var _attack_offset := 0.0
+# Cada ataque golpea una sola vez a cada enemigo: con el retroceso, el enemigo
+# puede salir y volver a entrar al area en el mismo golpe.
+var _hit_this_swing: Array[Node2D] = []
 var _state := State.FREE
 var _state_timer := 0.0
 var _knockback_timer := 0.0
@@ -229,6 +232,7 @@ func _change_state(new_state: State) -> void:
 	match new_state:
 		State.ATTACK:
 			_state_timer = ATTACK_DURATION
+			_hit_this_swing.clear()
 			attack_area.monitoring = true
 			sprite.play("attack")
 			Events.sfx_requested.emit("attack")
@@ -405,6 +409,9 @@ func _try_attack() -> void:
 		_change_state(State.ATTACK)
 
 func _on_attack_area_body_entered(body: Node2D) -> void:
+	if body in _hit_this_swing:
+		return
+	_hit_this_swing.append(body)
 	if body.has_method("take_hit") and body.take_hit():
 		_hit_shield_timer = HIT_CONFIRM_SHIELD_TIME
 		# Un golpe recibido manda sobre el retroceso: no se suman.
