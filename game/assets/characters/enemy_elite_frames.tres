@@ -20,11 +20,17 @@ animations = [{
 "texture": ExtResource("3_dj1v1")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_icpov")
+"texture": ExtResource("4_lpfrp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_72fmv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_6jurx")
 }],
 "loop": 1,
-"name": &"idle",
-"speed": 3.0
+"name": &"attack",
+"speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -37,15 +43,9 @@ animations = [{
 "texture": ExtResource("3_dj1v1")
 }, {
 "duration": 1.0,
-"texture": ExtResource("4_lpfrp")
-}, {
-"duration": 1.0,
-"texture": ExtResource("5_72fmv")
-}, {
-"duration": 1.0,
-"texture": ExtResource("6_6jurx")
+"texture": ExtResource("2_icpov")
 }],
 "loop": 1,
-"name": &"walk",
-"speed": 8.0
+"name": &"idle",
+"speed": 3.0
 }]

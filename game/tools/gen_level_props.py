@@ -10,7 +10,7 @@ ATLAS = os.path.join(HERE, "..", "assets", "tiles", "tilemap_packed.png")
 OUT = os.path.join(HERE, "..", "assets", "props") + os.sep
 TILE = 18
 
-# Coordenadas de celda en el atlas (las mismas que usaba level_loader.ATLAS).
+# Celdas del atlas de Kenney (columna, fila).
 PLANTS = {
     "plant_pine.png": (6, 6),
     "plant_sprout.png": (4, 6),

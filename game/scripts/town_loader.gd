@@ -112,7 +112,7 @@ func _is_path(col: int, row: int) -> bool:
 	return _rows[row][col] == ','
 
 func _ground_tile(col: int, row: int) -> Vector2i:
-	var roll := _hash(col, row)
+	var roll := MapUtils.cell_hash(col, row)
 	if not _is_dirt(col, row):
 		if roll % 100 < int(FLOWER_CHANCE * 100.0):
 			return FLOWERS[roll % FLOWERS.size()]
@@ -148,15 +148,12 @@ func _is_object_on_path(col: int, row: int) -> bool:
 	return MOBILE_OBJECTS.has(ch) and _has_path_neighbor(col, row)
 
 # Hash determinista por celda: el pasto no cambia de una corrida a otra.
-func _hash(col: int, row: int) -> int:
-	return absi((col * 73856093) ^ (row * 19349663))
-
 func _feet(col: int, row: int) -> Vector2:
 	return Vector2((col + 0.5) * CELL, (row + 1) * CELL)
 
 func _add_tree(col: int, row: int) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = TREE_TEXTURES[_hash(col, row) % TREE_TEXTURES.size()]
+	sprite.texture = TREE_TEXTURES[MapUtils.cell_hash(col, row) % TREE_TEXTURES.size()]
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
 	sprite.offset = -TREE_FEET
@@ -168,7 +165,7 @@ func _add_tree(col: int, row: int) -> void:
 
 func _add_house(col: int, row: int) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = HOUSE_TEXTURES[_hash(col, row) % HOUSE_TEXTURES.size()]
+	sprite.texture = HOUSE_TEXTURES[MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()]
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
 	sprite.offset = -HOUSE_FEET

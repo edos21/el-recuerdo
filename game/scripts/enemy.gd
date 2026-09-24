@@ -71,24 +71,30 @@ var _charge_cooldown := 0.0
 var _striking := false
 var _strike_cooldown := 0.0
 var _stun_tween: Tween
+var _squash_tween: Tween
+# Escala del sprite sin deformar: los efectos se miden contra esta, no contra
+# la escala del momento (que puede estar a mitad de un aplastamiento).
+var _base_sprite_scale: Vector2
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var hurt_box: Area2D = $HurtBox
 @onready var edge_ray: RayCast2D = $RayDown
 
 func _ready() -> void:
-	set_character_scale(CharacterScale.PLATFORMER)
+	_apply_character_scale()
 	health = max_health
 	_start_x = global_position.x
 	if sprite_frames_path != "":
 		sprite.sprite_frames = load(sprite_frames_path)
-		sprite.play("walk")
+		sprite.play(_current_animation())
 	hurt_box.body_entered.connect(_on_hurt_box_body_entered)
 
-func set_character_scale(scale: float) -> void:
+func _apply_character_scale() -> void:
+	var scale := CharacterScale.PLATFORMER
 	CharacterScale.place_sprite(sprite, scale)
 	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, scale)
 	CharacterScale.fit_height(hurt_box.get_node("CollisionShape2D"), HURT_BOX_HEIGHT_TEXELS, scale)
+	_base_sprite_scale = sprite.scale
 
 # Rayo hacia abajo un paso adelante en `direction`: sin piso ahi, hay un borde.
 func _has_floor_ahead(direction: int) -> bool:
@@ -124,15 +130,13 @@ func _physics_process(delta: float) -> void:
 	if not _striking:
 		sprite.play(_current_animation())
 
-# Si el enemigo tiene "idle", lo usa mientras no esta atacando. El elite lo
-# necesita: su "walk" es un ciclo de ataque y parado pareceria que golpea.
+# Fuera de una accion (que pone su propia animacion y marca _striking), el
+# enemigo camina o, si tiene "idle", se queda en guardia cuando no se mueve.
 func _current_animation() -> StringName:
-	if not sprite.sprite_frames.has_animation(&"idle"):
-		return &"walk"
-	if behavior == Behavior.CHARGE:
-		var attacking := _charge_state == ChargeState.WINDUP or _charge_state == ChargeState.DASH
-		return &"walk" if attacking else &"idle"
-	return &"walk" if velocity.x != 0.0 else &"idle"
+	var frames := sprite.sprite_frames
+	if frames.has_animation(&"idle") and (velocity.x == 0.0 or not frames.has_animation(&"walk")):
+		return &"idle"
+	return &"walk"
 
 func _process_patrol() -> void:
 	if global_position.x - _start_x > patrol_distance:
@@ -232,6 +236,8 @@ func _start_windup() -> void:
 	_charge_timer = CHARGE_WINDUP
 	_charge_direction = 1 if _player.global_position.x > global_position.x else -1
 	sprite.flip_h = _charge_direction < 0
+	_striking = true
+	sprite.play("attack")
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", CHARGE_WINDUP_TINT, CHARGE_WINDUP)
 
@@ -255,11 +261,12 @@ func _process_dash() -> void:
 
 func _start_recovery(duration: float) -> void:
 	_charge_state = ChargeState.RECOVER
+	_striking = false
 	_charge_timer = duration
 	velocity.x = 0.0
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", CHARGE_STUN_TINT, 0.1)
-	var head := CharacterScale.frame_rect(Rect2(STUN_HEAD_TEXELS, Vector2.ZERO), sprite.scale.x).position
+	var head := CharacterScale.frame_rect(Rect2(STUN_HEAD_TEXELS, Vector2.ZERO), _base_sprite_scale.x).position
 	Effects.stun_stars(self, head, duration)
 	_stun_tween = create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_stun_tween.tween_property(sprite, "rotation", STUN_WOBBLE, STUN_WOBBLE_TIME)
@@ -275,10 +282,11 @@ func _end_recovery() -> void:
 func _crash_into_wall() -> void:
 	Events.sfx_requested.emit("land")
 	Effects.hit_dust(get_parent(), global_position + WALL_DUST_OFFSET * Vector2(_charge_direction, 1), -_charge_direction)
-	var base := sprite.scale
-	sprite.scale = base * WALL_SQUASH
-	create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT) \
-			.tween_property(sprite, "scale", base, WALL_SQUASH_TIME)
+	if _squash_tween:
+		_squash_tween.kill()
+	sprite.scale = _base_sprite_scale * WALL_SQUASH
+	_squash_tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	_squash_tween.tween_property(sprite, "scale", _base_sprite_scale, WALL_SQUASH_TIME)
 
 # El perseguidor solo persigue mientras el jugador esta en su misma plataforma:
 # si te "ve" desde otra, o se tira al vacio o te espera pegado al borde y no
@@ -345,9 +353,11 @@ func _die() -> void:
 	set_deferred("collision_layer", 0)
 	hurt_box.set_deferred("monitoring", false)
 	var outline: Color = (sprite.material as ShaderMaterial).get_shader_parameter("outline_color")
+	if _squash_tween:
+		_squash_tween.kill()
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.set_parallel()
-	tween.tween_property(sprite, "scale", sprite.scale * POP_INFLATE, POP_INFLATE_TIME)
+	tween.tween_property(sprite, "scale", _base_sprite_scale * POP_INFLATE, POP_INFLATE_TIME)
 	tween.tween_property(sprite, "modulate", POP_FLASH, POP_INFLATE_TIME)
 	tween.chain().tween_callback(func() -> void:
 		Effects.pop(get_parent(), sprite.global_position, outline)

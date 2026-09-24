@@ -12,6 +12,10 @@ static func read_grid(path: String) -> Array:
 		rows.pop_back()
 	return rows
 
+# Numero estable por celda para variar decoracion sin azar entre corridas.
+static func cell_hash(col: int, row: int) -> int:
+	return absi((col * 73856093) ^ (row * 19349663))
+
 static func rect_shape(size: Vector2) -> CollisionShape2D:
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://byc8n7vxe63ga" path="res://scripts/core.gd" id="1"]
 [ext_resource type="Script" uid="uid://diia8yx4okhq0" path="res://scripts/hud.gd" id="3"]
-[ext_resource type="Shader" path="res://shaders/world_post.gdshader" id="5"]
+[ext_resource type="Shader" path="res://shaders/world_post_sharp.gdshader" id="5"]
 [ext_resource type="Script" uid="uid://byehncdik8qn7" path="res://scripts/audio_layers.gd" id="7"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_Clouds"]

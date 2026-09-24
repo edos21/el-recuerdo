@@ -19,6 +19,8 @@ static var _puff_texture: GradientTexture2D
 static var _spark_texture: ImageTexture
 static var _ring_texture: GradientTexture2D
 static var _star_texture: ImageTexture
+# Una rampa por color y alfa: los golpes repiten siempre los mismos.
+static var _ramps := {}
 
 # Polvo y chispas que salen hacia donde iba el golpe: el impacto empuja aire.
 static func hit_dust(parent: Node, at: Vector2, direction: float) -> void:
@@ -78,11 +80,13 @@ static func pop(parent: Node, at: Vector2, color: Color) -> void:
 # nacer, y una rampa que aparece desde transparente la dejaria invisible
 # durante todo el congelado, que es cuando mas se tiene que ver.
 static func _impact_ramp(color: Color, peak_alpha: float) -> Gradient:
-	var ramp := Gradient.new()
-	ramp.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
 	var solid := Color(color, peak_alpha)
-	ramp.colors = PackedColorArray([solid, solid, Color(color, 0.0)])
-	return ramp
+	if not _ramps.has(solid):
+		var ramp := Gradient.new()
+		ramp.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+		ramp.colors = PackedColorArray([solid, solid, Color(color, 0.0)])
+		_ramps[solid] = ramp
+	return _ramps[solid]
 
 # Estrellitas que giran sobre la cabeza mientras dure el aturdimiento: la
 # ventana para pegarle se ve, no solo se adivina. Cuelgan del que se aturde,
@@ -139,13 +143,7 @@ static func _ensure_textures() -> void:
 	var gradient := Gradient.new()
 	gradient.offsets = PackedFloat32Array([0.0, 0.62, 0.8, 1.0])
 	gradient.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0), Color.WHITE, Color(1, 1, 1, 0)])
-	_ring_texture = GradientTexture2D.new()
-	_ring_texture.gradient = gradient
-	_ring_texture.fill = GradientTexture2D.FILL_RADIAL
-	_ring_texture.fill_from = Vector2(0.5, 0.5)
-	_ring_texture.fill_to = Vector2(1.0, 0.5)
-	_ring_texture.width = 64
-	_ring_texture.height = 64
+	_ring_texture = AtmosphereKit.radial_texture_from(gradient, 64)
 	# Destello en cruz de 5x5, al tamano de pixel del pack.
 	var star := Image.create(5, 5, false, Image.FORMAT_RGBA8)
 	for i in range(5):

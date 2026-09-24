@@ -14,12 +14,9 @@ var _shake_tween: Tween
 
 func _process(delta: float) -> void:
 	var body := get_parent() as CharacterBody2D
-	var target := 0.0
 	if absf(body.velocity.x) > LOOKAHEAD_MIN_SPEED:
-		target = signf(body.velocity.x) * LOOKAHEAD_DISTANCE
-	else:
-		target = position.x
-	position.x = lerpf(position.x, target, 1.0 - exp(-LOOKAHEAD_SPEED * delta))
+		var target := signf(body.velocity.x) * LOOKAHEAD_DISTANCE
+		position.x = lerpf(position.x, target, 1.0 - exp(-LOOKAHEAD_SPEED * delta))
 
 func shake(strength: float, duration: float) -> void:
 	if _shake_tween:

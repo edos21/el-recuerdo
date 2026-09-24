@@ -6,6 +6,10 @@ class_name AtmosphereKit
 const GLOW_INTENSITY := 0.7
 const GLOW_BLOOM := 0.04
 const GLOW_THRESHOLD := 0.88
+const SWAY_SHADER := preload("res://shaders/wind_sway.gdshader")
+
+# Un solo material aditivo para todos: el batcher 2D agrupa lo que lo comparte.
+static var _additive: CanvasItemMaterial
 
 # Solo las capas del mundo brillan: el HUD queda fuera (ver Core).
 static func add_glow(parent: Node, intensity: float = GLOW_INTENSITY) -> WorldEnvironment:
@@ -21,6 +25,25 @@ static func add_glow(parent: Node, intensity: float = GLOW_INTENSITY) -> WorldEn
 	world_env.environment = env
 	parent.add_child(world_env)
 	return world_env
+
+static func add_ambient(parent: Node, color: Color) -> void:
+	var ambient := CanvasModulate.new()
+	ambient.color = color
+	parent.add_child(ambient)
+
+static func point_light(texture: Texture2D, color: Color, energy: float, texture_scale: float) -> PointLight2D:
+	var light := PointLight2D.new()
+	light.texture = texture
+	light.color = color
+	light.energy = energy
+	light.texture_scale = texture_scale
+	return light
+
+static func sway_material(strength: float) -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = SWAY_SHADER
+	mat.set_shader_parameter("strength", strength)
+	return mat
 
 static func particles(amount: int, lifetime: float, texture: Texture2D) -> CPUParticles2D:
 	var emitter := CPUParticles2D.new()
@@ -41,14 +64,18 @@ static func fade_ramp(color: Color, peak_alpha: float) -> Gradient:
 	return ramp
 
 static func additive_unshaded() -> CanvasItemMaterial:
-	var mat := CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	mat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
-	return mat
+	if not _additive:
+		_additive = CanvasItemMaterial.new()
+		_additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_additive.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	return _additive
 
 static func radial_texture(size: int, center: Color) -> GradientTexture2D:
 	var gradient := Gradient.new()
 	gradient.colors = PackedColorArray([center, Color(center, 0.0)])
+	return radial_texture_from(gradient, size)
+
+static func radial_texture_from(gradient: Gradient, size: int) -> GradientTexture2D:
 	var texture := GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.fill = GradientTexture2D.FILL_RADIAL

@@ -11,12 +11,15 @@ extends Node
 const WORLD_MAX_CANVAS_LAYER := 1
 const WORLD_OVERLAY_LAYER := 2
 const HUD_LAYER := 3
+const BLUR_SHADER := preload("res://shaders/world_post.gdshader")
+const SHARP_SHADER := preload("res://shaders/world_post_sharp.gdshader")
 
 @onready var hud: CanvasLayer = $HUD
 @onready var audio: Node = $AudioLayers
 @onready var world_material: ShaderMaterial = $WorldPost/PostRect.material
 
 var _camera: Camera2D
+var _needs_view := false
 
 func _ready() -> void:
 	$WorldPost.layer = WORLD_MAX_CANVAS_LAYER
@@ -24,6 +27,9 @@ func _ready() -> void:
 	set_process(false)
 
 func apply_look(look: WorldLook) -> void:
+	world_material.shader = BLUR_SHADER if look.needs_blur() else SHARP_SHADER
+	_needs_view = look.needs_view()
+	set_process(_camera != null and _needs_view)
 	var params := look.shader_params()
 	for param in params:
 		world_material.set_shader_parameter(param, params[param])
@@ -35,7 +41,7 @@ func bind_player(player: CharacterBody2D, camera: Camera2D) -> void:
 	player.stability_changed.connect(_on_stability_changed)
 	# El jugador ya emitio su Estabilidad en su _ready, antes de este enlace.
 	_on_stability_changed(player.stability, player.max_stability)
-	set_process(true)
+	set_process(_needs_view)
 
 func _process(_delta: float) -> void:
 	var view_size := get_viewport().get_visible_rect().size / _camera.zoom

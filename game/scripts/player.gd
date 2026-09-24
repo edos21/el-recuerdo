@@ -134,7 +134,7 @@ var _squash_tween: Tween
 var _hit_stop_serial := 0
 
 func _ready() -> void:
-	set_character_scale(CharacterScale.PLATFORMER)
+	_apply_character_scale()
 	attack_area.monitoring = false
 	attack_area.body_entered.connect(_on_attack_area_body_entered)
 
@@ -480,7 +480,8 @@ func restore_vitals() -> void:
 	health_changed.emit(health, max_health)
 	_emit_stability()
 
-func set_character_scale(scale: float) -> void:
+func _apply_character_scale() -> void:
+	var scale := CharacterScale.PLATFORMER
 	CharacterScale.place_sprite(sprite, scale)
 	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, scale)
 	var arc := CharacterScale.frame_rect(ATTACK_ARC_TEXELS, scale)

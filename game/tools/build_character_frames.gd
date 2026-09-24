@@ -44,16 +44,16 @@ func _make_shadow(name: String, prefix: String, count: int, fps: float) -> void:
 	var path := OUT_DIR + name + ".tres"
 	print(name, " -> ", path, " (", ResourceSaver.save(frames, path), ")")
 
-# El "walk" del elite es en realidad su ciclo de ataque (los ultimos frames son
-# el tajo): se usa solo al cargar y embestir. Parado se queda en guardia con
-# los primeros frames, sin parecer que golpea.
+# Los frames "walk" del elite son en realidad un ciclo de ataque (los ultimos
+# son el tajo): se publican como "attack", para cargar y embestir. Parado se
+# queda en guardia con los primeros, sin parecer que golpea.
 func _make_elite() -> void:
 	var frames := SpriteFrames.new()
 	frames.remove_animation("default")
-	frames.add_animation("walk")
-	frames.set_animation_speed("walk", 8.0)
+	frames.add_animation("attack")
+	frames.set_animation_speed("attack", 8.0)
 	for i in range(6):
-		frames.add_frame("walk", load(ENEMY_DIR + "elite-walk-%02d.png" % i))
+		frames.add_frame("attack", load(ENEMY_DIR + "elite-walk-%02d.png" % i))
 	frames.add_animation("idle")
 	frames.set_animation_speed("idle", 3.0)
 	for i in [0, 1, 2, 1]:

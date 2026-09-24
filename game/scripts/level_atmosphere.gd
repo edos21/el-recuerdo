@@ -10,7 +10,6 @@ extends Node2D
 # recuerdos que faltan brillan mas cuantos mas se recuperaron.
 
 const LevelLoader := preload("res://scripts/level_loader.gd")
-const SWAY_SHADER := preload("res://shaders/wind_sway.gdshader")
 const TUFT_TEXTURES := [
 	preload("res://assets/props/plant_sprout.png"),
 	preload("res://assets/props/plant_sprout_tall.png"),
@@ -88,9 +87,7 @@ func _ready() -> void:
 func build(player: CharacterBody2D, foreground: CanvasItem) -> void:
 	_player = player
 	_build_shared_resources()
-	var ambient := CanvasModulate.new()
-	ambient.color = AMBIENT_COLOR
-	add_child(ambient)
+	AtmosphereKit.add_ambient(self, AMBIENT_COLOR)
 	AtmosphereKit.add_glow(self, GLOW_INTENSITY)
 
 	var ground := get_tree().get_first_node_in_group("level_ground") as TileMapLayer
@@ -100,7 +97,9 @@ func build(player: CharacterBody2D, foreground: CanvasItem) -> void:
 	_add_tufts(ground, props)
 	for plant in get_tree().get_nodes_in_group("level_plants"):
 		plant.material = _sway_material
-	foreground.material = _foreground_sway_material()
+	# El pasto hereda este material (use_parent_material en Main.tscn): el
+	# Parallax2D no dibuja nada por si mismo.
+	foreground.material = AtmosphereKit.sway_material(FOREGROUND_SWAY_STRENGTH)
 
 	for memory in get_tree().get_nodes_in_group("level_memories"):
 		_decorate_memory(memory)
@@ -149,22 +148,10 @@ func _build_shared_resources() -> void:
 	_light_texture = AtmosphereKit.radial_texture(256, Color.WHITE)
 	_puff_texture = AtmosphereKit.radial_texture(64, Color.WHITE)
 	_mote_texture = AtmosphereKit.pixel_texture(2, Color.WHITE)
-	_sway_material = ShaderMaterial.new()
-	_sway_material.shader = SWAY_SHADER
-	_sway_material.set_shader_parameter("strength", SWAY_STRENGTH)
-
-func _foreground_sway_material() -> ShaderMaterial:
-	var mat := ShaderMaterial.new()
-	mat.shader = SWAY_SHADER
-	mat.set_shader_parameter("strength", FOREGROUND_SWAY_STRENGTH)
-	return mat
+	_sway_material = AtmosphereKit.sway_material(SWAY_STRENGTH)
 
 func _make_light(color: Color, energy: float, texture_scale: float) -> PointLight2D:
-	var light := PointLight2D.new()
-	light.texture = _light_texture
-	light.color = color
-	light.energy = energy
-	light.texture_scale = texture_scale
+	var light := AtmosphereKit.point_light(_light_texture, color, energy, texture_scale)
 	light.range_item_cull_mask = WORLD_LIGHT_MASK
 	return light
 
@@ -221,19 +208,13 @@ func _add_tufts(ground: TileMapLayer, props: TileMapLayer) -> void:
 			continue
 		if ground.get_cell_source_id(cell + Vector2i.UP) != -1:
 			continue
-		var roll := absi(cell.x * 7919 + cell.y * 104729)
+		var roll := MapUtils.cell_hash(cell.x, cell.y)
 		if roll % TUFT_EVERY != 0:
 			continue
 		var texture: Texture2D = TUFT_TEXTURES[(roll / TUFT_EVERY) % TUFT_TEXTURES.size()]
-		var tuft := Sprite2D.new()
-		tuft.texture = texture
-		tuft.centered = false
-		tuft.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# Los pies apoyan sobre la celda de suelo: la celda de aire de arriba.
+		var tuft := LevelLoader.bottom_anchored_sprite(texture, cell.x, cell.y - 1)
 		tuft.material = _sway_material
-		var size := texture.get_size()
-		var tile := LevelLoader.CELL / props.scale.x
-		# Los pies apoyan en el borde de arriba de la celda de suelo.
-		tuft.position = Vector2((cell.x + 0.5) * tile - size.x / 2.0, cell.y * tile - size.y + 1.0)
 		props.add_child(tuft)
 
 # Las luces y chispas son hijas del recuerdo: si esta custodiado (oculto) o ya

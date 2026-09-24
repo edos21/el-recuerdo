@@ -5,7 +5,6 @@ extends Node2D
 # pueblo: lee lo que arma town_loader (grupos town_trees, town_houses,
 # town_characters).
 
-const SWAY_SHADER := preload("res://shaders/wind_sway.gdshader")
 const WINDOWS_SHADER := preload("res://shaders/house_windows.gdshader")
 
 # Tarde dorada: la luz ambiente baja un poco para que las luces propias se noten.
@@ -16,6 +15,8 @@ const HOUSE_LIGHT_SCALE := 1.1
 const HOUSE_LIGHT_OFFSET := Vector2(0, 24)
 const PLAYER_LIGHT_ENERGY := 0.25
 const PLAYER_LIGHT_SCALE := 2.4
+# Mismo valor que el default del shader: las copas ya estaban afinadas con el.
+const SWAY_STRENGTH := 1.6
 
 const CONTACT_SHADOW_SIZE := Vector2(34, 12)
 const CONTACT_SHADOW_ALPHA := 0.42
@@ -45,7 +46,7 @@ var _windows_material: ShaderMaterial
 
 func build(player: CharacterBody2D) -> void:
 	_build_shared_resources()
-	_add_ambient_light()
+	AtmosphereKit.add_ambient(self, AMBIENT_COLOR)
 	AtmosphereKit.add_glow(self)
 	for tree in get_tree().get_nodes_in_group("town_trees"):
 		_decorate_tree(tree)
@@ -63,15 +64,9 @@ func _build_shared_resources() -> void:
 	_shadow_texture = AtmosphereKit.radial_texture(64, Color(0.04, 0.03, 0.10, CONTACT_SHADOW_ALPHA))
 	_puff_texture = AtmosphereKit.radial_texture(32, Color.WHITE)
 	_leaf_texture = _make_leaf_texture()
-	_sway_material = ShaderMaterial.new()
-	_sway_material.shader = SWAY_SHADER
+	_sway_material = AtmosphereKit.sway_material(SWAY_STRENGTH)
 	_windows_material = ShaderMaterial.new()
 	_windows_material.shader = WINDOWS_SHADER
-
-func _add_ambient_light() -> void:
-	var modulate_node := CanvasModulate.new()
-	modulate_node.color = AMBIENT_COLOR
-	add_child(modulate_node)
 
 func _decorate_tree(tree: Sprite2D) -> void:
 	tree.material = _sway_material
@@ -86,11 +81,7 @@ func _decorate_house(house: Sprite2D) -> void:
 	shadow.color = Color(0.05, 0.04, 0.12, HOUSE_SHADOW_ALPHA)
 	shadow.show_behind_parent = true
 	house.add_child(shadow)
-	var light := PointLight2D.new()
-	light.texture = _light_texture
-	light.color = HOUSE_LIGHT_COLOR
-	light.energy = HOUSE_LIGHT_ENERGY
-	light.texture_scale = HOUSE_LIGHT_SCALE
+	var light := AtmosphereKit.point_light(_light_texture, HOUSE_LIGHT_COLOR, HOUSE_LIGHT_ENERGY, HOUSE_LIGHT_SCALE)
 	light.position = house.position + HOUSE_LIGHT_OFFSET
 	add_child(light)
 	var smoke := _smoke()
@@ -105,11 +96,7 @@ func _contact_shadow() -> Sprite2D:
 	return shadow
 
 func _player_light() -> PointLight2D:
-	var light := PointLight2D.new()
-	light.texture = _light_texture
-	light.color = Color(1.0, 0.9, 0.75)
-	light.energy = PLAYER_LIGHT_ENERGY
-	light.texture_scale = PLAYER_LIGHT_SCALE
+	var light := AtmosphereKit.point_light(_light_texture, Color(1.0, 0.9, 0.75), PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE)
 	light.position = Vector2(0, -20)
 	return light
 

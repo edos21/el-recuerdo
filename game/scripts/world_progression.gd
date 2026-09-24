@@ -5,6 +5,7 @@ extends Node
 # audio. El punto de partida (gris y frio) es el look del Nivel 1.
 
 const STAGE_TWEEN := 1.8
+const STABILITY_SHAKE_STRENGTH := 4.0
 const STABILITY_SHAKE_TIME := 0.32
 
 # Expulsion: el color, el parallax y las capas de audio se van apagando en
@@ -34,7 +35,6 @@ const EXPULSION_BEATS := [
 @export var parallax: Node2D
 # Pasto de primer plano: aparece con los props, cuando el mundo recupera detalle.
 @export var foreground: CanvasItem
-@export var camera_shake_strength := 4.0
 
 var _player: Node2D
 var _world_material: ShaderMaterial
@@ -175,7 +175,7 @@ func _pulse_vignette() -> void:
 
 func _shake_camera() -> void:
 	if _player:
-		_player.camera.shake(camera_shake_strength, STABILITY_SHAKE_TIME)
+		_player.camera.shake(STABILITY_SHAKE_STRENGTH, STABILITY_SHAKE_TIME)
 
 func _set_param(param: String, value) -> void:
 	_world_material.set_shader_parameter(param, value)
