@@ -1,26 +1,26 @@
-extends SceneTree
-# godot --headless --fixed-fps 60 --script res://tools/dump_enemy_stats.gd
+extends Node
+# godot --headless --fixed-fps 60 --path . res://tools/dump_enemy_stats.tscn
 # Vuelca los stats efectivos de cada enemigo del Nivel 1 y el estado de los
 # recuerdos antes y despues de vencer a los enemigos. La salida tiene que ser
 # identica entre dos versiones del interprete: se compara con diff. Solo mira
 # lo que el loader construyo, asi sirve para cualquier cambio del interprete.
+# Corre como escena y no como `--script` porque los autoloads (Events,
+# GameState) no compilan en ese modo.
 
 const LEVEL := "res://levels/level1.txt"
 
 var _loader: Node2D
 var _frames := 0
 
-func _initialize() -> void:
-	var root := Node2D.new()
-	get_root().add_child(root)
+func _ready() -> void:
 	_loader = preload("res://scripts/level_loader.gd").new()
-	root.add_child(_loader)
+	add_child(_loader)
 	_loader.build(LEVEL)
 	# Antes del primer frame de fisica: los patrulleros todavia no se movieron y
 	# las posiciones son las de aparicion.
 	_dump_enemies()
 
-func _process(_delta: float) -> bool:
+func _process(_delta: float) -> void:
 	_frames += 1
 	match _frames:
 		2:
@@ -28,8 +28,7 @@ func _process(_delta: float) -> bool:
 			_defeat_all()
 		4:
 			_dump_pickups("revelado")
-			return true
-	return false
+			get_tree().quit()
 
 func _dump_enemies() -> void:
 	for child in _loader.get_children():
