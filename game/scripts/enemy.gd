@@ -60,7 +60,7 @@ const POP_FLASH := Color(2.5, 2.5, 2.5, 1)
 var health: int
 var _start_x := 0.0
 var _direction := 1
-var _player: Node2D
+var _player: Player
 var _home_floor: Object
 var _player_on_home_floor := false
 var _charge_state := ChargeState.IDLE
@@ -105,7 +105,7 @@ func _has_floor_ahead(direction: int) -> bool:
 # El jugador se agrega al arbol despues que los enemigos (level_loader lo suma
 # al final), asi que en _ready todavia no existe: hay que buscarlo despues.
 func _find_player() -> void:
-	_player = get_tree().get_first_node_in_group("player")
+	_player = get_tree().get_first_node_in_group("player") as Player
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -126,7 +126,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	if not _home_floor:
-		_home_floor = _floor_of(self)
+		_home_floor = MapUtils.floor_of(self)
 	if not _striking:
 		sprite.play(_current_animation())
 
@@ -189,14 +189,6 @@ func _strike_end() -> void:
 	_striking = false
 	sprite.play("walk")
 	_strike_cooldown = GUARD_COOLDOWN
-
-# Cuerpo estatico sobre el que esta parado un CharacterBody2D (o null en el aire).
-func _floor_of(body: CharacterBody2D) -> Object:
-	for i in body.get_slide_collision_count():
-		var collision := body.get_slide_collision(i)
-		if collision.get_normal().y < -0.5:
-			return collision.get_collider()
-	return null
 
 func _process_charge(delta: float) -> void:
 	match _charge_state:
@@ -313,8 +305,11 @@ func _process_chase() -> void:
 # Solo se actualiza con el jugador en el piso: un salto o una caida no cambian
 # en que plataforma esta.
 func _update_player_on_home_floor() -> void:
-	if _home_floor and _player and _player.is_on_floor():
-		_player_on_home_floor = _floor_of(_player) == _home_floor
+	if not _home_floor or not _player:
+		return
+	var player_floor := _player.current_floor()
+	if player_floor:
+		_player_on_home_floor = player_floor == _home_floor
 
 func _bounce_off_walls() -> void:
 	# Si el calculo de distancia de patrulla no alcanza a darle la vuelta a
