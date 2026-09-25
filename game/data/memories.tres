@@ -70,4 +70,4 @@ pickup_message = "Me detengo un momento. No todo es llegar rápido a algún lado
 
 [resource]
 script = ExtResource("7_vkkjm")
-memories = Array[ExtResource("1_01mlc")]([SubResource("Resource_8sk44"), SubResource("Resource_tslmd"), SubResource("Resource_dtna5"), SubResource("Resource_1b1ry"), SubResource("Resource_qk6l0"), SubResource("Resource_44f0c"), SubResource("Resource_is2vv")])
+entries = Array[ExtResource("1_01mlc")]([SubResource("Resource_8sk44"), SubResource("Resource_tslmd"), SubResource("Resource_dtna5"), SubResource("Resource_1b1ry"), SubResource("Resource_qk6l0"), SubResource("Resource_44f0c"), SubResource("Resource_is2vv")])

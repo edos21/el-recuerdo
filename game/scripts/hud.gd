@@ -62,8 +62,8 @@ var _stability_tween: Tween
 var _flicker_tween: Tween
 
 func _ready() -> void:
-	memory_label.text = "Recuerdos 0/%d" % MemoryData.memory_count()
-	for ability in MemoryData.abilities_of([MemoryData.Kind.MEMORY]):
+	memory_label.text = "Recuerdos 0/%d" % Catalogs.memories.memory_count()
+	for ability in Catalogs.memories.abilities_of([MemoryData.Kind.MEMORY]):
 		_make_icon_slot(ability).modulate = ICON_OFF_TINT
 	memory_icons.add_theme_constant_override("separation", int(ICON_GAP))
 	thought_label.modulate.a = 0.0
@@ -86,7 +86,7 @@ func play_title_card(title: String = "", subtitle: String = "") -> void:
 
 func _make_icon_slot(ability: String) -> TextureRect:
 	var slot := TextureRect.new()
-	slot.texture = MemoryData.entry(ability).icon
+	slot.texture = Catalogs.memories.entry(ability).icon
 	slot.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	slot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	slot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -154,13 +154,14 @@ func show_stability_bar() -> void:
 	stability_row.visible = true
 
 func note_ability_unlocked(ability: String) -> void:
-	if MemoryData.entry(ability).kind == MemoryData.Kind.OPTIONAL:
+	var kind := Catalogs.memories.entry(ability).kind
+	if kind == MemoryData.Kind.OPTIONAL:
 		_make_icon_slot(ability)
 		return
-	if MemoryData.entry(ability).kind != MemoryData.Kind.MEMORY:
+	if kind != MemoryData.Kind.MEMORY:
 		return
 	_memories_found += 1
-	memory_label.text = "Recuerdos %d/%d" % [_memories_found, MemoryData.memory_count()]
+	memory_label.text = "Recuerdos %d/%d" % [_memories_found, Catalogs.memories.memory_count()]
 	var slot: TextureRect = _icon_slots[ability]
 	var tween := create_tween()
 	tween.tween_property(slot, "modulate", Color(1.8, 1.8, 1.8, 1), 0.15)
@@ -172,9 +173,9 @@ func _on_memory_dimmed(ability: String) -> void:
 		return
 	var slot: TextureRect = _icon_slots[ability]
 	create_tween().tween_property(slot, "modulate", ICON_OFF_TINT, DIM_TIME)
-	if MemoryData.entry(ability).kind == MemoryData.Kind.MEMORY:
+	if Catalogs.memories.entry(ability).kind == MemoryData.Kind.MEMORY:
 		_memories_found = maxi(_memories_found - 1, 0)
-		memory_label.text = "Recuerdos %d/%d" % [_memories_found, MemoryData.memory_count()]
+		memory_label.text = "Recuerdos %d/%d" % [_memories_found, Catalogs.memories.memory_count()]
 
 # Pensamiento del personaje: subtítulo que aparece y se va solo, sin pausar el
 # juego (a diferencia de _on_message_requested, que frena todo hasta apretar Enter).

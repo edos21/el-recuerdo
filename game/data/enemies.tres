@@ -29,6 +29,7 @@ chase_speed = 200.0
 killable = true
 tint = Color(0.8, 0.9, 1.6, 1)
 collision_layer = 2
+notes = "Usa los mismos cuadros que la sombra común (z): lo único que la distingue a simple vista es el tinte frío."
 
 [sub_resource type="Resource" id="Resource_dewnc"]
 script = ExtResource("1_bytkx")
@@ -44,6 +45,7 @@ chase_speed = 200.0
 killable = true
 collision_layer = 2
 guards_memory = "5"
+notes = "El recuerdo del camino opcional no aparece hasta vencer al elite."
 
 [sub_resource type="Resource" id="Resource_aplca"]
 script = ExtResource("1_bytkx")
@@ -58,6 +60,7 @@ chase_range = 260.0
 chase_speed = 200.0
 killable = true
 collision_layer = 3
+notes = "El guardián sí tiene que ser un cuerpo sólido para el jugador (capa 1 además de la 2): la idea es que no se pueda atravesar."
 
 [sub_resource type="Resource" id="Resource_cumm1"]
 script = ExtResource("1_bytkx")
@@ -87,4 +90,4 @@ collision_layer = 2
 
 [resource]
 script = ExtResource("2_3mcpu")
-enemies = Array[ExtResource("1_bytkx")]([SubResource("Resource_ugfe8"), SubResource("Resource_up6cr"), SubResource("Resource_dewnc"), SubResource("Resource_aplca"), SubResource("Resource_cumm1"), SubResource("Resource_tgxwb")])
+entries = Array[ExtResource("1_bytkx")]([SubResource("Resource_ugfe8"), SubResource("Resource_up6cr"), SubResource("Resource_dewnc"), SubResource("Resource_aplca"), SubResource("Resource_cumm1"), SubResource("Resource_tgxwb")])

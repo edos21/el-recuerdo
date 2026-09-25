@@ -23,7 +23,7 @@ const COLLAPSE_THOUGHT_HOLD := 6.0
 
 # Cada tramo de Estabilidad perdida: un pensamiento (preguntas, no
 # explicaciones). Qué recuerdo se apaga en el HUD en cada tramo viene de
-# `MemoryData.entry(ability).fades_at`, en orden inverso al que se ganaron.
+# `Catalogs.memories.entry(ability).fades_at`, en orden inverso al que se ganaron.
 const EXPULSION_BEATS := [
 	{"ratio": 1.0, "thought": "Algo cambió. No sé qué."},
 	{"ratio": 0.75, "thought": "El aire se siente distinto. Más quieto."},
@@ -131,7 +131,7 @@ func _advance_beats(ratio: float) -> void:
 		Events.thought_requested.emit(EXPULSION_BEATS[_beats_fired].thought, Events.DEFAULT_THOUGHT_HOLD)
 		_beats_fired += 1
 	for ability in GameState.abilities:
-		var fades_at := MemoryData.entry(ability).fades_at
+		var fades_at := Catalogs.memories.entry(ability).fades_at
 		if fades_at != MemoryData.NO_FADE and ratio <= fades_at and not _dimmed_abilities.has(ability):
 			_dimmed_abilities[ability] = true
 			Events.memory_dimmed.emit(ability)
