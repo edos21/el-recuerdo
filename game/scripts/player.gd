@@ -1,3 +1,4 @@
+class_name Player
 extends CharacterBody2D
 
 signal health_changed(current: int, max_value: int)
@@ -394,6 +395,13 @@ func unlock(ability: String) -> void:
 			stability += STABILITY_BOOST_AMOUNT
 			_emit_stability()
 	ability_unlocked.emit(ability)
+
+# Piso estatico bajo el jugador; null en el aire. Los enemigos lo usan para
+# saber si comparten plataforma sin tocar el cuerpo del jugador.
+func current_floor() -> Object:
+	if not is_on_floor():
+		return null
+	return MapUtils.floor_of(self)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("attack") and _can_attack():

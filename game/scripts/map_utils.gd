@@ -16,6 +16,14 @@ static func read_grid(path: String) -> Array:
 static func cell_hash(col: int, row: int) -> int:
 	return absi((col * 73856093) ^ (row * 19349663))
 
+# Cuerpo estatico sobre el que esta parado un CharacterBody2D (o null en el aire).
+static func floor_of(body: CharacterBody2D) -> Object:
+	for i in body.get_slide_collision_count():
+		var collision := body.get_slide_collision(i)
+		if collision.get_normal().y < -0.5:
+			return collision.get_collider()
+	return null
+
 static func rect_shape(size: Vector2) -> CollisionShape2D:
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
