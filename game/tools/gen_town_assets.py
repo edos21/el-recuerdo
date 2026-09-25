@@ -117,6 +117,6 @@ for variant, name in (("v1", "house_a"), ("v2", "house_b"), ("v3", "house_c")):
                 visible += 1
     assert visible, "la casa %s quedo sin ventanas visibles" % name
     house.save(OUT + name + ".png")
-    mask.convert("L").point(lambda v: 255 if v else 0).save(OUT + name + "_windows.png")
+    mask.convert("L").save(OUT + name + "_windows.png")
 house_layout.write_layout_gd()
 print("ok")
