@@ -86,7 +86,7 @@ func play_title_card(title: String = "", subtitle: String = "") -> void:
 
 func _make_icon_slot(ability: String) -> TextureRect:
 	var slot := TextureRect.new()
-	slot.texture = load(MemoryData.LIST[ability].icon)
+	slot.texture = MemoryData.entry(ability).icon
 	slot.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	slot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	slot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -154,10 +154,10 @@ func show_stability_bar() -> void:
 	stability_row.visible = true
 
 func note_ability_unlocked(ability: String) -> void:
-	if MemoryData.LIST[ability].kind == MemoryData.Kind.OPTIONAL:
+	if MemoryData.entry(ability).kind == MemoryData.Kind.OPTIONAL:
 		_make_icon_slot(ability)
 		return
-	if MemoryData.LIST[ability].kind != MemoryData.Kind.MEMORY:
+	if MemoryData.entry(ability).kind != MemoryData.Kind.MEMORY:
 		return
 	_memories_found += 1
 	memory_label.text = "Recuerdos %d/%d" % [_memories_found, MemoryData.memory_count()]
@@ -172,7 +172,7 @@ func _on_memory_dimmed(ability: String) -> void:
 		return
 	var slot: TextureRect = _icon_slots[ability]
 	create_tween().tween_property(slot, "modulate", ICON_OFF_TINT, DIM_TIME)
-	if MemoryData.LIST[ability].kind == MemoryData.Kind.MEMORY:
+	if MemoryData.entry(ability).kind == MemoryData.Kind.MEMORY:
 		_memories_found = maxi(_memories_found - 1, 0)
 		memory_label.text = "Recuerdos %d/%d" % [_memories_found, MemoryData.memory_count()]
 

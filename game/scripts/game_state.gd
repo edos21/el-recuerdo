@@ -32,7 +32,7 @@ func is_low_stability(current: float, max_value: float) -> bool:
 # asi que volver a tocar un recuerdo ya recuperado (p. ej. con
 # debug_start_at_end) no lo cuenta dos veces. Devuelve si la otorgó de nuevo.
 func unlock(ability: String) -> bool:
-	if not MemoryData.LIST.has(ability):
+	if not MemoryData.has(ability):
 		push_error("Habilidad desconocida: %s" % ability)
 		return false
 	if abilities.has(ability):
