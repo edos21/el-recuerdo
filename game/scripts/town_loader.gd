@@ -1,4 +1,5 @@
 extends Node2D
+class_name TownLoader
 # Construye el pueblo real a partir de un mapa ASCII (levels/town.txt), igual
 # que level_loader.gd hace con el Nivel 1: editar el pueblo es editar el .txt.
 #
@@ -15,6 +16,12 @@ const HOUSE_TEXTURES := [
 	preload("res://assets/town/house_a.png"),
 	preload("res://assets/town/house_b.png"),
 	preload("res://assets/town/house_c.png"),
+]
+# Mascara de ventanas de cada casa, en el mismo orden que HOUSE_TEXTURES.
+const HOUSE_WINDOW_MASKS := [
+	preload("res://assets/town/house_a_windows.png"),
+	preload("res://assets/town/house_b_windows.png"),
+	preload("res://assets/town/house_c_windows.png"),
 ]
 const TREE_TEXTURES := [
 	preload("res://assets/town/tree_a.png"),
@@ -37,12 +44,13 @@ const DIRT_EDGES := {
 # Objetos que se paran sobre el suelo de su entorno (camino si hay camino al lado).
 const MOBILE_OBJECTS := ['P', 'n', 'N']
 
-# Dimensiones de las imagenes de arboles y casas (px de la textura): el origen
-# de cada sprite queda en sus pies, para que el orden por Y (y_sort) funcione.
+# Dimensiones de las imagenes de arboles (px de la textura) y meta con la que la
+# casa lleva su mascara de ventanas a la atmosfera. El origen de cada sprite
+# queda en sus pies, para que el orden por Y (y_sort) funcione; las medidas de
+# las casas salen de data/house_layout.gd.
 const TREE_FEET := Vector2(40, 100)
 const TREE_TRUNK := Vector2(16, 8)
-const HOUSE_FEET := Vector2(72, 198)
-const HOUSE_BODY := Vector2(272, 150)
+const WINDOW_MASK_META := &"window_mask"
 const WALL_THICKNESS := 64.0
 
 var objects: Node2D
@@ -165,15 +173,17 @@ func _add_tree(col: int, row: int) -> void:
 
 func _add_house(col: int, row: int) -> void:
 	var sprite := Sprite2D.new()
-	sprite.texture = HOUSE_TEXTURES[MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()]
+	var variant := MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()
+	sprite.texture = HOUSE_TEXTURES[variant]
+	sprite.set_meta(WINDOW_MASK_META, HOUSE_WINDOW_MASKS[variant])
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
-	sprite.offset = -HOUSE_FEET
+	sprite.offset = -HouseLayout.FEET
 	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	sprite.position = _feet(col, row)
 	sprite.add_to_group("town_houses")
 	objects.add_child(sprite)
-	_add_blocker(_feet(col, row), HOUSE_BODY)
+	_add_blocker(_feet(col, row), HouseLayout.BODY * TILE_SCALE)
 
 func _add_npc(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = TownNpcData.LIST[ch]

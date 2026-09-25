@@ -4,6 +4,7 @@
 # originales NO viven en el repo (ver assets/town/SOURCE.md).
 from PIL import Image
 import os, shutil
+import house_layout
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "assets", "town") + os.sep
@@ -52,24 +53,25 @@ ROOF_W = 9 * T          # el techo manda el ancho: el muro va 1 tile mas angosto
 EAVE_Y = 150            # donde arranca la planta baja, debajo del alero central
 CHIMNEY_X = ROOF_W - 20
 HOUSE_W = CHIMNEY_X + 2 * T
-# El vidrio del kit comparte color con las rendijas de la puerta y la chimenea;
-# en las ventanas se corre un punto para que el shader de ventanas encendidas
-# (shaders/house_windows.gdshader) las encuentre solo a ellas.
+# El vidrio del kit comparte color con las rendijas de la puerta y la chimenea:
+# solo se lo busca dentro de las piezas de ventana, y con eso se escribe la
+# mascara (house_x_windows.png) que usa el shader de ventanas encendidas.
 KIT_GLASS = (24, 24, 32)
-LIT_GLASS = (24, 24, 40)
 # Restos de otras piezas que caen dentro del recorte del techo (x0, y0, x1, y1).
 ROOF_JUNK = ((0, 0, 34, 64), (32, 0, 64, 16), (128, 0, 144, 16))
 
 def kit_piece(sheet, x0, y0, x1, y1):
     return sheet.crop((x0 * T, y0 * T, x1 * T, y1 * T))
 
-def mark_glass(piece):
-    pixels = piece.load()
+def glass_mask(piece):
+    """Blanco opaco donde la pieza tiene vidrio, transparente en el resto."""
+    mask = Image.new("RGBA", piece.size, (0, 0, 0, 0))
+    src, dst = piece.load(), mask.load()
     for y in range(piece.height):
         for x in range(piece.width):
-            if pixels[x, y][:3] == KIT_GLASS and pixels[x, y][3]:
-                pixels[x, y] = LIT_GLASS + (255,)
-    return piece
+            if src[x, y][:3] == KIT_GLASS and src[x, y][3]:
+                dst[x, y] = (255, 255, 255, 255)
+    return mask
 
 def strip(pieces, height):
     out = Image.new("RGBA", (sum(p.width for p in pieces), height), (0, 0, 0, 0))
@@ -84,8 +86,11 @@ for variant, name in (("v1", "house_a"), ("v2", "house_b"), ("v3", "house_c")):
     roof = kit_piece(kit, 0, 0, 9, 10)
     for box in ROOF_JUNK:
         roof.paste(Image.new("RGBA", (box[2] - box[0], box[3] - box[1]), (0, 0, 0, 0)), box[:2])
-    wall = strip([mark_glass(kit_piece(kit, 11, 25, 13, 27)), kit_piece(kit, 22, 25, 26, 27),
-                  mark_glass(kit_piece(kit, 19, 27, 21, 29))], 2 * T)
+    window_left, window_right = kit_piece(kit, 11, 25, 13, 27), kit_piece(kit, 19, 27, 21, 29)
+    middle = kit_piece(kit, 22, 25, 26, 27)
+    wall = strip([window_left, middle, window_right], 2 * T)
+    blank = Image.new("RGBA", middle.size, (0, 0, 0, 0))
+    wall_glass = strip([glass_mask(window_left), blank, glass_mask(window_right)], 2 * T)
     # Muro liso detras del alero: tapa el hueco entre el alero lateral y la planta baja.
     backing = strip([kit_piece(kit, 14, 19, 16, 21)] * 4, 2 * T)
     foundation = strip([kit_piece(kit, 10, 30, 12, 31), kit_piece(kit, 22, 30, 26, 31),
@@ -99,5 +104,19 @@ for variant, name in (("v1", "house_a"), ("v2", "house_b"), ("v3", "house_c")):
     house.alpha_composite(foundation, (wall_x, EAVE_Y + 2 * T))
     house.alpha_composite(chimney, (CHIMNEY_X, height - chimney.height - T))
     house.alpha_composite(roof, (0, 0))
+    assert house.size == house_layout.SIZE and house.height == house_layout.FEET[1], "house_layout.py no coincide con la casa armada"
+    # El alero puede tapar parte del vidrio: solo cuenta el que quedo visible.
+    mask = Image.new("RGBA", house.size, (0, 0, 0, 0))
+    mask.alpha_composite(wall_glass, (wall_x, EAVE_Y))
+    visible, mask_px, house_px = 0, mask.load(), house.load()
+    for y in range(house.height):
+        for x in range(house.width):
+            if mask_px[x, y][3] and house_px[x, y][:3] != KIT_GLASS:
+                mask_px[x, y] = (0, 0, 0, 0)
+            elif mask_px[x, y][3]:
+                visible += 1
+    assert visible, "la casa %s quedo sin ventanas visibles" % name
     house.save(OUT + name + ".png")
+    mask.convert("L").point(lambda v: 255 if v else 0).save(OUT + name + "_windows.png")
+house_layout.write_layout_gd()
 print("ok")
