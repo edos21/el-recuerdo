@@ -6,6 +6,7 @@
 # Con los packs originales se reemplaza por el arte real (ver README, "Arte").
 from PIL import Image, ImageDraw
 import os
+import house_layout
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(HERE, "..", "assets") + os.sep
@@ -96,19 +97,23 @@ for name, canopy in (("tree_a", (70, 130, 60, 255)), ("tree_b", (50, 110, 80, 25
     td.ellipse((8, 4, 72, 76), fill=canopy)
     save("town/%s.png" % name, tree)
 
-# Casas: mismo tamano que las del kit (156x198) y la misma posicion de los
-# vidrios de las ventanas, para que el shader de ventanas encendidas funcione.
+# Casas: mismo tamano que las del kit y una mascara de ventanas propia (la que
+# lee el shader de ventanas encendidas), con las medidas de tools/house_layout.py.
 for name, roof in (("house_a", (214, 182, 72, 255)), ("house_b", (170, 196, 170, 255)), ("house_c", (226, 160, 110, 255))):
-    house = Image.new("RGBA", (156, 198), (0, 0, 0, 0))
+    house = Image.new("RGBA", house_layout.SIZE, (0, 0, 0, 0))
+    window_mask = Image.new("L", house_layout.SIZE, 0)
+    md = ImageDraw.Draw(window_mask)
     hd = ImageDraw.Draw(house)
     hd.rectangle((8, 150, 135, 197), fill=(232, 218, 176, 255))
     hd.rectangle((8, 182, 135, 197), fill=(130, 130, 130, 255))
     hd.rectangle((52, 150, 91, 181), fill=(90, 110, 160, 255))
-    for x0 in (18, 110):
-        hd.rectangle((x0, 158, x0 + 12, 170), fill=(24, 24, 40, 255))
+    for rect in house_layout.PLACEHOLDER_WINDOWS:
+        hd.rectangle(rect, fill=(24, 24, 32, 255))
+        md.rectangle(rect, fill=255)
     hd.polygon([(0, 150), (40, 20), (104, 20), (144, 150)], fill=roof)
     hd.rectangle((126, 90, 150, 181), fill=(200, 200, 190, 255))
     save("town/%s.png" % name, house)
+    save("town/%s_windows.png" % name, window_mask)
 
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):
@@ -129,4 +134,5 @@ for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255))
             sheet.paste(cell, (c * 16, r * 16))
     save("town/%s.png" % name, sheet)
 
+house_layout.write_layout_gd()
 print("placeholders creados:", created)

@@ -11,9 +11,10 @@ archivo. `tools/gen_placeholder_art.py` crea placeholders.
   `mhap_female_cultivator_01`, `mhap_male_cultivator_01`). Licencia de compra.
 - `house_a.png`, `house_b.png`, `house_c.png`: Mana Seed "Thatch Roof Home" (Seliel the
   Shaper). Casas armadas por script con piezas del kit modular (`home exteriors, thatch
-  roof v1/v2/v3.png`: una variante de color por casa). Cambio a mano: los pixeles de
-  vidrio de las ventanas pasan de (24, 24, 32) a (24, 24, 40) para que el shader de
-  ventanas encendidas no ilumine tambien la puerta. Licencia de compra.
+  roof v1/v2/v3.png`: una variante de color por casa). Junto a cada casa el generador escribe
+  `house_x_windows.png` (mascara de ventanas, blanco donde hay vidrio visible; derivada del vidrio del kit,
+  la lee el shader de ventanas encendidas) y `data/house_layout.gd` (anclajes, desde
+  `tools/house_layout.py`). El vidrio conserva su color original. Licencia de compra.
 
 Los packs originales viven fuera del repo (por defecto en ~/Downloads/rpg_bundle;
 variable RPG_BUNDLE para cambiarlo). Regenerar: `python3 tools/gen_town_assets.py`
