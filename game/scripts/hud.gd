@@ -1,3 +1,4 @@
+class_name Hud
 extends CanvasLayer
 
 const HEALTH_BAR_WIDTH = 240.0
@@ -33,19 +34,21 @@ const THOUGHT_FADE_OUT = 1.2
 const TITLE_HOLD = 2.0
 const TITLE_FADE = 1.0
 
-@onready var health_row: Control = $HealthRow
-@onready var health_fill: ColorRect = $HealthRow/HealthBarBg/HealthBarFill
-@onready var stability_row: Control = $StabilityRow
-@onready var stability_bg: ColorRect = $StabilityRow/StabilityBarBg
-@onready var stability_fill: ColorRect = $StabilityRow/StabilityBarBg/StabilityBarFill
-@onready var narrative_box: ColorRect = $NarrativeBox
-@onready var narrative_label: Label = $NarrativeBox/NarrativeLabel
-@onready var memory_row: Control = $MemoryRow
-@onready var memory_label: Label = $MemoryRow/MemoryLabel
-@onready var memory_icons: HBoxContainer = $MemoryRow/Icons
-@onready var title_card: Control = $TitleCard
-@onready var thought_label: Label = $ThoughtLabel
+@onready var health_row: Control = %HealthRow
+@onready var health_fill: ColorRect = %HealthBarFill
+@onready var stability_row: Control = %StabilityRow
+@onready var stability_bg: ColorRect = %StabilityBarBg
+@onready var stability_fill: ColorRect = %StabilityBarFill
+@onready var narrative_box: ColorRect = %NarrativeBox
+@onready var narrative_label: Label = %NarrativeLabel
+@onready var memory_row: Control = %MemoryRow
+@onready var memory_label: Label = %MemoryLabel
+@onready var memory_icons: HBoxContainer = %Icons
+@onready var title_card: Control = %TitleCard
+@onready var thought_label: Label = %ThoughtLabel
 
+# Devuelve cuantos bancos lleva alcanzados el jugador; lo asigna la escena.
+var stage_provider: Callable
 var _message_queue: Array[String] = []
 var _memories_found := 0
 var _last_health := -1
@@ -53,7 +56,6 @@ var _last_stability := -1.0
 var _last_max_stability := -1.0
 var _icon_slots := {}
 var _shown_hints := {}
-var _checkpoints_reached := 0
 var _thought_tween: Tween
 var _health_tween: Tween
 var _stability_tween: Tween
@@ -73,8 +75,8 @@ func _ready() -> void:
 # Tarjeta de titulo de una escena: cada una decide si la muestra y con que texto.
 func play_title_card(title: String = "", subtitle: String = "") -> void:
 	if title != "":
-		$TitleCard/Title.text = title
-		$TitleCard/Subtitle.text = subtitle
+		%Title.text = title
+		%Subtitle.text = subtitle
 	title_card.visible = true
 	title_card.modulate.a = 1.0
 	var tween := create_tween()
@@ -187,13 +189,14 @@ func _on_thought_requested(text: String, hold: float) -> void:
 
 # Mensajes de una sola vez (pistas de fallo, línea del primer checkpoint):
 # la misma clave nunca se vuelve a mostrar, y las de HINT_LAST_STAGE caducan.
-func set_checkpoints_reached(count: int) -> void:
-	_checkpoints_reached = count
+# El progreso es de la escena, no del HUD: sin proveedor cuenta como tramo 0.
+func _current_stage() -> int:
+	return stage_provider.call() if stage_provider.is_valid() else 0
 
 func _on_hint_requested(key: String, text: String) -> void:
 	if _shown_hints.has(key):
 		return
-	if HINT_LAST_STAGE.has(key) and _checkpoints_reached > HINT_LAST_STAGE[key]:
+	if HINT_LAST_STAGE.has(key) and _current_stage() > HINT_LAST_STAGE[key]:
 		_shown_hints[key] = true
 		return
 	_shown_hints[key] = true

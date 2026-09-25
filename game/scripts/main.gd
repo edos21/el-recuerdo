@@ -7,10 +7,10 @@ const LEVEL1_LOOK := preload("res://looks/level1_look.tres")
 @onready var core: Core = $Core
 @onready var atmosphere: Node2D = $Atmosphere
 @onready var foreground: CanvasItem = $Foreground
-@onready var hud := $Core/HUD
+@onready var hud: Hud = core.hud
 @onready var respawn_sound: AudioStreamPlayer = $RespawnSound
 @onready var world_progression: Node = $WorldProgression
-@onready var audio_layers: Node = $Core/AudioLayers
+@onready var audio_layers: Node = core.audio
 
 # Cielo frio y apagado: el shader lo desatura igual, pero el tono base ya
 # no dice "tarde de verano".
@@ -42,6 +42,7 @@ func _ready() -> void:
 	core.bind_player(player, player.camera)
 	world_progression.setup(player, level_loader.props_layer, audio_layers, core.world_material)
 	atmosphere.build(player, foreground)
+	hud.stage_provider = _reached_checkpoint_count
 	hud.play_title_card()
 
 	player.health_changed.connect(hud.set_health)
@@ -75,11 +76,13 @@ func _apply_debug_start() -> void:
 		_reached_checkpoints[checkpoint] = true
 		if not last_checkpoint or checkpoint.global_position.x > last_checkpoint.global_position.x:
 			last_checkpoint = checkpoint
-	hud.set_checkpoints_reached(_reached_checkpoints.size())
 	_current_checkpoint = last_checkpoint.global_position
 	# Un par de celdas al costado para no arrancar pisando el banco, que
 	# frenaria el juego con su mensaje de primera vez.
 	player.global_position = _current_checkpoint + Vector2(DEBUG_START_CELLS * level_loader.CELL, 0.0)
+
+func _reached_checkpoint_count() -> int:
+	return _reached_checkpoints.size()
 
 func _on_ability_unlocked(ability: String) -> void:
 	hud.note_ability_unlocked(ability)
@@ -95,7 +98,6 @@ func _on_ability_unlocked(ability: String) -> void:
 func _on_checkpoint_activated(checkpoint: Node2D) -> void:
 	_current_checkpoint = checkpoint.global_position
 	_reached_checkpoints[checkpoint] = true
-	hud.set_checkpoints_reached(_reached_checkpoints.size())
 
 func _on_kill_zone_entered(body: Node2D) -> void:
 	if body == player:

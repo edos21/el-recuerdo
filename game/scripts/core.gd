@@ -14,15 +14,15 @@ const HUD_LAYER := 3
 const BLUR_SHADER := preload("res://shaders/world_post.gdshader")
 const SHARP_SHADER := preload("res://shaders/world_post_sharp.gdshader")
 
-@onready var hud: CanvasLayer = $HUD
-@onready var audio: Node = $AudioLayers
-@onready var world_material: ShaderMaterial = $WorldPost/PostRect.material
+@onready var hud: Hud = %HUD
+@onready var audio: Node = %AudioLayers
+@onready var world_material: ShaderMaterial = %PostRect.material
 
 var _camera: Camera2D
 var _needs_view := false
 
 func _ready() -> void:
-	$WorldPost.layer = WORLD_MAX_CANVAS_LAYER
+	%WorldPost.layer = WORLD_MAX_CANVAS_LAYER
 	hud.layer = HUD_LAYER
 	set_process(false)
 
