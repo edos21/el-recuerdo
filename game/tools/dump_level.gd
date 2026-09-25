@@ -1,18 +1,19 @@
-extends SceneTree
-# godot --headless --script res://tools/dump_level.gd
+extends Node
+# godot --headless --path . res://tools/dump_level.tscn
 # Carga el nivel de forma aislada (sin Main.tscn) y cuenta entidades para
-# comparar contra lo esperado del ASCII.
+# comparar contra lo esperado del ASCII. Corre como escena y no como
+# `--script` porque los autoloads (Events, GameState) no compilan en ese modo.
 
-func _initialize() -> void:
-	var root := Node2D.new()
-	get_root().add_child(root)
+func _ready() -> void:
 	var loader := preload("res://scripts/level_loader.gd").new()
-	root.add_child(loader)
+	add_child(loader)
 	var player := loader.build("res://levels/level1.txt")
 
-	var checkpoints := get_nodes_in_group("checkpoints")
-	var expulsion := get_nodes_in_group("expulsion_trigger")
-	var kill := get_nodes_in_group("kill_zone")
+	# Los grupos solo registran nodos que ya estan dentro del arbol: el loader
+	# tiene que colgarse de el antes de build().
+	var checkpoints := get_tree().get_nodes_in_group("checkpoints")
+	var expulsion := get_tree().get_nodes_in_group("expulsion_trigger")
+	var kill := get_tree().get_nodes_in_group("kill_zone")
 
 	var enemies := 0
 	var memories := 0
@@ -42,4 +43,4 @@ func _initialize() -> void:
 	print("solid bodies (merged): ", solids)
 	print("one-way platforms (merged): ", platforms)
 	print("hazard areas: ", hazards)
-	quit()
+	get_tree().quit()
