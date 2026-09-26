@@ -1,0 +1,16 @@
+# Atajos para probar. Copiá este archivo como `debug.cfg` (queda fuera de Git) y
+# descomentá lo que necesites. Solo se lee en builds de debug; sin `debug.cfg`
+# el juego arranca normal.
+
+[start]
+# Escena a la que saltar en vez del Nivel 1. Si se omite, se juega el Nivel 1.
+# scene = "res://scenes/Town.tscn"
+
+# En el Nivel 1: aparecer junto al último banco (útil para probar combate y expulsión).
+# level_end = true
+
+# Todas las habilidades, incluidas las que se ganan fuera del Nivel 1 (como el dash).
+# unlock_all = true
+
+# Habilidades sueltas, por su nombre en memories.tres (se suman a unlock_all).
+# abilities = ["dash"]

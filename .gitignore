@@ -4,6 +4,9 @@ game/*.translation
 export_presets.cfg
 *.tmp
 
+# Atajos de prueba locales (`game/debug.cfg.example` tiene el formato)
+game/debug.cfg
+
 # macOS
 .DS_Store
 
