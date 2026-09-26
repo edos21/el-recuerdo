@@ -24,6 +24,7 @@ Catalogs="*res://scripts/catalogs.gd"
 GameState="*res://scripts/game_state.gd"
 SceneRouter="*res://scripts/scene_router.gd"
 Events="*res://scripts/events.gd"
+DebugConfig="*res://scripts/debug_config.gd"
 
 [display]
 

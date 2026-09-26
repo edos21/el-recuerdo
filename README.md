@@ -86,10 +86,11 @@ conversar y entender la Fractura de a poco). Los textos y varias cifras son de p
    ```
 3. Abrí la carpeta `game/` desde el editor y presioná **F5**.
 
-> **Modo prueba:** en `game/scenes/Main.tscn` el nodo `Main` tiene `debug_start_at_end = true`,
-> que te da todas las habilidades y te deja junto al último banco para probar el combate y
-> la expulsión sin recorrer el nivel entero. Ponelo en `false` para jugar desde el inicio.
-> `Town.tscn` se puede correr suelta (F6) para ver el pueblo directo.
+> **Modo prueba:** copiá `game/debug.cfg.example` como `game/debug.cfg` (queda fuera de Git)
+> y descomentá lo que necesites: aparecer junto al último banco, saltar directo al pueblo u
+> otorgarte habilidades (por ejemplo `level_end = true` y `unlock_all = true` para probar el
+> combate y la expulsión sin recorrer el nivel entero). Sin ese archivo el juego arranca normal.
+> `Town.tscn` también se puede correr suelta (F6) para ver el pueblo directo.
 
 ## Estructura
 

@@ -30,7 +30,7 @@ func is_low_stability(current: float, max_value: float) -> bool:
 # Dueño de las habilidades: valida contra MemoryData (un typo o una habilidad
 # inexistente se detecta acá en vez de fallar en silencio) y es idempotente,
 # asi que volver a tocar un recuerdo ya recuperado (p. ej. con
-# debug_start_at_end) no lo cuenta dos veces. Devuelve si la otorgó de nuevo.
+# DebugConfig) no lo cuenta dos veces. Devuelve si la otorgó de nuevo.
 func unlock(ability: String) -> bool:
 	if not Catalogs.memories.has(ability):
 		push_error("Habilidad desconocida: %s" % ability)
@@ -41,7 +41,7 @@ func unlock(ability: String) -> bool:
 	return true
 
 # Lo que se da por ganado al llegar al pueblo (ensure_defaults) y la base de
-# debug_start_at_end: todo lo del Nivel 1 salvo lo opcional, como el bonus del
+# DebugConfig: todo lo del Nivel 1 salvo lo opcional, como el bonus del
 # camino secundario.
 func granted_by_default() -> Array[String]:
 	return Catalogs.memories.abilities_of([MemoryData.Kind.INNATE, MemoryData.Kind.MEMORY])

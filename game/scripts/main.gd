@@ -16,10 +16,6 @@ const LEVEL1_LOOK := preload("res://looks/level1_look.tres")
 # no dice "tarde de verano".
 const SKY_COLOR := Color(0.36, 0.40, 0.47)
 
-# Para probar combate sin recorrer el nivel entero: todas las habilidades y
-# aparecer junto al ultimo banco. Se activa desde el inspector de Main.
-@export var debug_start_at_end := false
-
 const TOWN_SCENE := "res://scenes/Town.tscn"
 # Tiempo que se queda el pensamiento final sobre el negro antes de despertar.
 const COLLAPSE_HOLD_TIME := 6.0
@@ -36,6 +32,9 @@ func _ready() -> void:
 	# GameState es el dueño de las habilidades: si el Nivel 1 se vuelve a
 	# cargar (F6, otra corrida), no debe arrancar con las de la vez anterior.
 	GameState.reset()
+	if DebugConfig.start_scene != "":
+		_start_in_debug_scene()
+		return
 	player = level_loader.build(LEVEL_PATH)
 	_current_checkpoint = player.global_position
 	core.apply_look(LEVEL1_LOOK)
@@ -63,14 +62,21 @@ func _ready() -> void:
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
 		checkpoint.activated.connect(_on_checkpoint_activated.bind(checkpoint))
 
-	if debug_start_at_end:
-		_apply_debug_start()
+	_apply_debug_start()
+
+# Lo que se gana fuera del Nivel 1 (LATER) no tiene objeto en el mapa: sin
+# otorgarlo desde acá no habría forma de probarlo jugando.
+func _start_in_debug_scene() -> void:
+	for ability in DebugConfig.abilities_to_grant():
+		GameState.unlock(ability)
+	GameState.begin_wake_up()
+	SceneRouter.change_scene.call_deferred(DebugConfig.start_scene)
 
 func _apply_debug_start() -> void:
-	# Lo que se gana fuera del Nivel 1 (LATER) no tiene objeto en el mapa: sin
-	# esto no habría forma de probarlo jugando.
-	for ability in GameState.granted_by_default() + Catalogs.memories.abilities_of([MemoryData.Kind.LATER]):
+	for ability in DebugConfig.abilities_to_grant():
 		player.unlock(ability)
+	if not DebugConfig.start_at_level_end:
+		return
 	var last_checkpoint: Node2D
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
 		_reached_checkpoints[checkpoint] = true
