@@ -34,14 +34,11 @@ func _ready() -> void:
 		push_error("DebugConfig: la escena '%s' no existe." % start_scene)
 		start_scene = ""
 
-# Habilidades a otorgar al arrancar. GameState.unlock valida cada nombre, así
-# que un typo en el archivo se avisa ahí.
+# Habilidades a otorgar al arrancar. GameState.unlock valida cada nombre (un
+# typo en el archivo se avisa ahí) y es idempotente, así que repetidas no importa.
 func abilities_to_grant() -> Array[String]:
-	if not unlock_all:
-		return abilities
-	var granted: Array[String] = GameState.granted_by_default()
-	granted.append_array(Catalogs.memories.abilities_of([MemoryData.Kind.LATER]))
-	for ability in abilities:
-		if not granted.has(ability):
-			granted.append(ability)
+	var granted: Array[String] = abilities.duplicate()
+	if unlock_all:
+		granted.append_array(GameState.granted_by_default())
+		granted.append_array(Catalogs.memories.abilities_of([MemoryData.Kind.LATER]))
 	return granted

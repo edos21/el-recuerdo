@@ -62,7 +62,10 @@ func _ready() -> void:
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
 		checkpoint.activated.connect(_on_checkpoint_activated.bind(checkpoint))
 
-	_apply_debug_start()
+	for ability in DebugConfig.abilities_to_grant():
+		player.unlock(ability)
+	if DebugConfig.start_at_level_end:
+		_move_to_last_checkpoint()
 
 # Lo que se gana fuera del Nivel 1 (LATER) no tiene objeto en el mapa: sin
 # otorgarlo desde acá no habría forma de probarlo jugando.
@@ -72,11 +75,7 @@ func _start_in_debug_scene() -> void:
 	GameState.begin_wake_up()
 	SceneRouter.change_scene.call_deferred(DebugConfig.start_scene)
 
-func _apply_debug_start() -> void:
-	for ability in DebugConfig.abilities_to_grant():
-		player.unlock(ability)
-	if not DebugConfig.start_at_level_end:
-		return
+func _move_to_last_checkpoint() -> void:
 	var last_checkpoint: Node2D
 	for checkpoint in get_tree().get_nodes_in_group("checkpoints"):
 		_reached_checkpoints[checkpoint] = true
