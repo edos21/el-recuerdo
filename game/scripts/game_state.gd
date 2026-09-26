@@ -32,7 +32,7 @@ func is_low_stability(current: float, max_value: float) -> bool:
 # asi que volver a tocar un recuerdo ya recuperado (p. ej. con
 # debug_start_at_end) no lo cuenta dos veces. Devuelve si la otorgó de nuevo.
 func unlock(ability: String) -> bool:
-	if not MemoryData.LIST.has(ability):
+	if not Catalogs.memories.has(ability):
 		push_error("Habilidad desconocida: %s" % ability)
 		return false
 	if abilities.has(ability):
@@ -44,7 +44,7 @@ func unlock(ability: String) -> bool:
 # debug_start_at_end: todo lo del Nivel 1 salvo lo opcional, como el bonus del
 # camino secundario.
 func granted_by_default() -> Array[String]:
-	return MemoryData.abilities_of([MemoryData.Kind.INNATE, MemoryData.Kind.MEMORY])
+	return Catalogs.memories.abilities_of([MemoryData.Kind.INNATE, MemoryData.Kind.MEMORY])
 
 func capture_from_platformer(player: Node) -> void:
 	max_stability = player.max_stability

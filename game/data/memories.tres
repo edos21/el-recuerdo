@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="MemoryData" format=3]
+
+[ext_resource type="Script" path="res://data/memory_def.gd" id="1_01mlc"]
+[ext_resource type="Texture2D" path="res://assets/items/rope.png" id="2_ojr4l"]
+[ext_resource type="Texture2D" path="res://assets/items/shoes.png" id="3_ac5jn"]
+[ext_resource type="Texture2D" path="res://assets/items/heart.png" id="4_mkrju"]
+[ext_resource type="Texture2D" path="res://assets/items/sword.png" id="5_av7be"]
+[ext_resource type="Texture2D" path="res://assets/items/star.png" id="6_ufhhg"]
+[ext_resource type="Script" path="res://data/memories.gd" id="7_vkkjm"]
+
+[sub_resource type="Resource" id="Resource_8sk44"]
+script = ExtResource("1_01mlc")
+id = "jump"
+kind = 1
+icon = ExtResource("2_ojr4l")
+pickup_char = "1"
+pickup_icon_scale = 2.0
+pickup_message = "Una cuerda de saltar, gastada por el uso. Recuerdo el sonido que hacía al golpear el suelo, una y otra vez, sin pensar. Así se sentía moverse sin dudar. Presioná Espacio para saltar. [Recuerdo del Saltador recuperado]"
+
+[sub_resource type="Resource" id="Resource_tslmd"]
+script = ExtResource("1_01mlc")
+id = "sprint"
+kind = 1
+icon = ExtResource("3_ac5jn")
+fades_at = 0.25
+pickup_char = "2"
+pickup_icon_scale = 2.0
+pickup_message = "Unos zapatos viejos, todavía atados. Me gustaba salir a correr con ellos — me sentía ágil, liviano, rápido. Como un corredor. Mantené Shift apretado mientras te movés para correr. [Recuerdo del Corredor recuperado]"
+
+[sub_resource type="Resource" id="Resource_dtna5"]
+script = ExtResource("1_01mlc")
+id = "stability"
+fades_at = -1.0
+
+[sub_resource type="Resource" id="Resource_1b1ry"]
+script = ExtResource("1_01mlc")
+id = "health"
+kind = 1
+icon = ExtResource("4_mkrju")
+fades_at = 0.5
+pickup_char = "3"
+pickup_icon_scale = 2.0
+pickup_message = "Un relicario pequeño, todavía tibio, como si alguien lo hubiera sostenido hace un instante. Recuerdo lo que se siente estar vivo de verdad, con todo lo que eso implica. [Recuerdo de Vida recuperado]"
+
+[sub_resource type="Resource" id="Resource_qk6l0"]
+script = ExtResource("1_01mlc")
+id = "attack"
+kind = 1
+icon = ExtResource("5_av7be")
+fades_at = 0.75
+pickup_char = "4"
+pickup_icon_scale = 2.0
+pickup_message = "Una espada corta, con el filo gastado de uso real, no de exhibición. Recuerdo la firmeza de sostenerla, la decisión de no quedarme quieto. Presioná X para atacar. [Recuerdo del Guerrero recuperado]"
+
+[sub_resource type="Resource" id="Resource_44f0c"]
+script = ExtResource("1_01mlc")
+id = "dash"
+kind = 3
+fades_at = -1.0
+
+[sub_resource type="Resource" id="Resource_is2vv"]
+script = ExtResource("1_01mlc")
+id = "stability_boost"
+kind = 2
+icon = ExtResource("6_ufhhg")
+fades_at = 0.75
+pickup_char = "5"
+pickup_icon_scale = 2.0
+pickup_message = "Me detengo un momento. No todo es llegar rápido a algún lado — a veces vale la pena desviarse, mirar alrededor, quedarme con lo que casi me pierdo. [Estabilidad máxima ampliada +10%]"
+
+[resource]
+script = ExtResource("7_vkkjm")
+entries = Array[ExtResource("1_01mlc")]([SubResource("Resource_8sk44"), SubResource("Resource_tslmd"), SubResource("Resource_dtna5"), SubResource("Resource_1b1ry"), SubResource("Resource_qk6l0"), SubResource("Resource_44f0c"), SubResource("Resource_is2vv")])

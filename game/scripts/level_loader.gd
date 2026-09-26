@@ -99,7 +99,7 @@ func build(level_path: String) -> Node2D:
 				'X':
 					_add_expulsion_trigger(col, row)
 				'1', '2', '3', '4', '5':
-					memory_pickups[ch] = _add_memory(MemoryData.by_pickup_char(ch), col, row)
+					memory_pickups[ch] = _add_memory(Catalogs.memories.by_pickup_char(ch), col, row)
 				'z', 'f', 'e', 'g', 'h', 'm':
 					_track_guardian(guarded_by, ch, _add_enemy(ch, col, row))
 
@@ -186,13 +186,13 @@ func _add_hazard(col: int, row: int) -> void:
 	add_child(area)
 
 func _add_memory(ability: String, col: int, row: int) -> Area2D:
-	var data: Dictionary = MemoryData.LIST[ability]
+	var data := Catalogs.memories.entry(ability)
 	var pickup := MEMORY_SCENE.instantiate()
 	pickup.position = _cell_center(col, row)
 	pickup.ability = ability
-	pickup.message = data.pickup.message
-	pickup.icon = load(data.icon)
-	pickup.icon_scale = data.pickup.icon_scale
+	pickup.message = data.pickup_message
+	pickup.icon = data.icon
+	pickup.icon_scale = data.pickup_icon_scale
 	pickup.add_to_group("level_memories")
 	add_child(pickup)
 	return pickup
@@ -200,7 +200,7 @@ func _add_memory(ability: String, col: int, row: int) -> Area2D:
 # Todo se asigna antes de add_child porque Enemy._ready() copia max_health a
 # health: un stat seteado despues llega tarde.
 func _add_enemy(ch: String, col: int, row: int) -> Enemy:
-	var data: Dictionary = EnemyData.LIST[ch]
+	var data := Catalogs.enemies.entry(ch)
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
 	enemy.position = _standing_on_cell(col, row)
 	enemy.sprite_frames_path = data.frames
@@ -218,14 +218,14 @@ func _add_enemy(ch: String, col: int, row: int) -> Enemy:
 	return enemy
 
 # Un enemigo que custodia un recuerdo se anota como su custodio. Si no se lo
-# puede vencer, el recuerdo quedaria escondido para siempre: se avisa y no se lo
-# cuenta, asi un dato mal cargado no deja el nivel incompletable.
+# puede vencer, el recuerdo quedaria escondido para siempre: Catalogs ya lo avisa
+# al arrancar, y aca no se lo cuenta, asi un dato mal cargado no deja el nivel
+# incompletable.
 func _track_guardian(guarded_by: Dictionary, ch: String, enemy: Enemy) -> void:
-	var memory_ch: String = EnemyData.LIST[ch].guards_memory
+	var memory_ch := Catalogs.enemies.entry(ch).guards_memory
 	if memory_ch == "":
 		return
 	if not enemy.killable:
-		push_warning("El enemigo '%s' custodia el recuerdo '%s' pero no se lo puede vencer." % [ch, memory_ch])
 		return
 	if not guarded_by.has(memory_ch):
 		guarded_by[memory_ch] = []

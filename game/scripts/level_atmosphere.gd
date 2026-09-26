@@ -136,7 +136,7 @@ func _on_ability_unlocked(_ability: String) -> void:
 # Cuantos mas recuerdos vuelven, mas llaman los que faltan.
 func _update_memory_glow() -> void:
 	var recovered := 0
-	for ability in MemoryData.abilities_of([MemoryData.Kind.MEMORY]):
+	for ability in Catalogs.memories.abilities_of([MemoryData.Kind.MEMORY]):
 		if GameState.has_ability(ability):
 			recovered += 1
 	var energy := MEMORY_LIGHT_BASE_ENERGY + MEMORY_LIGHT_ENERGY_PER_RECOVERED * recovered

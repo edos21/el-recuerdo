@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://data/enemy_def.gd" id="1_bytkx"]
+[ext_resource type="Script" path="res://data/enemy_data.gd" id="2_3mcpu"]
+
+[sub_resource type="Resource" id="Resource_ugfe8"]
+script = ExtResource("1_bytkx")
+map_char = "z"
+frames = "res://assets/characters/enemy_shadow_frames.tres"
+speed = 60.0
+patrol_distance = 70.0
+max_health = 2
+contact_damage = 1
+chase_range = 260.0
+chase_speed = 200.0
+killable = true
+collision_layer = 2
+
+[sub_resource type="Resource" id="Resource_up6cr"]
+script = ExtResource("1_bytkx")
+map_char = "f"
+frames = "res://assets/characters/enemy_shadow_frames.tres"
+speed = 115.0
+patrol_distance = 70.0
+max_health = 2
+contact_damage = 1
+chase_range = 260.0
+chase_speed = 200.0
+killable = true
+tint = Color(0.8, 0.9, 1.6, 1)
+collision_layer = 2
+notes = "Usa los mismos cuadros que la sombra común (z): lo único que la distingue a simple vista es el tinte frío."
+
+[sub_resource type="Resource" id="Resource_dewnc"]
+script = ExtResource("1_bytkx")
+map_char = "e"
+frames = "res://assets/characters/enemy_elite_frames.tres"
+behavior = 3
+speed = 90.0
+patrol_distance = 25.0
+max_health = 5
+contact_damage = 2
+chase_range = 260.0
+chase_speed = 200.0
+killable = true
+collision_layer = 2
+guards_memory = "5"
+notes = "El recuerdo del camino opcional no aparece hasta vencer al elite."
+
+[sub_resource type="Resource" id="Resource_aplca"]
+script = ExtResource("1_bytkx")
+map_char = "g"
+frames = "res://assets/characters/enemy_guardian_frames.tres"
+behavior = 1
+speed = 60.0
+patrol_distance = 80.0
+max_health = 2
+contact_damage = 1
+chase_range = 260.0
+chase_speed = 200.0
+killable = true
+collision_layer = 3
+notes = "El guardián sí tiene que ser un cuerpo sólido para el jugador (capa 1 además de la 2): la idea es que no se pueda atravesar."
+
+[sub_resource type="Resource" id="Resource_cumm1"]
+script = ExtResource("1_bytkx")
+map_char = "h"
+frames = "res://assets/characters/enemy_chaser_frames.tres"
+behavior = 2
+speed = 60.0
+patrol_distance = 80.0
+max_health = 2
+contact_damage = 1
+chase_range = 320.0
+chase_speed = 150.0
+collision_layer = 2
+
+[sub_resource type="Resource" id="Resource_tgxwb"]
+script = ExtResource("1_bytkx")
+map_char = "m"
+frames = "res://assets/characters/enemy_restos_frames.tres"
+speed = 110.0
+patrol_distance = 35.0
+max_health = 1
+contact_damage = 1
+chase_range = 260.0
+chase_speed = 200.0
+killable = true
+collision_layer = 2
+
+[resource]
+script = ExtResource("2_3mcpu")
+entries = Array[ExtResource("1_bytkx")]([SubResource("Resource_ugfe8"), SubResource("Resource_up6cr"), SubResource("Resource_dewnc"), SubResource("Resource_aplca"), SubResource("Resource_cumm1"), SubResource("Resource_tgxwb")])
