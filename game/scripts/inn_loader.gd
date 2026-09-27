@@ -15,6 +15,10 @@ const TABLE_TEXTURE := preload("res://assets/town/inn_table.png")
 const POT_TEXTURE := preload("res://assets/town/inn_pot.png")
 
 const WALLS := ['#', 'W', 'v']
+# El umbral se dispara en la mitad de abajo de la fila 'D': quien entra aparece
+# una celda más arriba, ya adentro.
+const DOOR_TRIGGER_DEPTH := 16.0
+const DOOR_ARRIVAL_LIFT := 4.0
 
 # Pies y huella de cada mueble, en px de textura. La cama y la valija miden dos
 # celdas de ancho: sus pies van a un cuarto del ancho para que arranquen en el
@@ -40,6 +44,7 @@ func _build_ground() -> void:
 	add_child(room)
 	for row in _rows.size():
 		_add_wall_runs(row)
+		_add_door_runs(row)
 
 func _place(ch: String, col: int, row: int) -> void:
 	var feet := _feet(col, row)
@@ -65,6 +70,22 @@ func _add_wall_runs(row: int) -> void:
 			col += 1
 		var width := (col - start) * CELL
 		_add_blocker(Vector2(start * CELL + width * 0.5, (row + 1) * CELL), Vector2(width, CELL))
+
+# Un tramo seguido de 'D' es una sola puerta, la de la posada hacia el pueblo.
+func _add_door_runs(row: int) -> void:
+	var col := 0
+	while col < _rows[row].length():
+		if _cell(col, row) != 'D':
+			col += 1
+			continue
+		var start := col
+		while _cell(col, row) == 'D':
+			col += 1
+		var width := (col - start) * CELL
+		var bottom := (row + 1) * CELL
+		var trigger := Rect2(start * CELL, bottom - DOOR_TRIGGER_DEPTH, width, DOOR_TRIGGER_DEPTH)
+		var arrival := Vector2(start * CELL + width * 0.5, row * CELL - DOOR_ARRIVAL_LIFT)
+		_add_door(DoorData.POSADA, DoorData.SCENES[DoorData.POSADA].outside, trigger, arrival)
 
 # La huella se centra en el sprite, no en la celda: la cama y la valija son
 # más anchas que una celda.

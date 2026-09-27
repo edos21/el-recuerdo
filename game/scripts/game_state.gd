@@ -28,6 +28,9 @@ var max_stability: float = MAX_STABILITY
 var stability: float = MAX_STABILITY
 var came_from_expulsion := false
 var completed_beats: Array[String] = []
+# Puerta por la que se sale de una escena (DoorData): la de destino hace aparecer
+# al jugador en la puerta con el mismo id y la limpia.
+var arrival_door: StringName = &""
 
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
@@ -106,3 +109,4 @@ func reset() -> void:
 	stability = MAX_STABILITY
 	came_from_expulsion = false
 	completed_beats.clear()
+	arrival_door = &""

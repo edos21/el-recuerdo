@@ -21,6 +21,7 @@ var bounds: Rect2
 var _rows: Array = []
 var _cols := 0
 var _spawn := Vector2.ZERO
+var _doors: Array[Door] = []
 
 func build(level_path: String) -> CharacterBody2D:
 	_rows = MapUtils.read_grid(level_path)
@@ -58,8 +59,22 @@ func _build_ground() -> void:
 func _place(_ch: String, _col: int, _row: int) -> void:
 	pass
 
+# Quien llega por una puerta aparece en la puerta con el mismo id; si no, en 'P'.
 func _spawn_position() -> Vector2:
+	var arrival := GameState.arrival_door
+	GameState.arrival_door = &""
+	if arrival == &"":
+		return _spawn
+	for door in _doors:
+		if door.id == arrival:
+			return door.spawn_point
+	push_error("TopDownLoader: no hay puerta '%s' en este mapa." % arrival)
 	return _spawn
+
+func _add_door(id: StringName, target_scene: String, trigger: Rect2, arrival: Vector2) -> void:
+	var door := Door.new(id, target_scene, trigger, arrival)
+	add_child(door)
+	_doors.append(door)
 
 func _cell(col: int, row: int) -> String:
 	if row < 0 or row >= _rows.size() or col < 0 or col >= _rows[row].length():

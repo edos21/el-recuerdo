@@ -47,6 +47,10 @@ const TREE_FEET := Vector2(40, 100)
 const TREE_TRUNK := Vector2(16, 8)
 const WINDOW_MASK_META := &"window_mask"
 const LAYOUT_META := &"layout"
+# Umbral delante de la puerta de un edificio (px de mundo) y cuánto más abajo
+# aparece quien sale por ella.
+const DOOR_TRIGGER := Vector2(48, 16)
+const DOOR_ARRIVAL_DEPTH := 40.0
 
 func _build_ground() -> void:
 	var ground := TileMapLayer.new()
@@ -67,6 +71,7 @@ func _place(ch: String, col: int, row: int) -> void:
 			_add_building(col, row, HOUSE_TEXTURES[variant], HOUSE_WINDOW_MASKS[variant], HouseLayout.HOUSE)
 		'I':
 			_add_building(col, row, INN_TEXTURE, INN_WINDOW_MASK, HouseLayout.INN)
+			_add_building_door(col, row, HouseLayout.INN, DoorData.POSADA)
 
 func _make_tile_set() -> TileSet:
 	var source := TileSetAtlasSource.new()
@@ -132,3 +137,9 @@ func _add_building(col: int, row: int, texture: Texture2D, window_mask: Texture2
 	sprite.set_meta(WINDOW_MASK_META, window_mask)
 	sprite.set_meta(LAYOUT_META, layout)
 	_add_blocker(_feet(col, row), layout.body * TILE_SCALE)
+
+# La puerta sale de los anclajes del edificio, así siempre coincide con el arte.
+func _add_building_door(col: int, row: int, layout: Dictionary, id: StringName) -> void:
+	var door: Vector2 = _feet(col, row) + layout.door * TILE_SCALE
+	var trigger := Rect2(door - Vector2(DOOR_TRIGGER.x * 0.5, 0), DOOR_TRIGGER)
+	_add_door(id, DoorData.SCENES[id].inside, trigger, door + Vector2(0, DOOR_ARRIVAL_DEPTH))
