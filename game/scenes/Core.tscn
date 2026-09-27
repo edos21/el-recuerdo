@@ -167,6 +167,7 @@ horizontal_alignment = 1
 autowrap_mode = 3
 
 [node name="DismissHint" type="Label" parent="HUD/NarrativeBox" unique_id=968128445]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 24.0
 offset_top = 270.0
