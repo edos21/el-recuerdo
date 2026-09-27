@@ -53,6 +53,7 @@ ROOF_W = 9 * T          # el techo manda el ancho: el muro va 1 tile mas angosto
 EAVE_Y = 150            # donde arranca la planta baja, debajo del alero central
 CHIMNEY_X = ROOF_W - 20
 HOUSE_W = CHIMNEY_X + 2 * T
+WALL_X = (ROOF_W - 8 * T) // 2   # los pisos miden 8 tiles, centrados bajo el techo
 # El vidrio del kit comparte color con las rendijas de la puerta y la chimenea:
 # solo se lo busca dentro de las piezas de ventana, y con eso se escribe la
 # mascara (house_x_windows.png) que usa el shader de ventanas encendidas.
@@ -81,42 +82,79 @@ def strip(pieces, height):
         x += p.width
     return out
 
-for variant, name in (("v1", "house_a"), ("v2", "house_b"), ("v3", "house_c")):
-    kit = Image.open(os.path.join(HOMES, "home exteriors, thatch roof %s.png" % variant)).convert("RGBA")
+def ground_floor(kit):
+    window_left, window_right = kit_piece(kit, 11, 25, 13, 27), kit_piece(kit, 19, 27, 21, 29)
+    return [window_left, kit_piece(kit, 22, 25, 26, 27), window_right], (True, False, True)
+
+# Piso alto del kit ("Upper Floors"): mismas columnas que la planta baja, seis
+# filas mas arriba, con muro liso donde abajo va la puerta.
+def upper_floor(kit):
+    plain = kit_piece(kit, 14, 19, 16, 21)
+    return [kit_piece(kit, 11, 19, 13, 21), plain, plain, kit_piece(kit, 19, 21, 21, 23)], (True, False, False, True)
+
+def building(kit, floors, layout):
+    """Techo, pisos (de arriba abajo), cimiento y chimenea; devuelve la imagen y
+    la mascara de ventanas con solo el vidrio que quedo visible."""
     roof = kit_piece(kit, 0, 0, 9, 10)
     for box in ROOF_JUNK:
         roof.paste(Image.new("RGBA", (box[2] - box[0], box[3] - box[1]), (0, 0, 0, 0)), box[:2])
-    window_left, window_right = kit_piece(kit, 11, 25, 13, 27), kit_piece(kit, 19, 27, 21, 29)
-    middle = kit_piece(kit, 22, 25, 26, 27)
-    wall = strip([window_left, middle, window_right], 2 * T)
-    blank = Image.new("RGBA", middle.size, (0, 0, 0, 0))
-    wall_glass = strip([glass_mask(window_left), blank, glass_mask(window_right)], 2 * T)
-    # Muro liso detras del alero: tapa el hueco entre el alero lateral y la planta baja.
+    # Muro liso detras del alero: tapa el hueco entre el alero lateral y el piso de arriba.
     backing = strip([kit_piece(kit, 14, 19, 16, 21)] * 4, 2 * T)
     foundation = strip([kit_piece(kit, 10, 30, 12, 31), kit_piece(kit, 22, 30, 26, 31),
                         kit_piece(kit, 18, 30, 20, 31)], T)
     chimney = kit.crop((17 * T, 0, 19 * T, 6 * T))
-    height = EAVE_Y + 3 * T
-    house = Image.new("RGBA", (HOUSE_W, height), (0, 0, 0, 0))
-    wall_x = (ROOF_W - wall.width) // 2
-    house.alpha_composite(backing, (wall_x, EAVE_Y - 28))
-    house.alpha_composite(wall, (wall_x, EAVE_Y))
-    house.alpha_composite(foundation, (wall_x, EAVE_Y + 2 * T))
-    house.alpha_composite(chimney, (CHIMNEY_X, height - chimney.height - T))
-    house.alpha_composite(roof, (0, 0))
-    assert house.size == house_layout.SIZE and house.height == house_layout.FEET[1], "house_layout.py no coincide con la casa armada"
+    height = EAVE_Y + 2 * T * len(floors) + T
+    image = Image.new("RGBA", (HOUSE_W, height), (0, 0, 0, 0))
+    mask = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    image.alpha_composite(backing, (WALL_X, EAVE_Y - 28))
+    for i, (pieces, has_glass) in enumerate(floors):
+        y = EAVE_Y + 2 * T * i
+        image.alpha_composite(strip(pieces, 2 * T), (WALL_X, y))
+        glass = [glass_mask(p) if g else Image.new("RGBA", p.size, (0, 0, 0, 0)) for p, g in zip(pieces, has_glass)]
+        mask.alpha_composite(strip(glass, 2 * T), (WALL_X, y))
+    image.alpha_composite(foundation, (WALL_X, height - T))
+    image.alpha_composite(chimney, (CHIMNEY_X, height - chimney.height - T))
+    image.alpha_composite(roof, (0, 0))
+    assert image.size == layout["size"] and image.height == layout["feet"][1], "house_layout.py no coincide con el edificio armado"
     # El alero puede tapar parte del vidrio: solo cuenta el que quedo visible.
-    mask = Image.new("RGBA", house.size, (0, 0, 0, 0))
-    mask.alpha_composite(wall_glass, (wall_x, EAVE_Y))
-    visible, mask_px, house_px = 0, mask.load(), house.load()
-    for y in range(house.height):
-        for x in range(house.width):
-            if mask_px[x, y][3] and house_px[x, y][:3] != KIT_GLASS:
+    visible, mask_px, image_px = 0, mask.load(), image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            if mask_px[x, y][3] and image_px[x, y][:3] != KIT_GLASS:
                 mask_px[x, y] = (0, 0, 0, 0)
             elif mask_px[x, y][3]:
                 visible += 1
-    assert visible, "la casa %s quedo sin ventanas visibles" % name
+    assert visible, "el edificio quedo sin ventanas visibles"
+    return image, mask
+
+for variant, name in (("v1", "house_a"), ("v2", "house_b"), ("v3", "house_c")):
+    kit = Image.open(os.path.join(HOMES, "home exteriors, thatch roof %s.png" % variant)).convert("RGBA")
+    house, mask = building(kit, [ground_floor(kit)], house_layout.LAYOUTS["house"])
     house.save(OUT + name + ".png")
     mask.convert("L").save(OUT + name + "_windows.png")
+
+# --- Posada: la casa con un piso mas y un cartel colgado junto a la puerta ---
+# El cartel del kit "Village Accessories" va en dos partes (ver "a note on signs
+# and pendants.txt"): un soporte con una tabla lisa y, encima, la tabla con el
+# oficio. La cama dice "posada" sin texto (el cartel "INN" esta en ingles).
+ACCESSORIES = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "18.10b - Village Accessories", "packaged")
+SIGN_BRACKET = (64, 64, 96, 96)     # soporte con tabla lisa, en village accessories 32x32.png
+SIGN_BED = (16, 0, 32, 16)          # tabla con la cama, en village accessories 16x16.png
+SIGN_BOARD_AREA = (16, 18, 32, 32)  # donde cuelga la tabla lisa dentro del soporte
+SIGN_POS = (WALL_X + T, EAVE_Y + 2 * T - 14)  # entre la ventana y la puerta, bajo el piso alto
+
+def inn_sign():
+    bracket = Image.open(os.path.join(ACCESSORIES, "village accessories 32x32.png")).convert("RGBA").crop(SIGN_BRACKET)
+    sign = Image.open(os.path.join(ACCESSORIES, "village accessories 16x16.png")).convert("RGBA").crop(SIGN_BED)
+    board = bracket.crop(SIGN_BOARD_AREA).getbbox()
+    center = (SIGN_BOARD_AREA[0] + (board[0] + board[2]) // 2, SIGN_BOARD_AREA[1] + (board[1] + board[3]) // 2)
+    bracket.alpha_composite(sign, (center[0] - sign.width // 2, center[1] - sign.height // 2))
+    return bracket
+
+kit = Image.open(os.path.join(HOMES, "home exteriors, thatch roof v3.png")).convert("RGBA")
+inn, mask = building(kit, [upper_floor(kit), ground_floor(kit)], house_layout.LAYOUTS["inn"])
+inn.alpha_composite(inn_sign(), SIGN_POS)
+inn.save(OUT + "inn.png")
+mask.convert("L").save(OUT + "inn_windows.png")
 house_layout.write_layout_gd()
 print("ok")

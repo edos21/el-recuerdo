@@ -97,23 +97,35 @@ for name, canopy in (("tree_a", (70, 130, 60, 255)), ("tree_b", (50, 110, 80, 25
     td.ellipse((8, 4, 72, 76), fill=canopy)
     save("town/%s.png" % name, tree)
 
-# Casas: mismo tamano que las del kit y una mascara de ventanas propia (la que
-# lee el shader de ventanas encendidas), con las medidas de tools/house_layout.py.
-for name, roof in (("house_a", (214, 182, 72, 255)), ("house_b", (170, 196, 170, 255)), ("house_c", (226, 160, 110, 255))):
-    house = Image.new("RGBA", house_layout.SIZE, (0, 0, 0, 0))
-    window_mask = Image.new("L", house_layout.SIZE, 0)
+# Edificios: mismo tamano que los del kit y una mascara de ventanas propia (la
+# que lee el shader de ventanas encendidas), con las medidas de tools/house_layout.py.
+# La posada es una casa con un piso mas y un bloque de cartel junto a la puerta.
+def building(layout, roof, sign=False):
+    size = layout["size"]
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    window_mask = Image.new("L", size, 0)
     md = ImageDraw.Draw(window_mask)
-    hd = ImageDraw.Draw(house)
-    hd.rectangle((8, 150, 135, 197), fill=(232, 218, 176, 255))
-    hd.rectangle((8, 182, 135, 197), fill=(130, 130, 130, 255))
-    hd.rectangle((52, 150, 91, 181), fill=(90, 110, 160, 255))
-    for rect in house_layout.PLACEHOLDER_WINDOWS:
+    hd = ImageDraw.Draw(image)
+    ground_y = size[1] - 48
+    hd.rectangle((8, 150, 135, size[1] - 1), fill=(232, 218, 176, 255))
+    hd.rectangle((8, size[1] - 16, 135, size[1] - 1), fill=(130, 130, 130, 255))
+    hd.rectangle((52, ground_y, 91, size[1] - 17), fill=(90, 110, 160, 255))
+    for rect in layout["placeholder_windows"]:
         hd.rectangle(rect, fill=(24, 24, 32, 255))
         md.rectangle(rect, fill=255)
+    if sign:
+        hd.rectangle((30, ground_y - 6, 44, ground_y + 12), fill=(150, 100, 50, 255))
     hd.polygon([(0, 150), (40, 20), (104, 20), (144, 150)], fill=roof)
-    hd.rectangle((126, 90, 150, 181), fill=(200, 200, 190, 255))
+    hd.rectangle((126, size[1] - 108, 150, size[1] - 17), fill=(200, 200, 190, 255))
+    return image, window_mask
+
+for name, roof in (("house_a", (214, 182, 72, 255)), ("house_b", (170, 196, 170, 255)), ("house_c", (226, 160, 110, 255))):
+    house, window_mask = building(house_layout.LAYOUTS["house"], roof)
     save("town/%s.png" % name, house)
     save("town/%s_windows.png" % name, window_mask)
+inn, window_mask = building(house_layout.LAYOUTS["inn"], (190, 110, 80, 255), sign=True)
+save("town/inn.png", inn)
+save("town/inn_windows.png", window_mask)
 
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):

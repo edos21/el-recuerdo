@@ -16,6 +16,12 @@ archivo. `tools/gen_placeholder_art.py` crea placeholders.
   la lee el shader de ventanas encendidas) y `data/house_layout.gd` (anclajes, desde
   `tools/house_layout.py`). El vidrio conserva su color original. Licencia de compra.
 
+- `inn.png`, `inn_windows.png`: la posada, armada por script con el mismo kit "Thatch Roof
+  Home" (variante v3) y un piso alto de su seccion "Upper Floors". El cartel sale de Mana Seed
+  "Village Accessories" (Seliel the Shaper): el soporte con tabla lisa de
+  `village accessories 32x32.png` y, encima, la tabla con la cama de
+  `village accessories 16x16.png`. Licencia de compra.
+
 Los packs originales viven fuera del repo (por defecto en ~/Downloads/rpg_bundle;
 variable RPG_BUNDLE para cambiarlo). Regenerar: `python3 tools/gen_town_assets.py`
 y luego `godot --headless --script res://tools/build_topdown_frames.gd`.

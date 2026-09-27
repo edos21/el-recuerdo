@@ -75,18 +75,20 @@ func _windows_material(mask: Texture2D) -> ShaderMaterial:
 	return _windows_materials[mask]
 
 # Los anclajes de HouseLayout van en px de textura; la casa se dibuja escalada.
+# Cada edificio trae los suyos (la posada es mas alta que las casas).
 func _decorate_house(house: Sprite2D) -> void:
 	house.material = _windows_material(house.get_meta(TownLoader.WINDOW_MASK_META))
+	var layout: Dictionary = house.get_meta(TownLoader.LAYOUT_META)
 	var shadow := Polygon2D.new()
-	shadow.polygon = PackedVector2Array(HouseLayout.SHADOW)
+	shadow.polygon = PackedVector2Array(layout.shadow)
 	shadow.color = Color(0.05, 0.04, 0.12, HOUSE_SHADOW_ALPHA)
 	shadow.show_behind_parent = true
 	house.add_child(shadow)
 	var light := AtmosphereKit.point_light(_light_texture, HOUSE_LIGHT_COLOR, HOUSE_LIGHT_ENERGY, HOUSE_LIGHT_SCALE)
-	light.position = house.position + HouseLayout.LIGHT * house.scale
+	light.position = house.position + layout.light * house.scale
 	add_child(light)
 	var smoke := _smoke()
-	smoke.position = house.position + HouseLayout.CHIMNEY * house.scale
+	smoke.position = house.position + layout.chimney * house.scale
 	add_child(smoke)
 
 func _contact_shadow() -> Sprite2D:

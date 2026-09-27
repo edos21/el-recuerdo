@@ -3,9 +3,9 @@ extends TopDownLoader
 # Construye el pueblo real a partir de un mapa ASCII (levels/town.txt), igual
 # que level_loader.gd hace con el Nivel 1: editar el pueblo es editar el .txt.
 #
-# Leyenda: '.' pasto, ',' camino de tierra, 'T' arbol, 'H' casa (la 'H' marca
-# el centro de su base), 'n'/'N' NPCs (data/town_npcs.gd), 'P' donde aparece
-# el jugador.
+# Leyenda: '.' pasto, ',' camino de tierra, 'T' arbol, 'H' casa e 'I' posada
+# (la letra marca el centro de su base), 'n'/'N' NPCs (data/town_npcs.gd), 'P'
+# donde aparece el jugador.
 
 const GROUND_TEXTURE := preload("res://assets/town/ground.png")
 const HOUSE_TEXTURES := [
@@ -19,6 +19,8 @@ const HOUSE_WINDOW_MASKS := [
 	preload("res://assets/town/house_b_windows.png"),
 	preload("res://assets/town/house_c_windows.png"),
 ]
+const INN_TEXTURE := preload("res://assets/town/inn.png")
+const INN_WINDOW_MASK := preload("res://assets/town/inn_windows.png")
 const TREE_TEXTURES := [
 	preload("res://assets/town/tree_a.png"),
 	preload("res://assets/town/tree_b.png"),
@@ -38,12 +40,13 @@ const DIRT_EDGES := {
 # Objetos que se paran sobre el suelo de su entorno (camino si hay camino al lado).
 const MOBILE_OBJECTS := ['P', 'n', 'N']
 
-# Dimensiones de las imagenes de arboles (px de la textura) y meta con la que la
-# casa lleva su mascara de ventanas a la atmosfera. Las medidas de las casas
-# salen de data/house_layout.gd.
+# Dimensiones de las imagenes de arboles (px de la textura) y metas con las que
+# cada edificio lleva a la atmosfera su mascara de ventanas y sus anclajes
+# (data/house_layout.gd): la posada no mide lo mismo que una casa.
 const TREE_FEET := Vector2(40, 100)
 const TREE_TRUNK := Vector2(16, 8)
 const WINDOW_MASK_META := &"window_mask"
+const LAYOUT_META := &"layout"
 
 func _build_ground() -> void:
 	var ground := TileMapLayer.new()
@@ -60,7 +63,10 @@ func _place(ch: String, col: int, row: int) -> void:
 		'T':
 			_add_tree(col, row)
 		'H':
-			_add_house(col, row)
+			var variant := MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()
+			_add_building(col, row, HOUSE_TEXTURES[variant], HOUSE_WINDOW_MASKS[variant], HouseLayout.HOUSE)
+		'I':
+			_add_building(col, row, INN_TEXTURE, INN_WINDOW_MASK, HouseLayout.INN)
 
 func _make_tile_set() -> TileSet:
 	var source := TileSetAtlasSource.new()
@@ -121,8 +127,8 @@ func _add_tree(col: int, row: int) -> void:
 	_add_prop(texture, _feet(col, row), TREE_FEET, &"town_trees")
 	_add_blocker(_feet(col, row), TREE_TRUNK * TILE_SCALE)
 
-func _add_house(col: int, row: int) -> void:
-	var variant := MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()
-	var sprite := _add_prop(HOUSE_TEXTURES[variant], _feet(col, row), HouseLayout.FEET, &"town_houses")
-	sprite.set_meta(WINDOW_MASK_META, HOUSE_WINDOW_MASKS[variant])
-	_add_blocker(_feet(col, row), HouseLayout.BODY * TILE_SCALE)
+func _add_building(col: int, row: int, texture: Texture2D, window_mask: Texture2D, layout: Dictionary) -> void:
+	var sprite := _add_prop(texture, _feet(col, row), layout.feet, &"town_houses")
+	sprite.set_meta(WINDOW_MASK_META, window_mask)
+	sprite.set_meta(LAYOUT_META, layout)
+	_add_blocker(_feet(col, row), layout.body * TILE_SCALE)
