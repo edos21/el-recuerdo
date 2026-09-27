@@ -6,18 +6,24 @@ extends Node
 
 const MAX_HEALTH := 5
 const MAX_STABILITY := 90.0
+# Largo de la barra original, que nunca cambia (kintsugi): el tope actual
+# (`max_stability`) crece madurando hasta acá, y lo que falta es el fantasma.
+# Tiene que quedar holgado por encima de lo que da el Nivel 1 (base + elite),
+# o el fantasma se cierra antes de que madurar en el pueblo signifique algo.
+const STABILITY_ORIGINAL_MAX := 130.0
 # Por debajo de esta fraccion de la Estabilidad maxima: barra parpadeando, vineta
 # cerrada y musica apagada.
 const LOW_STABILITY_RATIO := 0.4
-# Todavia sin cerrar (historia_lore.md sec. 15): con cuanto despierta en el
-# pueblo real. Placeholder: Vida completa y Estabilidad a media barra.
-const WAKE_STABILITY_RATIO := 0.4
+# Despierta en la posada con el cuerpo descansado y la cabeza no: Vida completa
+# y Estabilidad en zona baja (lo que dejo la expulsion). A afinar jugando.
+const WAKE_STABILITY_RATIO := 0.3
 
 var abilities: Array[String] = []
 var health: int = MAX_HEALTH
 var max_stability: float = MAX_STABILITY
 var stability: float = MAX_STABILITY
 var came_from_expulsion := false
+var completed_beats: Array[String] = []
 
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
@@ -38,6 +44,25 @@ func unlock(ability: String) -> bool:
 	if abilities.has(ability):
 		return false
 	abilities.append(ability)
+	return true
+
+# Dueño de los beats de guion, con el mismo contrato que unlock(): valida contra
+# BeatData y cada beat cuenta una sola vez aunque la escena se repita. En el
+# hub la Estabilidad no cambia sola, asi que GameState es su unica fuente y el
+# jugador cenital la vuelve a leer. Devuelve si el beat se aplico ahora.
+func complete_beat(beat_id: String) -> bool:
+	var beat := Catalogs.beats.entry(beat_id)
+	if beat == null:
+		push_error("Beat desconocido: %s" % beat_id)
+		return false
+	if completed_beats.has(beat_id):
+		return false
+	completed_beats.append(beat_id)
+	match beat.kind:
+		BeatData.Kind.RELIEF:
+			stability = minf(stability + beat.amount, max_stability)
+		BeatData.Kind.MATURITY:
+			max_stability = minf(max_stability + beat.amount, STABILITY_ORIGINAL_MAX)
 	return true
 
 # Lo que se da por ganado al llegar al pueblo (ensure_defaults) y la base de
@@ -70,3 +95,4 @@ func reset() -> void:
 	max_stability = MAX_STABILITY
 	stability = MAX_STABILITY
 	came_from_expulsion = false
+	completed_beats.clear()

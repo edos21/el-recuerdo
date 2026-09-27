@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BeatData" format=3]
+
+[ext_resource type="Script" path="res://data/beat_def.gd" id="1_beatdef"]
+[ext_resource type="Script" path="res://data/beats.gd" id="2_beats"]
+
+[sub_resource type="Resource" id="Resource_tomas_keys"]
+script = ExtResource("1_beatdef")
+id = "tomas_keys"
+amount = 10.0
+
+[sub_resource type="Resource" id="Resource_inn_water"]
+script = ExtResource("1_beatdef")
+id = "inn_water"
+amount = 10.0
+
+[sub_resource type="Resource" id="Resource_broth"]
+script = ExtResource("1_beatdef")
+id = "broth"
+kind = 1
+amount = 5.0
+
+[sub_resource type="Resource" id="Resource_dont_know"]
+script = ExtResource("1_beatdef")
+id = "dont_know_who_i_am"
+kind = 1
+amount = 5.0
+
+[resource]
+script = ExtResource("2_beats")
+entries = Array[ExtResource("1_beatdef")]([SubResource("Resource_tomas_keys"), SubResource("Resource_inn_water"), SubResource("Resource_broth"), SubResource("Resource_dont_know")])

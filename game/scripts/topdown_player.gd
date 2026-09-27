@@ -48,6 +48,17 @@ func _ready() -> void:
 	stability_changed.emit(stability, max_stability)
 	low_stability_changed.emit(GameState.is_low_stability(stability, max_stability))
 
+# Lo llama quien dispara el momento de guion (un NPC, un objeto) con el jugador
+# que recibe en interact(). La cuenta la lleva GameState; aca solo se relee y se
+# avisa al HUD, igual que al arrancar la escena.
+func complete_beat(beat_id: String) -> void:
+	if not GameState.complete_beat(beat_id):
+		return
+	stability = GameState.stability
+	max_stability = GameState.max_stability
+	stability_changed.emit(stability, max_stability)
+	low_stability_changed.emit(GameState.is_low_stability(stability, max_stability))
+
 func set_camera_limits(bounds: Rect2) -> void:
 	camera.limit_left = int(bounds.position.x)
 	camera.limit_top = int(bounds.position.y)
