@@ -142,4 +142,4 @@ func _add_building(col: int, row: int, texture: Texture2D, window_mask: Texture2
 func _add_building_door(col: int, row: int, layout: Dictionary, id: StringName) -> void:
 	var door: Vector2 = _feet(col, row) + layout.door * TILE_SCALE
 	var trigger := Rect2(door - Vector2(DOOR_TRIGGER.x * 0.5, 0), DOOR_TRIGGER)
-	_add_door(id, DoorData.SCENES[id].inside, trigger, door + Vector2(0, DOOR_ARRIVAL_DEPTH))
+	_add_door(id, DoorData.INSIDE[id], trigger, door + Vector2(0, DOOR_ARRIVAL_DEPTH))

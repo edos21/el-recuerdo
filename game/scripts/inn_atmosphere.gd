@@ -1,7 +1,7 @@
-extends Node2D
+extends TopDownAtmosphere
 # Capa de atmósfera del interior de la posada: penumbra cálida, el fuego de la
 # olla como luz principal y el polvo que flota adentro. Lee lo que arma
-# inn_loader (grupos inn_pot y town_characters); no toca la lógica.
+# interior_loader (grupos inn_pot y town_characters); no toca la lógica.
 
 const AMBIENT_COLOR := Color(0.62, 0.52, 0.46)
 const FIRE_COLOR := Color(1.0, 0.58, 0.28)
@@ -26,16 +26,8 @@ func build(player: CharacterBody2D, room: Rect2) -> void:
 	AtmosphereKit.add_glow(self)
 	for pot in get_tree().get_nodes_in_group(&"inn_pot"):
 		_add_fire(pot)
-	for character in get_tree().get_nodes_in_group(TopDownLoader.CHARACTERS_GROUP):
-		var shadow := Sprite2D.new()
-		shadow.texture = _shadow_texture
-		shadow.scale = CONTACT_SHADOW_SIZE / 64.0
-		shadow.show_behind_parent = true
-		character.add_child(shadow)
-		character.move_child(shadow, 0)
-	var light := AtmosphereKit.point_light(_light_texture, Color(1.0, 0.9, 0.75), PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE)
-	light.position = Vector2(0, -20)
-	player.add_child(light)
+	AtmosphereKit.add_contact_shadows(get_tree().get_nodes_in_group(TopDownLoader.CHARACTERS_GROUP), _shadow_texture, CONTACT_SHADOW_SIZE)
+	player.add_child(AtmosphereKit.player_light(_light_texture, PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE))
 	add_child(_dust(room))
 
 # El fuego titila: la única luz fuerte del cuarto no puede quedarse quieta.

@@ -15,28 +15,24 @@ LAYOUT_GD = os.path.join(HERE, "..", "data", "house_layout.gd")
 # (todo lo que no es size ni feet, relativo a los pies). placeholder_windows:
 # ventanas de los placeholders (x0, y0, x1, y1 inclusivos); el arte real mide su
 # propio vidrio al generarse.
+HOUSE = {
+    "size": (156, 198),
+    "feet": (72, 198),
+    "body": (136, 75),
+    "chimney": (68, -111),
+    "light": (0, 12),
+    "shadow": ((-66, -2), (86, -2), (98, 6), (-58, 6)),
+    "door": (0, 0),
+    "placeholder_windows": ((18, 158, 30, 170), (110, 158, 122, 170)),
+}
 LAYOUTS = {
-    "house": {
-        "size": (156, 198),
-        "feet": (72, 198),
-        "body": (136, 75),
-        "chimney": (68, -111),
-        "light": (0, 12),
-        "shadow": ((-66, -2), (86, -2), (98, 6), (-58, 6)),
-        "door": (0, 0),
-        "placeholder_windows": ((18, 158, 30, 170), (110, 158, 122, 170)),
-    },
-    # Dos plantas (una mas que las casas) y cartel: se reconoce de lejos.
+    "house": HOUSE,
+    # La casa con un piso mas (y cartel): mas alta, misma huella y puerta.
     "inn": {
+        **HOUSE,
         "size": (156, 230),
         "feet": (72, 230),
-        "body": (136, 75),
-        "chimney": (68, -111),
-        "light": (0, 12),
-        "shadow": ((-66, -2), (86, -2), (98, 6), (-58, 6)),
-        "door": (0, 0),
-        "placeholder_windows": ((18, 158, 30, 170), (110, 158, 122, 170),
-                                (18, 190, 30, 202), (110, 190, 122, 202)),
+        "placeholder_windows": HOUSE["placeholder_windows"] + ((18, 190, 30, 202), (110, 190, 122, 202)),
     },
 }
 

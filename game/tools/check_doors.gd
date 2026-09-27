@@ -54,14 +54,8 @@ func _swap(scene: PackedScene, arrival: StringName) -> void:
 	_scene.free()
 	_load(scene, arrival)
 
-func _door(id: StringName) -> Door:
-	for door in _scene.loader._doors:
-		if door.id == id:
-			return door
-	return null
-
 func _check_arrival(label: String) -> void:
-	var door := _door(DoorData.POSADA)
+	var door := _scene.loader.door(DoorData.POSADA)
 	_expect(door != null, "%s: el mapa tiene la puerta" % label)
 	if door == null:
 		return
@@ -70,12 +64,12 @@ func _check_arrival(label: String) -> void:
 	_expect(GameState.arrival_door == &"", "%s: la llegada se consume" % label)
 
 func _check_default_spawn() -> void:
-	_expect(_scene.player.position.distance_to(_scene.loader._spawn) < POSITION_TOLERANCE, "sin llegada, se aparece en 'P'")
+	_expect(_scene.player.position.distance_to(_scene.loader.spawn) < POSITION_TOLERANCE, "sin llegada, se aparece en 'P'")
 
 # Con el jugador real sobre el umbral: la puerta guarda la llegada y pide el
 # cambio de escena (el fundido tarda más que lo que queda de este chequeo).
 func _check_crossing() -> void:
-	var door := _door(DoorData.POSADA)
+	var door := _scene.loader.door(DoorData.POSADA)
 	door._on_body_entered(_scene.player)
 	_expect(GameState.arrival_door == DoorData.POSADA, "cruzar la puerta guarda la llegada")
 

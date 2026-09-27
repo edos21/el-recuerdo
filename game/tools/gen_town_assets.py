@@ -5,6 +5,7 @@
 from PIL import Image
 import os, shutil
 import house_layout
+import map_grid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "assets", "town") + os.sep
@@ -156,12 +157,11 @@ inn, mask = building(kit, [upper_floor(kit), ground_floor(kit)], house_layout.LA
 inn.alpha_composite(inn_sign(), SIGN_POS)
 inn.save(OUT + "inn.png")
 mask.convert("L").save(OUT + "inn_windows.png")
-# --- Interior de la posada: el cuarto sale del mismo mapa que lee el juego ---
-# (levels/inn.txt), asi la imagen y las paredes que bloquean no se desincronizan.
+# --- Interiores: cada cuarto sale del mismo mapa que lee el juego ---
+# (levels/<cuarto>.txt), asi la imagen y las paredes que bloquean no se desincronizan.
 # '#' borde oscuro, 'W' pared, 'v' ventana (bloques de 2x2 sobre el revoque),
 # 'D' umbral de la puerta; el resto es piso. Los muebles van como sprites
 # sueltos para ordenarse por Y con los personajes.
-INN_MAP = os.path.join(HERE, "..", "levels", "inn.txt")
 # El piso del kit es un autotile (empedrado con parches de tierra): solo la
 # primera columna es empedrado puro, y esas cuatro variantes se mezclan sin cortes.
 FLOOR_TILES = [(0, r) for r in range(3, 7)]
@@ -174,40 +174,37 @@ WINDOW_BAND_ROW = 2             # las ventanas van en el revoque
 THRESHOLD = (25, 7)             # piedras del umbral
 BOUNDARY_SAMPLE = (6 * T + 4, 2 * T + 4)
 
-def cell_hash(col, row):
-    return (col * 73856093 ^ row * 19349663) & 0x7FFFFFFF
+def tile(sheet, col, row):
+    return kit_piece(sheet, col, row, col + 1, row + 1)
+
+def room_image(map_path, interiors):
+    rows = map_grid.read_grid(map_path)
+    wall_top = min(r for r, line in enumerate(rows) if "W" in line)
+    room = Image.new("RGBA", (max(len(r) for r in rows) * T, len(rows) * T), interiors.getpixel(BOUNDARY_SAMPLE))
+    for row, line in enumerate(rows):
+        for col, ch in enumerate(line):
+            at = (col * T, row * T)
+            if ch == "#":
+                continue
+            if ch in "Wv":
+                band = row - wall_top
+                assert 0 <= band < len(WALL_ROWS), "%s: la pared mide %d filas" % (map_path, len(WALL_ROWS))
+                source = WALL_POST if (col - line.index("W")) % WALL_POST_EVERY == WALL_POST_EVERY - 1 \
+                    else WALL_COLUMNS[map_grid.cell_hash(col, row) % len(WALL_COLUMNS)]
+                room.alpha_composite(tile(interiors, source, WALL_ROWS[band]), at)
+                if ch == "v" and map_grid.at(rows, col - 1, row) != "v" and map_grid.at(rows, col, row - 1) != "v":
+                    assert band == WINDOW_BAND_ROW, "%s: la ventana tiene que caer sobre el revoque" % map_path
+                    room.alpha_composite(kit_piece(interiors, WINDOW[0], WINDOW[1], WINDOW[0] + 2, WINDOW[1] + 2), at)
+            elif ch == "D":
+                offset = 1 if map_grid.at(rows, col - 1, row) == "D" else 0
+                room.alpha_composite(tile(interiors, THRESHOLD[0] + offset, THRESHOLD[1]), at)
+            else:
+                floor = FLOOR_TILES[map_grid.cell_hash(col, row) % len(FLOOR_TILES)]
+                room.alpha_composite(tile(interiors, *floor), at)
+    return room
 
 interiors = Image.open(os.path.join(HOMES, "home interiors, thatch roof v2.png")).convert("RGBA")
-boundary = interiors.getpixel(BOUNDARY_SAMPLE)
-with open(INN_MAP) as f:
-    rows = [line.rstrip("\n") for line in f if line.strip()]
-cols = max(len(r) for r in rows)
-def at(col, row):
-    return rows[row][col] if 0 <= row < len(rows) and 0 <= col < len(rows[row]) else ""
-wall_top = min(r for r, line in enumerate(rows) if "W" in line)
-room = Image.new("RGBA", (cols * T, len(rows) * T), boundary)
-for row, line in enumerate(rows):
-    for col, ch in enumerate(line):
-        if ch == "#":
-            continue
-        if ch in "Wv":
-            band = row - wall_top
-            assert 0 <= band < len(WALL_ROWS), "inn.txt: la pared mide %d filas" % len(WALL_ROWS)
-            first = line.index("W")
-            source = WALL_POST if (col - first) % WALL_POST_EVERY == WALL_POST_EVERY - 1 \
-                else WALL_COLUMNS[cell_hash(col, row) % len(WALL_COLUMNS)]
-            room.alpha_composite(kit_piece(interiors, source, WALL_ROWS[band], source + 1, WALL_ROWS[band] + 1), (col * T, row * T))
-            if ch == "v" and at(col - 1, row) != "v" and at(col, row - 1) != "v":
-                assert band == WINDOW_BAND_ROW, "inn.txt: la ventana tiene que caer sobre el revoque"
-                window = kit_piece(interiors, WINDOW[0], WINDOW[1], WINDOW[0] + 2, WINDOW[1] + 2)
-                room.alpha_composite(window, (col * T, row * T))
-        elif ch == "D":
-            offset = 0 if at(col - 1, row) != "D" else 1
-            room.alpha_composite(kit_piece(interiors, THRESHOLD[0] + offset, THRESHOLD[1], THRESHOLD[0] + offset + 1, THRESHOLD[1] + 1), (col * T, row * T))
-        else:
-            tile = FLOOR_TILES[cell_hash(col, row) % len(FLOOR_TILES)]
-            room.alpha_composite(kit_piece(interiors, tile[0], tile[1], tile[0] + 1, tile[1] + 1), (col * T, row * T))
-room.save(OUT + "inn_room.png")
+room_image(os.path.join(HERE, "..", "levels", "inn.txt"), interiors).save(OUT + "inn_room.png")
 
 SLICEABLE = os.path.join(HOMES, "thatch roof sliceable")
 COZY = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "19.04b - Cozy Furnishings", "packaged")

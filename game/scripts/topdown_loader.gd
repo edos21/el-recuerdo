@@ -16,11 +16,11 @@ const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
 const NPC_SCENE := preload("res://scenes/Npc.tscn")
 
 var objects: Node2D
-# Rectángulo del mapa en px de mundo; vale después de build().
+# Rectángulo del mapa y la celda 'P', en px de mundo; valen después de build().
 var bounds: Rect2
+var spawn := Vector2.ZERO
 var _rows: Array = []
 var _cols := 0
-var _spawn := Vector2.ZERO
 var _doors: Array[Door] = []
 
 func build(level_path: String) -> CharacterBody2D:
@@ -36,13 +36,13 @@ func build(level_path: String) -> CharacterBody2D:
 		for col in _rows[row].length():
 			var ch: String = _rows[row][col]
 			if ch == 'P':
-				_spawn = _feet(col, row)
+				spawn = _feet(col, row)
 			elif TownNpcData.LIST.has(ch):
 				_add_npc(ch, col, row)
 			else:
 				_place(ch, col, row)
 	bounds = Rect2(0, 0, _cols * CELL, _rows.size() * CELL)
-	_add_boundary(bounds)
+	_add_boundary()
 	var player: CharacterBody2D = PLAYER_SCENE.instantiate()
 	player.position = _spawn_position()
 	player.add_to_group(CHARACTERS_GROUP)
@@ -59,22 +59,43 @@ func _build_ground() -> void:
 func _place(_ch: String, _col: int, _row: int) -> void:
 	pass
 
+func door(id: StringName) -> Door:
+	for candidate in _doors:
+		if candidate.id == id:
+			return candidate
+	return null
+
 # Quien llega por una puerta aparece en la puerta con el mismo id; si no, en 'P'.
 func _spawn_position() -> Vector2:
 	var arrival := GameState.arrival_door
 	GameState.arrival_door = &""
 	if arrival == &"":
-		return _spawn
-	for door in _doors:
-		if door.id == arrival:
-			return door.spawn_point
-	push_error("TopDownLoader: no hay puerta '%s' en este mapa." % arrival)
-	return _spawn
+		return spawn
+	var arrival_door := door(arrival)
+	if arrival_door == null:
+		push_error("TopDownLoader: no hay puerta '%s' en este mapa." % arrival)
+		return spawn
+	return arrival_door.spawn_point
 
 func _add_door(id: StringName, target_scene: String, trigger: Rect2, arrival: Vector2) -> void:
 	var door := Door.new(id, target_scene, trigger, arrival)
 	add_child(door)
 	_doors.append(door)
+
+# Tramos seguidos de una fila hechos de alguno de `chars`, como (inicio, fin)
+# con el fin excluido: un tramo es un solo bloqueo o una sola puerta.
+func _runs(row: int, chars: Array) -> Array[Vector2i]:
+	var runs: Array[Vector2i] = []
+	var col := 0
+	while col < _rows[row].length():
+		if not chars.has(_cell(col, row)):
+			col += 1
+			continue
+		var start := col
+		while chars.has(_cell(col, row)):
+			col += 1
+		runs.append(Vector2i(start, col))
+	return runs
 
 func _cell(col: int, row: int) -> String:
 	if row < 0 or row >= _rows.size() or col < 0 or col >= _rows[row].length():
@@ -110,27 +131,20 @@ func _add_prop(texture: Texture2D, base: Vector2, feet: Vector2, group: StringNa
 # Cuerpo estatico apoyado en `base` (el centro de su borde inferior): la forma
 # crece hacia arriba desde los pies del sprite.
 func _add_blocker(base: Vector2, size: Vector2) -> void:
+	_add_wall(Rect2(base - Vector2(size.x * 0.5, size.y), size))
+
+func _add_boundary() -> void:
+	var t := WALL_THICKNESS
+	_add_wall(Rect2(bounds.position.x - t, bounds.position.y - t, bounds.size.x + 2 * t, t))
+	_add_wall(Rect2(bounds.position.x - t, bounds.end.y, bounds.size.x + 2 * t, t))
+	_add_wall(Rect2(bounds.position.x - t, bounds.position.y, t, bounds.size.y))
+	_add_wall(Rect2(bounds.end.x, bounds.position.y, t, bounds.size.y))
+
+# Cuerpo estático en la capa del mundo que ocupa `area` (px de mundo).
+func _add_wall(area: Rect2) -> void:
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
-	body.position = base
-	var shape := MapUtils.rect_shape(size)
-	shape.position = Vector2(0, -size.y * 0.5)
-	body.add_child(shape)
+	body.position = area.get_center()
+	body.add_child(MapUtils.rect_shape(area.size))
 	add_child(body)
-
-func _add_boundary(bounds: Rect2) -> void:
-	var t := WALL_THICKNESS
-	var sides := [
-		Rect2(bounds.position.x - t, bounds.position.y - t, bounds.size.x + 2 * t, t),
-		Rect2(bounds.position.x - t, bounds.end.y, bounds.size.x + 2 * t, t),
-		Rect2(bounds.position.x - t, bounds.position.y, t, bounds.size.y),
-		Rect2(bounds.end.x, bounds.position.y, t, bounds.size.y),
-	]
-	for side in sides:
-		var body := StaticBody2D.new()
-		body.collision_layer = 1
-		body.collision_mask = 0
-		body.position = side.get_center()
-		body.add_child(MapUtils.rect_shape(side.size))
-		add_child(body)

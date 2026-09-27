@@ -2,25 +2,37 @@ class_name TopDownScene
 extends Node2D
 # Arranque común de las escenas cenitales del mundo real (el pueblo, los
 # interiores): arma el mapa, la atmósfera y el look, y conecta al jugador con
-# el HUD. Cada escena dice qué mapa, qué look y qué suena; lo que pasa en ella
-# (pensamientos, guion) lo agrega su propio script después de super._ready().
+# el HUD. Qué mapa, qué look y qué suena son datos de cada .tscn; lo que pasa
+# en la escena (pensamientos, guion) lo agrega un script propio que extiende
+# este, después de super._ready().
+
+const WIND_FADE := 2.0
+const PAD_FADE := 4.0
+
+@export_file("*.txt") var level_path := ""
+@export var look: WorldLook
+# Lo que queda fuera del mapa (el pasto de afuera, la oscuridad de un cuarto).
+@export var clear_color := Color.BLACK
+@export var wind_db := -20.0
+@export var pad_db := -24.0
 
 @onready var core: Core = $Core
 @onready var loader: TopDownLoader = $Loader
-@onready var atmosphere: Node2D = $Atmosphere
+@onready var atmosphere: TopDownAtmosphere = $Atmosphere
 
 var player: CharacterBody2D
 
 func _ready() -> void:
-	RenderingServer.set_default_clear_color(_clear_color())
+	RenderingServer.set_default_clear_color(clear_color)
 	GameState.ensure_defaults()
-	player = loader.build(_level_path())
+	player = loader.build(level_path)
 	atmosphere.build(player, loader.bounds)
-	core.apply_look(_look())
+	core.apply_look(look)
 	core.bind_player(player, player.camera)
 	_restore_hud()
 	core.audio.set_muffled(false)
-	_start_ambience()
+	core.audio.set_layer("wind", wind_db, WIND_FADE)
+	core.audio.set_layer("pad", pad_db, PAD_FADE)
 	player.health_changed.connect(core.hud.set_health)
 	player.stability_changed.connect(core.hud.set_stability)
 	player.low_stability_changed.connect(core.hud.set_low_stability)
@@ -28,18 +40,6 @@ func _ready() -> void:
 	core.hud.set_health(player.health, player.max_health)
 	core.hud.set_stability(player.stability, player.max_stability)
 	core.hud.set_low_stability(GameState.is_low_stability(player.stability, player.max_stability))
-
-func _level_path() -> String:
-	return ""
-
-func _look() -> WorldLook:
-	return null
-
-func _clear_color() -> Color:
-	return Color.BLACK
-
-func _start_ambience() -> void:
-	pass
 
 # Los recuerdos ya recuperados siguen encendidos en el HUD.
 func _restore_hud() -> void:

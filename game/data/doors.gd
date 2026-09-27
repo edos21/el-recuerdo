@@ -6,6 +6,6 @@ extends RefCounted
 
 const POSADA := &"posada"
 
-const SCENES := {
-	POSADA: {"outside": "res://scenes/Town.tscn", "inside": "res://scenes/Inn.tscn"},
-}
+# Escena a la que lleva cada puerta desde afuera y desde adentro.
+const INSIDE := {POSADA: "res://scenes/Inn.tscn"}
+const OUTSIDE := {POSADA: "res://scenes/Town.tscn"}

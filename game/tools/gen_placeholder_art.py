@@ -7,6 +7,7 @@
 from PIL import Image, ImageDraw
 import os
 import house_layout
+import map_grid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(HERE, "..", "assets") + os.sep
@@ -130,8 +131,7 @@ save("town/inn_windows.png", window_mask)
 # Interior de la posada: el cuarto sale de levels/inn.txt, como el real ('#'
 # borde, 'W'/'v' pared y ventana, 'D' umbral, el resto piso), y los muebles son
 # cajas del mismo tamano que los del kit (la olla, una tira de 5 cuadros).
-with open(os.path.join(HERE, "..", "levels", "inn.txt")) as f:
-    inn_rows = [line.rstrip("\n") for line in f if line.strip()]
+inn_rows = map_grid.read_grid(os.path.join(HERE, "..", "levels", "inn.txt"))
 room = Image.new("RGBA", (max(len(r) for r in inn_rows) * 16, len(inn_rows) * 16), (24, 22, 30, 255))
 rd = ImageDraw.Draw(room)
 ROOM_COLORS = {"W": (150, 100, 60, 255), "v": (240, 210, 120, 255), "D": (120, 120, 120, 255)}

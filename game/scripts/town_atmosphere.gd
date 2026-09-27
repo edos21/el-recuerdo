@@ -1,4 +1,4 @@
-extends Node2D
+extends TopDownAtmosphere
 # Capa de atmosfera del pueblo (prototipo de "look moderno"): luz de tarde,
 # glow, sombras de contacto, viento en los arboles y particulas de ambiente.
 # El post-proceso es el de Core (looks/town_look.tres). No toca la logica del
@@ -46,11 +46,8 @@ func build(player: CharacterBody2D, _bounds: Rect2) -> void:
 		_decorate_tree(tree)
 	for house in get_tree().get_nodes_in_group("town_houses"):
 		_decorate_house(house)
-	for character in get_tree().get_nodes_in_group("town_characters"):
-		var shadow := _contact_shadow()
-		character.add_child(shadow)
-		character.move_child(shadow, 0)
-	player.add_child(_player_light())
+	AtmosphereKit.add_contact_shadows(get_tree().get_nodes_in_group(TopDownLoader.CHARACTERS_GROUP), _shadow_texture, CONTACT_SHADOW_SIZE)
+	player.add_child(AtmosphereKit.player_light(_light_texture, PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE))
 	player.add_child(_motes())
 
 func _build_shared_resources() -> void:
@@ -90,18 +87,6 @@ func _decorate_house(house: Sprite2D) -> void:
 	var smoke := _smoke()
 	smoke.position = house.position + layout.chimney * house.scale
 	add_child(smoke)
-
-func _contact_shadow() -> Sprite2D:
-	var shadow := Sprite2D.new()
-	shadow.texture = _shadow_texture
-	shadow.scale = CONTACT_SHADOW_SIZE / 64.0
-	shadow.show_behind_parent = true
-	return shadow
-
-func _player_light() -> PointLight2D:
-	var light := AtmosphereKit.point_light(_light_texture, Color(1.0, 0.9, 0.75), PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE)
-	light.position = Vector2(0, -20)
-	return light
 
 # Polen/polvo en suspension alrededor del jugador: se emite en el mundo, asi
 # que las particulas quedan flotando donde nacieron cuando el jugador se aleja.
