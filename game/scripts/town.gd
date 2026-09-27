@@ -1,7 +1,7 @@
-extends Node2D
+extends TopDownScene
 # Pueblo real: donde el protagonista despierta despues de la expulsion. Por
-# ahora es una plaza de prueba caminable con dos NPCs; el guion, los interiores
-# y el primer recuerdo ajeno vienen despues.
+# ahora es una plaza de prueba caminable con dos NPCs y la posada; el guion y
+# el primer recuerdo ajeno vienen despues.
 
 const LEVEL_PATH := "res://levels/town.txt"
 const GRASS_COLOR := Color(0.31, 0.42, 0.24)
@@ -11,43 +11,22 @@ const AMBIENT_WIND_DB := -20.0
 const AMBIENT_PAD_DB := -24.0
 const TOWN_LOOK := preload("res://looks/town_look.tres")
 
-@onready var core: Core = $Core
-@onready var town_loader: Node2D = $TownLoader
-@onready var atmosphere: Node2D = $Atmosphere
-
-var player: CharacterBody2D
-
 func _ready() -> void:
-	RenderingServer.set_default_clear_color(GRASS_COLOR)
-	GameState.ensure_defaults()
-	player = town_loader.build(LEVEL_PATH)
-	atmosphere.build(player)
-	# Mundo real: color pleno, sin el frio del recuerdo.
-	core.apply_look(TOWN_LOOK)
-	core.bind_player(player, player.camera)
-	_restore_hud()
-	_start_ambience()
-	player.health_changed.connect(core.hud.set_health)
-	player.stability_changed.connect(core.hud.set_stability)
-	player.low_stability_changed.connect(core.hud.set_low_stability)
-	# El jugador ya emitio en su _ready, antes de estas conexiones.
-	core.hud.set_health(player.health, player.max_health)
-	core.hud.set_stability(player.stability, player.max_stability)
-	core.hud.set_low_stability(GameState.is_low_stability(player.stability, player.max_stability))
+	super._ready()
 	if GameState.came_from_expulsion:
 		await get_tree().create_timer(WAKE_THOUGHT_DELAY).timeout
 		Events.thought_requested.emit(WAKE_THOUGHT, Events.DEFAULT_THOUGHT_HOLD)
 
-# Los recuerdos ya recuperados siguen encendidos en el HUD.
-func _restore_hud() -> void:
-	for ability in GameState.abilities:
-		core.hud.note_ability_unlocked(ability)
-	if GameState.has_ability("health"):
-		core.hud.show_health_bar()
-	if GameState.has_ability("stability"):
-		core.hud.show_stability_bar()
+func _level_path() -> String:
+	return LEVEL_PATH
+
+# Mundo real: color pleno, sin el frio del recuerdo.
+func _look() -> WorldLook:
+	return TOWN_LOOK
+
+func _clear_color() -> Color:
+	return GRASS_COLOR
 
 func _start_ambience() -> void:
-	core.audio.set_muffled(false)
 	core.audio.set_layer("wind", AMBIENT_WIND_DB, 2.0)
 	core.audio.set_layer("pad", AMBIENT_PAD_DB, 4.0)

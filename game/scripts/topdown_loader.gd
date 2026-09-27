@@ -16,6 +16,8 @@ const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
 const NPC_SCENE := preload("res://scenes/Npc.tscn")
 
 var objects: Node2D
+# Rectángulo del mapa en px de mundo; vale después de build().
+var bounds: Rect2
 var _rows: Array = []
 var _cols := 0
 var _spawn := Vector2.ZERO
@@ -38,7 +40,7 @@ func build(level_path: String) -> CharacterBody2D:
 				_add_npc(ch, col, row)
 			else:
 				_place(ch, col, row)
-	var bounds := Rect2(0, 0, _cols * CELL, _rows.size() * CELL)
+	bounds = Rect2(0, 0, _cols * CELL, _rows.size() * CELL)
 	_add_boundary(bounds)
 	var player: CharacterBody2D = PLAYER_SCENE.instantiate()
 	player.position = _spawn_position()

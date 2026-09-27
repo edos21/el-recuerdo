@@ -22,6 +22,13 @@ archivo. `tools/gen_placeholder_art.py` crea placeholders.
   `village accessories 32x32.png` y, encima, la tabla con la cama de
   `village accessories 16x16.png`. Licencia de compra.
 
+- `inn_room.png`: el cuarto de la posada, armado por script leyendo `levels/inn.txt` con
+  piezas de `home interiors, thatch roof v2.png` (Mana Seed "Thatch Roof Home": empedrado,
+  pared de madera y revoque, ventana encendida, umbral). Licencia de compra.
+- `inn_bed.png`, `inn_table.png`, `inn_pot.png` (tira de 5 cuadros): copias de
+  `thatch roof sliceable/` del mismo kit. `inn_trunk.png` (la valija): recorte del baul de
+  `cozy furnishings 32x32.png`, Mana Seed "Cozy Furnishings" (Seliel the Shaper). Licencia de compra.
+
 Los packs originales viven fuera del repo (por defecto en ~/Downloads/rpg_bundle;
 variable RPG_BUNDLE para cambiarlo). Regenerar: `python3 tools/gen_town_assets.py`
 y luego `godot --headless --script res://tools/build_topdown_frames.gd`.

@@ -1,11 +1,11 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://scripts/town.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/town_loader.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/inn.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/inn_loader.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/Core.tscn" id="3"]
-[ext_resource type="Script" path="res://scripts/town_atmosphere.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/inn_atmosphere.gd" id="4"]
 
-[node name="Town" type="Node2D"]
+[node name="Inn" type="Node2D"]
 script = ExtResource("1")
 
 [node name="Loader" type="Node2D" parent="."]

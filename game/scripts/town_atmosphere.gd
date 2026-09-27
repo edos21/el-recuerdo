@@ -38,7 +38,7 @@ var _sway_material: ShaderMaterial
 # Un material por mascara: cada variante de casa tiene sus propias ventanas.
 var _windows_materials: Dictionary = {}
 
-func build(player: CharacterBody2D) -> void:
+func build(player: CharacterBody2D, _bounds: Rect2) -> void:
 	_build_shared_resources()
 	AtmosphereKit.add_ambient(self, AMBIENT_COLOR)
 	AtmosphereKit.add_glow(self)

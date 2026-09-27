@@ -127,6 +127,29 @@ inn, window_mask = building(house_layout.LAYOUTS["inn"], (190, 110, 80, 255), si
 save("town/inn.png", inn)
 save("town/inn_windows.png", window_mask)
 
+# Interior de la posada: el cuarto sale de levels/inn.txt, como el real ('#'
+# borde, 'W'/'v' pared y ventana, 'D' umbral, el resto piso), y los muebles son
+# cajas del mismo tamano que los del kit (la olla, una tira de 5 cuadros).
+with open(os.path.join(HERE, "..", "levels", "inn.txt")) as f:
+    inn_rows = [line.rstrip("\n") for line in f if line.strip()]
+room = Image.new("RGBA", (max(len(r) for r in inn_rows) * 16, len(inn_rows) * 16), (24, 22, 30, 255))
+rd = ImageDraw.Draw(room)
+ROOM_COLORS = {"W": (150, 100, 60, 255), "v": (240, 210, 120, 255), "D": (120, 120, 120, 255)}
+for row, line in enumerate(inn_rows):
+    for col, ch in enumerate(line):
+        if ch != "#":
+            rd.rectangle((col * 16, row * 16, col * 16 + 15, row * 16 + 15), fill=ROOM_COLORS.get(ch, (90, 80, 70, 255)))
+save("town/inn_room.png", room)
+for name, size, color in (("inn_bed", (32, 64), (70, 120, 150, 255)), ("inn_table", (48, 48), (140, 100, 60, 255)),
+                          ("inn_trunk", (32, 16), (120, 80, 40, 255))):
+    prop = Image.new("RGBA", size, (0, 0, 0, 0))
+    ImageDraw.Draw(prop).rectangle((1, 1, size[0] - 2, size[1] - 2), fill=color)
+    save("town/%s.png" % name, prop)
+pot = Image.new("RGBA", (160, 32), (0, 0, 0, 0))
+for frame in range(5):
+    ImageDraw.Draw(pot).ellipse((frame * 32 + 4, 8, frame * 32 + 27, 30 - frame % 2), fill=(50, 50, 55, 255))
+save("town/inn_pot.png", pot)
+
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):
     sheet = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
