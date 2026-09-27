@@ -391,8 +391,11 @@ func unlock(ability: String) -> void:
 			# de lo "normal" y esto te devuelve exactamente a esa base
 			# (90 -> 100) — la exploración opcional te deja como se supone
 			# que deberías estar, no te da una ventaja extra.
-			max_stability = minf(max_stability + STABILITY_BOOST_AMOUNT, GameState.STABILITY_ORIGINAL_MAX)
-			stability += STABILITY_BOOST_AMOUNT
+			# Contra el máximo original solo suma lo que creció el tope, igual
+			# que madurar en GameState.complete_beat.
+			var grown := minf(max_stability + STABILITY_BOOST_AMOUNT, GameState.STABILITY_ORIGINAL_MAX) - max_stability
+			max_stability += grown
+			stability += grown
 			_emit_stability()
 	ability_unlocked.emit(ability)
 
