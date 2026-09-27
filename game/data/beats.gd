@@ -18,9 +18,6 @@ var _by_id: Dictionary[String, BeatDef] = {}
 func entry(beat_id: String) -> BeatDef:
 	return _by_id.get(beat_id)
 
-func has(beat_id: String) -> bool:
-	return _by_id.has(beat_id)
-
 # Lo llama Catalogs al arrancar. Un beat que no mueve nada es un dato a medio
 # cargar: se avisa acá en vez de dejar un momento de guion sin efecto.
 func index() -> void:

@@ -21,8 +21,16 @@ const STEP_SETTLE_SPEED := 12.0
 
 var health: int
 var max_health := GameState.MAX_HEALTH
-var stability: float
-var max_stability: float
+# En el hub la Estabilidad es de GameState (ver complete_beat alli): el jugador
+# solo la expone con la misma interfaz que el de plataformas.
+var stability: float:
+	get:
+		return GameState.stability
+var max_stability: float:
+	get:
+		return GameState.max_stability
+
+var _low_stability := false
 
 var _facing := "down"
 var _step_time := 0.0
@@ -38,26 +46,23 @@ var _base_camera: Vector2
 func _ready() -> void:
 	GameState.ensure_defaults()
 	health = GameState.health
-	max_stability = GameState.max_stability
-	stability = GameState.stability
+	GameState.stability_changed.connect(_emit_stability)
 	camera.zoom = Vector2(CAMERA_ZOOM, CAMERA_ZOOM)
 	_base_scale = sprite.scale
 	_base_offset = sprite.position
 	_base_camera = camera.position
 	health_changed.emit(health, max_health)
-	stability_changed.emit(stability, max_stability)
-	low_stability_changed.emit(GameState.is_low_stability(stability, max_stability))
+	_emit_stability()
 
-# Lo llama quien dispara el momento de guion (un NPC, un objeto) con el jugador
-# que recibe en interact(). La cuenta la lleva GameState; aca solo se relee y se
-# avisa al HUD, igual que al arrancar la escena.
-func complete_beat(beat_id: String) -> void:
-	if not GameState.complete_beat(beat_id):
-		return
-	stability = GameState.stability
-	max_stability = GameState.max_stability
+# Unico punto que emite stability_changed, con el mismo contrato que player.gd:
+# el umbral de Estabilidad baja se avisa solo al cruzarlo (reemitirlo reinicia
+# el parpadeo del HUD).
+func _emit_stability() -> void:
 	stability_changed.emit(stability, max_stability)
-	low_stability_changed.emit(GameState.is_low_stability(stability, max_stability))
+	var low := GameState.is_low_stability(stability, max_stability)
+	if low != _low_stability:
+		_low_stability = low
+		low_stability_changed.emit(low)
 
 func set_camera_limits(bounds: Rect2) -> void:
 	camera.limit_left = int(bounds.position.x)

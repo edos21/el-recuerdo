@@ -33,7 +33,6 @@ const THOUGHT_FADE_IN = 0.8
 const THOUGHT_FADE_OUT = 1.2
 const TITLE_HOLD = 2.0
 const TITLE_FADE = 1.0
-const DISMISS_HINT = "[Enter] continuar"
 const CHOICE_HINT = "[W/S] elegir     [Enter] confirmar"
 const CHOICE_MARKER = ">  "
 const CHOICE_PADDING = "    "
@@ -72,6 +71,8 @@ class QueuedLine:
 var stage_provider: Callable
 var _message_queue: Array[QueuedLine] = []
 var _selected_option := 0
+# El texto de "continuar" es el de la escena; la elección lo reemplaza un rato.
+var _dismiss_text := ""
 var _memories_found := 0
 var _last_health := -1
 var _last_stability := -1.0
@@ -89,6 +90,7 @@ func _ready() -> void:
 		_make_icon_slot(ability).modulate = ICON_OFF_TINT
 	memory_icons.add_theme_constant_override("separation", int(ICON_GAP))
 	thought_label.modulate.a = 0.0
+	_dismiss_text = dismiss_hint.text
 	Events.hint_requested.connect(_on_hint_requested)
 	Events.message_requested.connect(_on_message_requested)
 	Events.choice_requested.connect(_on_choice_requested)
@@ -255,7 +257,7 @@ func _show_next_message() -> void:
 func _render_line(line: QueuedLine) -> void:
 	if not line.is_choice():
 		narrative_label.text = line.text
-		dismiss_hint.text = DISMISS_HINT
+		dismiss_hint.text = _dismiss_text
 		return
 	var rows := PackedStringArray([line.text, ""])
 	for i in line.options.size():
@@ -268,9 +270,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not narrative_box.visible:
 		return
 	var line: QueuedLine = _message_queue.front()
-	if line.is_choice() and (event.is_action_pressed("move_up") or event.is_action_pressed("move_down")):
+	var step := int(event.is_action_pressed("move_down")) - int(event.is_action_pressed("move_up"))
+	if line.is_choice() and step != 0:
 		get_viewport().set_input_as_handled()
-		var step := -1 if event.is_action_pressed("move_up") else 1
 		_selected_option = posmod(_selected_option + step, line.options.size())
 		_render_line(line)
 		return

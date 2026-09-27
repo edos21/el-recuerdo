@@ -15,6 +15,7 @@ var _failures := 0
 var _frames := 0
 var _chosen := -1
 var _last_stability_signal := -1.0
+var _low_signals := 0
 
 func _ready() -> void:
 	_check_wake_up()
@@ -73,16 +74,21 @@ func _check_maturity() -> void:
 	GameState.complete_beat("dont_know_who_i_am")
 	_expect(is_equal_approx(GameState.max_stability, GameState.STABILITY_ORIGINAL_MAX), "madurar no pasa el máximo original")
 
-# Con el jugador real, no con GameState: es el que el NPC va a tocar.
+# Con el jugador real, no solo con GameState: es el que le habla al HUD.
 func _check_player_signal() -> void:
 	GameState.reset()
 	GameState.ensure_defaults()
 	var player := PLAYER_SCENE.instantiate()
 	add_child(player)
 	player.stability_changed.connect(func(current: float, _max_value: float) -> void: _last_stability_signal = current)
-	player.complete_beat("inn_water")
+	player.low_stability_changed.connect(func(_is_low: bool) -> void: _low_signals += 1)
+	# Despierta en zona baja y madurar agranda el tope: sigue en zona baja, asi
+	# que el umbral no se reavisa (reavisarlo reinicia el parpadeo del HUD).
+	GameState.complete_beat("dont_know_who_i_am")
+	_expect(_low_signals == 0, "un beat que no cruza el umbral no reavisa la Estabilidad baja")
+	GameState.complete_beat("inn_water")
 	_expect(is_equal_approx(_last_stability_signal, GameState.stability), "el jugador avisa la Estabilidad nueva al HUD")
-	_expect(is_equal_approx(player.stability, GameState.stability), "el jugador relee la Estabilidad de GameState")
+	_expect(is_equal_approx(player.stability, GameState.stability), "el jugador expone la Estabilidad de GameState")
 	player.queue_free()
 
 func _press(action: String) -> void:

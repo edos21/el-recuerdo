@@ -4,6 +4,10 @@ extends Node
 # lo actualiza al irse (el jugador de plataformas y el cenital comparten estos
 # numeros, no la fisica).
 
+# Solo la emite lo que cambia la Estabilidad fuera de un jugador (los beats del
+# hub); los valores se leen de aca.
+signal stability_changed
+
 const MAX_HEALTH := 5
 const MAX_STABILITY := 90.0
 # Largo de la barra original, que nunca cambia (kintsugi): el tope actual
@@ -48,8 +52,8 @@ func unlock(ability: String) -> bool:
 
 # Dueño de los beats de guion, con el mismo contrato que unlock(): valida contra
 # BeatData y cada beat cuenta una sola vez aunque la escena se repita. En el
-# hub la Estabilidad no cambia sola, asi que GameState es su unica fuente y el
-# jugador cenital la vuelve a leer. Devuelve si el beat se aplico ahora.
+# hub la Estabilidad no cambia sola, asi que GameState es su unica fuente: quien
+# dispara el beat no necesita al jugador. Devuelve si el beat se aplico ahora.
 func complete_beat(beat_id: String) -> bool:
 	var beat := Catalogs.beats.entry(beat_id)
 	if beat == null:
@@ -63,6 +67,7 @@ func complete_beat(beat_id: String) -> bool:
 			stability = minf(stability + beat.amount, max_stability)
 		BeatData.Kind.MATURITY:
 			max_stability = minf(max_stability + beat.amount, STABILITY_ORIGINAL_MAX)
+	stability_changed.emit()
 	return true
 
 # Lo que se da por ganado al llegar al pueblo (ensure_defaults) y la base de
