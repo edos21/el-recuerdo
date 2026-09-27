@@ -66,7 +66,12 @@ func complete_beat(beat_id: String) -> bool:
 		BeatData.Kind.RELIEF:
 			stability = minf(stability + beat.amount, max_stability)
 		BeatData.Kind.MATURITY:
-			max_stability = minf(max_stability + beat.amount, STABILITY_ORIGINAL_MAX)
+			# El tramo reparado llega lleno: si solo creciera el tope, el
+			# porcentaje bajaria y crecer podria reencender el aviso de
+			# Estabilidad baja.
+			var grown := minf(max_stability + beat.amount, STABILITY_ORIGINAL_MAX) - max_stability
+			max_stability += grown
+			stability += grown
 	stability_changed.emit()
 	return true
 

@@ -7,7 +7,7 @@ extends Resource
 # `kind` sigue la regla de guion del hub:
 # - RELIEF (alivio): hacer algo por otro. Sube la Estabilidad actual, hasta el tope.
 # - MATURITY (madurar): dejar que te ayuden o que te vean. Sube el tope, hasta
-#   el máximo original (rellena el fantasma).
+#   el máximo original (rellena el fantasma), y la actual en lo mismo.
 
 enum Kind { RELIEF, MATURITY }
 

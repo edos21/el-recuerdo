@@ -68,11 +68,16 @@ func _check_relief() -> void:
 func _check_maturity() -> void:
 	var beat := Catalogs.beats.entry("broth")
 	var before := GameState.max_stability
+	GameState.stability = before * 0.5
+	var before_current := GameState.stability
 	_expect(GameState.complete_beat("broth"), "madurar se aplica la primera vez")
 	_expect(is_equal_approx(GameState.max_stability, before + beat.amount), "madurar sube el tope")
+	_expect(is_equal_approx(GameState.stability, before_current + beat.amount), "madurar sube la actual en lo mismo que el tope")
 	GameState.max_stability = GameState.STABILITY_ORIGINAL_MAX - 1.0
+	before_current = GameState.stability
 	GameState.complete_beat("dont_know_who_i_am")
 	_expect(is_equal_approx(GameState.max_stability, GameState.STABILITY_ORIGINAL_MAX), "madurar no pasa el máximo original")
+	_expect(is_equal_approx(GameState.stability, before_current + 1.0), "contra el máximo original, la actual sube solo lo que creció el tope")
 
 # Con el jugador real, no solo con GameState: es el que le habla al HUD.
 func _check_player_signal() -> void:
