@@ -8,6 +8,6 @@ const WAKE_THOUGHT_DELAY := 2.0
 
 func _ready() -> void:
 	super._ready()
-	if GameState.came_from_expulsion:
+	if GameState.consume_wake():
 		await get_tree().create_timer(WAKE_THOUGHT_DELAY).timeout
 		Events.thought_requested.emit(WAKE_THOUGHT, Events.DEFAULT_THOUGHT_HOLD)

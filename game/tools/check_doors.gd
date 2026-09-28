@@ -3,7 +3,8 @@ extends Node
 # Comprueba las puertas entre el pueblo y la posada sin jugar: quien llega por
 # una puerta aparece en la puerta con el mismo id de la otra escena, afuera de
 # su umbral (si no, volvería a cruzarla al aparecer), y la llegada se consume;
-# sin llegada, se aparece en 'P'; y pisar el umbral guarda la puerta de llegada.
+# sin llegada, se aparece en 'P'; pisar el umbral guarda la puerta de llegada; y
+# el despertar se consume al mostrarse, así salir de la posada no lo repite.
 # Imprime FAIL por cada chequeo roto y sale con código 1. Corre como escena y
 # no como `--script` porque los autoloads no compilan en ese modo.
 
@@ -36,6 +37,7 @@ func _physics_process(_delta: float) -> void:
 			_swap(TOWN_SCENE, DoorData.POSADA)
 		1:
 			_check_arrival("posada por fuera")
+			_expect(not GameState.came_from_expulsion, "el pueblo consume el despertar: volver a salir no lo repite")
 			_swap(INN_SCENE, &"")
 		2:
 			_check_default_spawn()

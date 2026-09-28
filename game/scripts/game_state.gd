@@ -92,6 +92,13 @@ func begin_wake_up() -> void:
 	health = MAX_HEALTH
 	stability = max_stability * WAKE_STABILITY_RATIO
 
+# El despertar se muestra una sola vez: la escena que lo muestra lo consume. Si
+# no, volver a entrar a esa escena (por una puerta) lo repetiria.
+func consume_wake() -> bool:
+	var waking := came_from_expulsion
+	came_from_expulsion = false
+	return waking
+
 # Si una escena se corre suelta (F6) sin haber pasado por el Nivel 1, se
 # simula el estado con el que se llega al pueblo, para poder probarla directo.
 func ensure_defaults() -> void:
