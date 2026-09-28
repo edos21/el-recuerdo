@@ -160,7 +160,8 @@ mask.convert("L").save(OUT + "inn_windows.png")
 # --- Interiores: cada cuarto sale del mismo mapa que lee el juego ---
 # (levels/<cuarto>.txt), asi la imagen y las paredes que bloquean no se desincronizan.
 # '#' borde oscuro, 'W' pared, 'v' ventana (bloques de 2x2 sobre el revoque),
-# 'D' umbral de la puerta; el resto es piso. Los muebles van como sprites
+# 'c' cuadro colgado (su esquina de arriba a la izquierda, sobre el revoque), 'D'
+# umbral de la puerta; el resto es piso. Los muebles van como sprites
 # sueltos para ordenarse por Y con los personajes.
 # El piso del kit es un autotile (empedrado con parches de tierra): solo la
 # primera columna es empedrado puro, y esas cuatro variantes se mezclan sin cortes.
@@ -173,11 +174,13 @@ WINDOW = (25, 2)                # ventana encendida de 2x2
 WINDOW_BAND_ROW = 2             # las ventanas van en el revoque
 THRESHOLD = (25, 7)             # piedras del umbral
 BOUNDARY_SAMPLE = (6 * T + 4, 2 * T + 4)
+COZY = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "19.04b - Cozy Furnishings", "packaged")
+PAINTING = (5 * 32, 0, 6 * 32, 32)   # paisaje enmarcado, en cozy furnishings 32x32.png
 
 def tile(sheet, col, row):
     return kit_piece(sheet, col, row, col + 1, row + 1)
 
-def room_image(map_path, interiors):
+def room_image(map_path, interiors, painting):
     rows = map_grid.read_grid(map_path)
     wall_top = min(r for r, line in enumerate(rows) if "W" in line)
     room = Image.new("RGBA", (max(len(r) for r in rows) * T, len(rows) * T), interiors.getpixel(BOUNDARY_SAMPLE))
@@ -186,7 +189,7 @@ def room_image(map_path, interiors):
             at = (col * T, row * T)
             if ch == "#":
                 continue
-            if ch in "Wv":
+            if ch in "Wvc":
                 band = row - wall_top
                 assert 0 <= band < len(WALL_ROWS), "%s: la pared mide %d filas" % (map_path, len(WALL_ROWS))
                 source = WALL_POST if (col - line.index("W")) % WALL_POST_EVERY == WALL_POST_EVERY - 1 \
@@ -195,6 +198,11 @@ def room_image(map_path, interiors):
                 if ch == "v" and map_grid.at(rows, col - 1, row) != "v" and map_grid.at(rows, col, row - 1) != "v":
                     assert band == WINDOW_BAND_ROW, "%s: la ventana tiene que caer sobre el revoque" % map_path
                     room.alpha_composite(kit_piece(interiors, WINDOW[0], WINDOW[1], WINDOW[0] + 2, WINDOW[1] + 2), at)
+                if ch == "c":
+                    assert band == WINDOW_BAND_ROW, "%s: el cuadro tiene que colgar del revoque" % map_path
+                    box = painting.getbbox()
+                    room.alpha_composite(painting.crop(box), (col * T + (2 * T - (box[2] - box[0])) // 2,
+                                                             row * T + (2 * T - (box[3] - box[1])) // 2))
             elif ch == "D":
                 offset = 1 if map_grid.at(rows, col - 1, row) == "D" else 0
                 room.alpha_composite(tile(interiors, THRESHOLD[0] + offset, THRESHOLD[1]), at)
@@ -204,15 +212,32 @@ def room_image(map_path, interiors):
     return room
 
 interiors = Image.open(os.path.join(HOMES, "home interiors, thatch roof v2.png")).convert("RGBA")
-room_image(os.path.join(HERE, "..", "levels", "inn.txt"), interiors).save(OUT + "inn_room.png")
+cozy_32 = Image.open(os.path.join(COZY, "cozy furnishings 32x32.png")).convert("RGBA")
+cozy_16 = Image.open(os.path.join(COZY, "cozy furnishings 16x16.png")).convert("RGBA")
+room_image(os.path.join(HERE, "..", "levels", "inn.txt"), interiors, cozy_32.crop(PAINTING)).save(OUT + "inn_room.png")
 
 SLICEABLE = os.path.join(HOMES, "thatch roof sliceable")
-COZY = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "19.04b - Cozy Furnishings", "packaged")
+CANDLES = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "19.03a - Animated Candles", "packaged")
 TRUNK = (8 * 32, 3 * 32 + 16, 9 * 32, 4 * 32)   # baul con correas y candado: la valija
-for src, name in (("thatch roof bed 32x64.png", "inn_bed"), ("thatch roof table 48x48.png", "inn_table"),
-                  ("animated cooking pot 32x32.png", "inn_pot")):
-    shutil.copyfile(os.path.join(SLICEABLE, src), OUT + name + ".png")
-Image.open(os.path.join(COZY, "cozy furnishings 32x32.png")).convert("RGBA").crop(TRUNK).save(OUT + "inn_trunk.png")
+# Escritorio con cajones y, encima, una pila de libros y uno abierto. La imagen
+# lleva margen arriba para que los libros no se recorten; la vela va aparte
+# porque es animada (ver interior_loader.gd).
+DESK = (1 * 32, 2 * 32, 2 * 32, 3 * 32)
+DESK_TOP_MARGIN = 8
+BOOK_STACK, BOOK_STACK_AT = (19 * 16, 0, 20 * 16, 16), (0, 5)
+OPEN_BOOK, OPEN_BOOK_AT = (18 * 16, 0, 19 * 16, 16), (9, 7)
+# Vela en su candelero: la primera fila de la hoja; el cuadro 0 esta apagado.
+CANDLE_FRAMES = [(c * 16, 0, (c + 1) * 16, 16) for c in range(1, 5)]
+
+shutil.copyfile(os.path.join(SLICEABLE, "thatch roof bed 32x64.png"), OUT + "inn_bed.png")
+cozy_32.crop(TRUNK).save(OUT + "inn_trunk.png")
+desk = Image.new("RGBA", (32, 32 + DESK_TOP_MARGIN), (0, 0, 0, 0))
+desk.alpha_composite(cozy_32.crop(DESK), (0, DESK_TOP_MARGIN))
+desk.alpha_composite(cozy_16.crop(BOOK_STACK), BOOK_STACK_AT)
+desk.alpha_composite(cozy_16.crop(OPEN_BOOK), OPEN_BOOK_AT)
+desk.save(OUT + "inn_desk.png")
+candles = Image.open(os.path.join(CANDLES, "animated candles anim 16x16 v01.png")).convert("RGBA")
+strip([candles.crop(box) for box in CANDLE_FRAMES], 16).save(OUT + "inn_candle.png")
 
 house_layout.write_layout_gd()
 print("ok")

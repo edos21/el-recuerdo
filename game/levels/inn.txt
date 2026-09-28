@@ -1,11 +1,11 @@
 ##############
 #WWWWWWWWWWWW#
 #WWWWWWWWWWWW#
-#WWvvWWWWWvvW#
-#WWvvWWWWWvvW#
+#WcWWWvvWWvvW#
+#WWWWWvvWWvvW#
+#.......d....#
 #............#
-#..........o.#
-#.....t......#
+#............#
 #.B..........#
 #.M.P........#
 ######DD######

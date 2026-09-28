@@ -129,26 +129,28 @@ save("town/inn.png", inn)
 save("town/inn_windows.png", window_mask)
 
 # Interior de la posada: el cuarto sale de levels/inn.txt, como el real ('#'
-# borde, 'W'/'v' pared y ventana, 'D' umbral, el resto piso), y los muebles son
-# cajas del mismo tamano que los del kit (la olla, una tira de 5 cuadros).
+# borde, 'W'/'v'/'c' pared, ventana y cuadro, 'D' umbral, el resto piso), y los
+# muebles son cajas del mismo tamano que los del kit (la vela, una tira de 4 cuadros).
 inn_rows = map_grid.read_grid(os.path.join(HERE, "..", "levels", "inn.txt"))
 room = Image.new("RGBA", (max(len(r) for r in inn_rows) * 16, len(inn_rows) * 16), (24, 22, 30, 255))
 rd = ImageDraw.Draw(room)
-ROOM_COLORS = {"W": (150, 100, 60, 255), "v": (240, 210, 120, 255), "D": (120, 120, 120, 255)}
+ROOM_COLORS = {"W": (150, 100, 60, 255), "v": (240, 210, 120, 255), "c": (180, 140, 60, 255), "D": (120, 120, 120, 255)}
 for row, line in enumerate(inn_rows):
     for col, ch in enumerate(line):
         if ch != "#":
             rd.rectangle((col * 16, row * 16, col * 16 + 15, row * 16 + 15), fill=ROOM_COLORS.get(ch, (90, 80, 70, 255)))
 save("town/inn_room.png", room)
-for name, size, color in (("inn_bed", (32, 64), (70, 120, 150, 255)), ("inn_table", (48, 48), (140, 100, 60, 255)),
+for name, size, color in (("inn_bed", (32, 64), (70, 120, 150, 255)), ("inn_desk", (32, 40), (140, 100, 60, 255)),
                           ("inn_trunk", (32, 16), (120, 80, 40, 255))):
     prop = Image.new("RGBA", size, (0, 0, 0, 0))
     ImageDraw.Draw(prop).rectangle((1, 1, size[0] - 2, size[1] - 2), fill=color)
     save("town/%s.png" % name, prop)
-pot = Image.new("RGBA", (160, 32), (0, 0, 0, 0))
-for frame in range(5):
-    ImageDraw.Draw(pot).ellipse((frame * 32 + 4, 8, frame * 32 + 27, 30 - frame % 2), fill=(50, 50, 55, 255))
-save("town/inn_pot.png", pot)
+candle = Image.new("RGBA", (64, 16), (0, 0, 0, 0))
+for frame in range(4):
+    cd = ImageDraw.Draw(candle)
+    cd.rectangle((frame * 16 + 6, 8, frame * 16 + 9, 15), fill=(230, 220, 200, 255))
+    cd.ellipse((frame * 16 + 6, 3 + frame % 2, frame * 16 + 9, 7), fill=(255, 170, 60, 255))
+save("town/inn_candle.png", candle)
 
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):

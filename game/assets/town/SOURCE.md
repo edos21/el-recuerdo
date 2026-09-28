@@ -24,10 +24,14 @@ archivo. `tools/gen_placeholder_art.py` crea placeholders.
 
 - `inn_room.png`: el cuarto de la posada, armado por script leyendo `levels/inn.txt` con
   piezas de `home interiors, thatch roof v2.png` (Mana Seed "Thatch Roof Home": empedrado,
-  pared de madera y revoque, ventana encendida, umbral). Licencia de compra.
-- `inn_bed.png`, `inn_table.png`, `inn_pot.png` (tira de 5 cuadros): copias de
-  `thatch roof sliceable/` del mismo kit. `inn_trunk.png` (la valija): recorte del baul de
-  `cozy furnishings 32x32.png`, Mana Seed "Cozy Furnishings" (Seliel the Shaper). Licencia de compra.
+  pared de madera y revoque, ventana encendida, umbral) y el paisaje enmarcado de
+  `cozy furnishings 32x32.png` (Mana Seed "Cozy Furnishings"). Licencia de compra.
+- `inn_bed.png`: copia de `thatch roof sliceable/thatch roof bed 32x64.png` (Thatch Roof Home).
+  `inn_trunk.png` (la valija): recorte del baul de `cozy furnishings 32x32.png`.
+  `inn_desk.png`: el escritorio con cajones de ese mismo archivo con una pila de libros y un libro
+  abierto de `cozy furnishings 16x16.png`. Todo Mana Seed (Seliel the Shaper), licencia de compra.
+- `inn_candle.png` (tira de 4 cuadros): la vela en candelero de
+  `animated candles anim 16x16 v01.png`, Mana Seed "Animated Candles". Licencia de compra.
 
 Los packs originales viven fuera del repo (por defecto en ~/Downloads/rpg_bundle;
 variable RPG_BUNDLE para cambiarlo). Regenerar: `python3 tools/gen_town_assets.py`
