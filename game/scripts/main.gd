@@ -16,7 +16,7 @@ const LEVEL1_LOOK := preload("res://looks/level1_look.tres")
 # no dice "tarde de verano".
 const SKY_COLOR := Color(0.36, 0.40, 0.47)
 
-const TOWN_SCENE := "res://scenes/Town.tscn"
+const INN_ROOM_SCENE := "res://scenes/InnRoom.tscn"
 # Tiempo que se queda el pensamiento final sobre el negro antes de despertar.
 const COLLAPSE_HOLD_TIME := 6.0
 
@@ -126,8 +126,8 @@ func _on_player_died() -> void:
 	_on_respawn_requested()
 
 # El recuerdo expulsa al protagonista: no hay puerta que cruzar, solo el
-# desgaste hasta desplomarse. Lo que sigue (despertar en el pueblo real)
-# engancha en `player.collapsed`.
+# desgaste hasta desplomarse. Lo que sigue (despertar en la posada del pueblo
+# real) engancha en `player.collapsed`.
 func _on_expulsion_triggered(body: Node2D) -> void:
 	if body != player or _expulsion_started:
 		return
@@ -140,4 +140,4 @@ func _on_player_collapsed() -> void:
 	await get_tree().create_timer(COLLAPSE_HOLD_TIME).timeout
 	GameState.capture_from_platformer(player)
 	GameState.begin_wake_up()
-	SceneRouter.change_scene(TOWN_SCENE)
+	SceneRouter.change_scene(INN_ROOM_SCENE)

@@ -4,9 +4,9 @@ extends Node
 # lo actualiza al irse (el jugador de plataformas y el cenital comparten estos
 # numeros, no la fisica).
 
-# Solo la emite lo que cambia la Estabilidad fuera de un jugador (los beats del
-# hub); los valores se leen de aca.
-signal stability_changed
+# Solo la emite lo que cambia la Vida o la Estabilidad fuera de un jugador (los
+# beats y el descanso del hub); los valores se leen de aca.
+signal vitals_changed
 
 const MAX_HEALTH := 5
 const MAX_STABILITY := 90.0
@@ -75,7 +75,7 @@ func complete_beat(beat_id: String) -> bool:
 			var grown := minf(max_stability + beat.amount, STABILITY_ORIGINAL_MAX) - max_stability
 			max_stability += grown
 			stability += grown
-	stability_changed.emit()
+	vitals_changed.emit()
 	return true
 
 # Lo que se da por ganado al llegar al pueblo (ensure_defaults) y la base de
@@ -91,6 +91,14 @@ func begin_wake_up() -> void:
 	came_from_expulsion = true
 	health = MAX_HEALTH
 	stability = max_stability * WAKE_STABILITY_RATIO
+
+# Descansar (la cama de la posada, se puede repetir) devuelve la Vida entera y
+# levanta la Estabilidad hasta el piso del despertar, nunca mas: es para no
+# quedar sin salida, no una fuente de Estabilidad (esa es alivio y madurar).
+func rest() -> void:
+	health = MAX_HEALTH
+	stability = maxf(stability, max_stability * WAKE_STABILITY_RATIO)
+	vitals_changed.emit()
 
 # El despertar se muestra una sola vez: la escena que lo muestra lo consume. Si
 # no, volver a entrar a esa escena (por una puerta) lo repetiria.

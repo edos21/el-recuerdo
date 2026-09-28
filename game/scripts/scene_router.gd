@@ -18,6 +18,22 @@ func _ready() -> void:
 	_shade.modulate.a = 0.0
 	add_child(_shade)
 
+# Fundido a negro y vuelta sin cambiar de escena (descansar, un salto de
+# tiempo): `on_dark` corre con la pantalla negra.
+func blink(hold: float, on_dark: Callable) -> void:
+	if _busy:
+		return
+	_busy = true
+	var tween := create_tween()
+	tween.tween_property(_shade, "modulate:a", 1.0, FADE_OUT_TIME)
+	await tween.finished
+	on_dark.call()
+	await get_tree().create_timer(hold).timeout
+	var fade_in := create_tween()
+	fade_in.tween_property(_shade, "modulate:a", 0.0, FADE_IN_TIME)
+	await fade_in.finished
+	_busy = false
+
 func change_scene(path: String) -> void:
 	if _busy:
 		return
