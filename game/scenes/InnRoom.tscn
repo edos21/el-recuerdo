@@ -1,0 +1,28 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/topdown_scene.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/interior_loader.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/Core.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/interior_atmosphere.gd" id="4"]
+[ext_resource type="Resource" path="res://looks/inn_look.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/town/inn_room.png" id="6"]
+
+[node name="InnRoom" type="Node2D"]
+script = ExtResource("1")
+level_path = "res://levels/inn_room.txt"
+look = ExtResource("5")
+clear_color = Color(0.07, 0.06, 0.09, 1)
+wind_db = -34.0
+pad_db = -24.0
+
+[node name="Loader" type="Node2D" parent="."]
+script = ExtResource("2")
+room_texture = ExtResource("6")
+doors = Dictionary[String, StringName]({
+"D": &"posada_escalera"
+})
+
+[node name="Atmosphere" type="Node2D" parent="."]
+script = ExtResource("4")
+
+[node name="Core" parent="." instance=ExtResource("3")]

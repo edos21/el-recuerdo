@@ -1,18 +1,18 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://cb0cpqrsad2xk"]
 
-[ext_resource type="Script" path="res://scripts/memory_pickup.gd" id="1"]
-[ext_resource type="AudioStream" path="res://assets/audio/memory_recovered.ogg" id="2"]
+[ext_resource type="Script" uid="uid://b15gdjbh688bo" path="res://scripts/memory_pickup.gd" id="1"]
+[ext_resource type="AudioStream" uid="uid://c4f82nmtfabqv" path="res://assets/audio/memory_recovered.ogg" id="2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
 size = Vector2(24, 24)
 
-[node name="MemoryPickup" type="Area2D"]
+[node name="MemoryPickup" type="Area2D" unique_id=646177940]
 script = ExtResource("1")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=234823760]
 shape = SubResource("RectangleShape2D_1")
 
-[node name="Icon" type="Sprite2D" parent="."]
+[node name="Icon" type="Sprite2D" parent="." unique_id=887742144]
 
-[node name="Sound" type="AudioStreamPlayer" parent="."]
+[node name="Sound" type="AudioStreamPlayer" parent="." unique_id=1404257999]
 stream = ExtResource("2")

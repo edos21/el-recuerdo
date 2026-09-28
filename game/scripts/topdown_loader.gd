@@ -16,6 +16,9 @@ const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
 const NPC_SCENE := preload("res://scenes/Npc.tscn")
 
 var objects: Node2D
+# Escena a la que pertenece el mapa: de acá sale adónde lleva cada puerta
+# (DoorData). La asigna TopDownScene antes de build().
+var scene_path := ""
 # Rectángulo del mapa y la celda 'P', en px de mundo; valen después de build().
 var bounds: Rect2
 var spawn := Vector2.ZERO
@@ -59,6 +62,9 @@ func _build_ground() -> void:
 func _place(_ch: String, _col: int, _row: int) -> void:
 	pass
 
+func all_doors() -> Array[Door]:
+	return _doors
+
 func door(id: StringName) -> Door:
 	for candidate in _doors:
 		if candidate.id == id:
@@ -77,8 +83,8 @@ func _spawn_position() -> Vector2:
 		return spawn
 	return arrival_door.spawn_point
 
-func _add_door(id: StringName, target_scene: String, trigger: Rect2, arrival: Vector2) -> void:
-	var door := Door.new(id, target_scene, trigger, arrival)
+func _add_door(id: StringName, trigger: Rect2, arrival: Vector2) -> void:
+	var door := Door.new(id, DoorData.other_side(id, scene_path), trigger, arrival)
 	add_child(door)
 	_doors.append(door)
 
@@ -118,15 +124,20 @@ func _add_npc(ch: String, col: int, row: int) -> void:
 func _add_prop(texture: Texture2D, base: Vector2, feet: Vector2, group: StringName = &"") -> Sprite2D:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
 	sprite.offset = -feet
-	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
-	sprite.position = base
-	if group != &"":
-		sprite.add_to_group(group)
-	objects.add_child(sprite)
+	_place_prop(sprite, base, group)
 	return sprite
+
+# Lo común de todo objeto del mapa (quieto o animado, que ya trae su origen):
+# píxeles nítidos, la escala de las celdas y el orden por Y.
+func _place_prop(prop: Node2D, base: Vector2, group: StringName = &"") -> void:
+	prop.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	prop.scale = Vector2(TILE_SCALE, TILE_SCALE)
+	prop.position = base
+	if group != &"":
+		prop.add_to_group(group)
+	objects.add_child(prop)
 
 # Cuerpo estatico apoyado en `base` (el centro de su borde inferior): la forma
 # crece hacia arriba desde los pies del sprite.
