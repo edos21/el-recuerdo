@@ -6,6 +6,9 @@ extends Node
 
 signal hint_requested(key: String, text: String)
 signal message_requested(text: String)
+# Elección en el cuadro de diálogo: pausa como un mensaje y, al confirmar, llama
+# a `on_chosen` con el índice de la opción elegida.
+signal choice_requested(prompt: String, options: PackedStringArray, on_chosen: Callable)
 signal thought_requested(text: String, hold: float)
 signal memory_dimmed(ability: String)
 signal sfx_requested(sfx: String)

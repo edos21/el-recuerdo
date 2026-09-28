@@ -8,10 +8,12 @@ extends Node
 
 var memories: MemoryData = load("res://data/memories.tres")
 var enemies: EnemyData = load("res://data/enemies.tres")
+var beats: BeatData = load("res://data/beats.tres")
 
 func _init() -> void:
 	memories.index()
 	enemies.index()
+	beats.index()
 	_check_guardians()
 
 # Regla que cruza los dos catálogos: un recuerdo custodiado tiene que existir y

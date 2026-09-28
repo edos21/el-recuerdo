@@ -33,6 +33,25 @@ const THOUGHT_FADE_IN = 0.8
 const THOUGHT_FADE_OUT = 1.2
 const TITLE_HOLD = 2.0
 const TITLE_FADE = 1.0
+const CHOICE_HINT = "[W/S] elegir     [Enter] confirmar"
+const CHOICE_MARKER = ">  "
+const CHOICE_PADDING = "    "
+
+# Un cuadro de la cola de diálogo: texto para leer o, si trae opciones, una
+# elección. Comparten cola para que una pregunta nunca se adelante a lo que
+# el NPC venía diciendo.
+class QueuedLine:
+	var text: String
+	var options: PackedStringArray
+	var on_chosen: Callable
+
+	func _init(line_text: String, line_options := PackedStringArray(), callback := Callable()) -> void:
+		text = line_text
+		options = line_options
+		on_chosen = callback
+
+	func is_choice() -> bool:
+		return not options.is_empty()
 
 @onready var health_row: Control = %HealthRow
 @onready var health_fill: ColorRect = %HealthBarFill
@@ -41,6 +60,7 @@ const TITLE_FADE = 1.0
 @onready var stability_fill: ColorRect = %StabilityBarFill
 @onready var narrative_box: ColorRect = %NarrativeBox
 @onready var narrative_label: Label = %NarrativeLabel
+@onready var dismiss_hint: Label = %DismissHint
 @onready var memory_row: Control = %MemoryRow
 @onready var memory_label: Label = %MemoryLabel
 @onready var memory_icons: HBoxContainer = %Icons
@@ -49,7 +69,10 @@ const TITLE_FADE = 1.0
 
 # Devuelve cuantos bancos lleva alcanzados el jugador; lo asigna la escena.
 var stage_provider: Callable
-var _message_queue: Array[String] = []
+var _message_queue: Array[QueuedLine] = []
+var _selected_option := 0
+# El texto de "continuar" es el de la escena; la elección lo reemplaza un rato.
+var _dismiss_text := ""
 var _memories_found := 0
 var _last_health := -1
 var _last_stability := -1.0
@@ -67,8 +90,10 @@ func _ready() -> void:
 		_make_icon_slot(ability).modulate = ICON_OFF_TINT
 	memory_icons.add_theme_constant_override("separation", int(ICON_GAP))
 	thought_label.modulate.a = 0.0
+	_dismiss_text = dismiss_hint.text
 	Events.hint_requested.connect(_on_hint_requested)
 	Events.message_requested.connect(_on_message_requested)
+	Events.choice_requested.connect(_on_choice_requested)
 	Events.thought_requested.connect(_on_thought_requested)
 	Events.memory_dimmed.connect(_on_memory_dimmed)
 
@@ -204,14 +229,24 @@ func _on_hint_requested(key: String, text: String) -> void:
 	_on_message_requested(text)
 
 func _on_message_requested(text: String) -> void:
-	_message_queue.append(text)
+	_enqueue(QueuedLine.new(text))
+
+func _on_choice_requested(prompt: String, options: PackedStringArray, on_chosen: Callable) -> void:
+	if options.is_empty():
+		push_error("Hud: elección sin opciones ('%s')." % prompt)
+		return
+	_enqueue(QueuedLine.new(prompt, options, on_chosen))
+
+func _enqueue(line: QueuedLine) -> void:
+	_message_queue.append(line)
 	if not narrative_box.visible:
 		_show_next_message()
 
 func _show_next_message() -> void:
 	if _message_queue.is_empty():
 		return
-	narrative_label.text = _message_queue.front()
+	_selected_option = 0
+	_render_line(_message_queue.front())
 	narrative_box.visible = true
 	# Un pensamiento suelto no debe encimarse con un cuadro de dialogo.
 	if _thought_tween and _thought_tween.is_valid():
@@ -219,12 +254,35 @@ func _show_next_message() -> void:
 	thought_label.modulate.a = 0.0
 	get_tree().paused = true
 
+func _render_line(line: QueuedLine) -> void:
+	if not line.is_choice():
+		narrative_label.text = line.text
+		dismiss_hint.text = _dismiss_text
+		return
+	var rows := PackedStringArray([line.text, ""])
+	for i in line.options.size():
+		var marker := CHOICE_MARKER if i == _selected_option else CHOICE_PADDING
+		rows.append(marker + line.options[i])
+	narrative_label.text = "\n".join(rows)
+	dismiss_hint.text = CHOICE_HINT
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not narrative_box.visible:
+		return
+	var line: QueuedLine = _message_queue.front()
+	var step := int(event.is_action_pressed("move_down")) - int(event.is_action_pressed("move_up"))
+	if line.is_choice() and step != 0:
+		get_viewport().set_input_as_handled()
+		_selected_option = posmod(_selected_option + step, line.options.size())
+		_render_line(line)
 		return
 	if event.is_action_pressed("interact"):
 		get_viewport().set_input_as_handled()
 		_message_queue.pop_front()
+		# Antes de decidir si se cierra el cuadro: la respuesta a una elección
+		# suele ser otro mensaje, y tiene que entrar en esta misma pausa.
+		if line.is_choice() and line.on_chosen.is_valid():
+			line.on_chosen.call(_selected_option)
 		if _message_queue.is_empty():
 			narrative_box.visible = false
 			get_tree().paused = false
