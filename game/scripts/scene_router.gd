@@ -26,6 +26,9 @@ func change_scene(path: String) -> void:
 	tween.tween_property(_shade, "modulate:a", 1.0, FADE_OUT_TIME)
 	await tween.finished
 	get_tree().change_scene_to_file(path)
+	# Una pausa es de la escena que la pidio (un dialogo abierto durante el
+	# fundido): la escena nueva arranca sin ella, o quedaria congelada.
+	get_tree().paused = false
 	await get_tree().process_frame
 	var fade_in := create_tween()
 	fade_in.tween_property(_shade, "modulate:a", 0.0, FADE_IN_TIME)

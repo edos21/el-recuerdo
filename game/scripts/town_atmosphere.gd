@@ -1,4 +1,4 @@
-extends Node2D
+extends TopDownAtmosphere
 # Capa de atmosfera del pueblo (prototipo de "look moderno"): luz de tarde,
 # glow, sombras de contacto, viento en los arboles y particulas de ambiente.
 # El post-proceso es el de Core (looks/town_look.tres). No toca la logica del
@@ -38,7 +38,7 @@ var _sway_material: ShaderMaterial
 # Un material por mascara: cada variante de casa tiene sus propias ventanas.
 var _windows_materials: Dictionary = {}
 
-func build(player: CharacterBody2D) -> void:
+func build(player: CharacterBody2D, _bounds: Rect2) -> void:
 	_build_shared_resources()
 	AtmosphereKit.add_ambient(self, AMBIENT_COLOR)
 	AtmosphereKit.add_glow(self)
@@ -46,11 +46,8 @@ func build(player: CharacterBody2D) -> void:
 		_decorate_tree(tree)
 	for house in get_tree().get_nodes_in_group("town_houses"):
 		_decorate_house(house)
-	for character in get_tree().get_nodes_in_group("town_characters"):
-		var shadow := _contact_shadow()
-		character.add_child(shadow)
-		character.move_child(shadow, 0)
-	player.add_child(_player_light())
+	AtmosphereKit.add_contact_shadows(get_tree().get_nodes_in_group(TopDownLoader.CHARACTERS_GROUP), _shadow_texture, CONTACT_SHADOW_SIZE)
+	player.add_child(AtmosphereKit.player_light(_light_texture, PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE))
 	player.add_child(_motes())
 
 func _build_shared_resources() -> void:
@@ -75,31 +72,21 @@ func _windows_material(mask: Texture2D) -> ShaderMaterial:
 	return _windows_materials[mask]
 
 # Los anclajes de HouseLayout van en px de textura; la casa se dibuja escalada.
+# Cada edificio trae los suyos (la posada es mas alta que las casas).
 func _decorate_house(house: Sprite2D) -> void:
 	house.material = _windows_material(house.get_meta(TownLoader.WINDOW_MASK_META))
+	var layout: Dictionary = house.get_meta(TownLoader.LAYOUT_META)
 	var shadow := Polygon2D.new()
-	shadow.polygon = PackedVector2Array(HouseLayout.SHADOW)
+	shadow.polygon = PackedVector2Array(layout.shadow)
 	shadow.color = Color(0.05, 0.04, 0.12, HOUSE_SHADOW_ALPHA)
 	shadow.show_behind_parent = true
 	house.add_child(shadow)
 	var light := AtmosphereKit.point_light(_light_texture, HOUSE_LIGHT_COLOR, HOUSE_LIGHT_ENERGY, HOUSE_LIGHT_SCALE)
-	light.position = house.position + HouseLayout.LIGHT * house.scale
+	light.position = house.position + layout.light * house.scale
 	add_child(light)
 	var smoke := _smoke()
-	smoke.position = house.position + HouseLayout.CHIMNEY * house.scale
+	smoke.position = house.position + layout.chimney * house.scale
 	add_child(smoke)
-
-func _contact_shadow() -> Sprite2D:
-	var shadow := Sprite2D.new()
-	shadow.texture = _shadow_texture
-	shadow.scale = CONTACT_SHADOW_SIZE / 64.0
-	shadow.show_behind_parent = true
-	return shadow
-
-func _player_light() -> PointLight2D:
-	var light := AtmosphereKit.point_light(_light_texture, Color(1.0, 0.9, 0.75), PLAYER_LIGHT_ENERGY, PLAYER_LIGHT_SCALE)
-	light.position = Vector2(0, -20)
-	return light
 
 # Polen/polvo en suspension alrededor del jugador: se emite en el mundo, asi
 # que las particulas quedan flotando donde nacieron cuando el jugador se aleja.

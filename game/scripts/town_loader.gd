@@ -1,15 +1,11 @@
-extends Node2D
 class_name TownLoader
+extends TopDownLoader
 # Construye el pueblo real a partir de un mapa ASCII (levels/town.txt), igual
 # que level_loader.gd hace con el Nivel 1: editar el pueblo es editar el .txt.
 #
-# Leyenda: '.' pasto, ',' camino de tierra, 'T' arbol, 'H' casa (la 'H' marca
-# el centro de su base), 'n'/'N' NPCs (data/town_npcs.gd), 'P' donde aparece
-# el jugador.
-
-const TILE := 16
-const TILE_SCALE := 2
-const CELL := float(TILE * TILE_SCALE)
+# Leyenda: '.' pasto, ',' camino de tierra, 'T' arbol, 'H' casa e 'I' posada
+# (la letra marca el centro de su base), 'n'/'N' NPCs (data/town_npcs.gd), 'P'
+# donde aparece el jugador.
 
 const GROUND_TEXTURE := preload("res://assets/town/ground.png")
 const HOUSE_TEXTURES := [
@@ -23,12 +19,12 @@ const HOUSE_WINDOW_MASKS := [
 	preload("res://assets/town/house_b_windows.png"),
 	preload("res://assets/town/house_c_windows.png"),
 ]
+const INN_TEXTURE := preload("res://assets/town/inn.png")
+const INN_WINDOW_MASK := preload("res://assets/town/inn_windows.png")
 const TREE_TEXTURES := [
 	preload("res://assets/town/tree_a.png"),
 	preload("res://assets/town/tree_b.png"),
 ]
-const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
-const NPC_SCENE := preload("res://scenes/Npc.tscn")
 
 # Posiciones en el atlas de ground.png (ver tools/gen_town_assets.py).
 const GRASS := [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0)]
@@ -44,57 +40,38 @@ const DIRT_EDGES := {
 # Objetos que se paran sobre el suelo de su entorno (camino si hay camino al lado).
 const MOBILE_OBJECTS := ['P', 'n', 'N']
 
-# Dimensiones de las imagenes de arboles (px de la textura) y meta con la que la
-# casa lleva su mascara de ventanas a la atmosfera. El origen de cada sprite
-# queda en sus pies, para que el orden por Y (y_sort) funcione; las medidas de
-# las casas salen de data/house_layout.gd.
+# Dimensiones de las imagenes de arboles (px de la textura) y metas con las que
+# cada edificio lleva a la atmosfera su mascara de ventanas y sus anclajes
+# (data/house_layout.gd): la posada no mide lo mismo que una casa.
 const TREE_FEET := Vector2(40, 100)
 const TREE_TRUNK := Vector2(16, 8)
 const WINDOW_MASK_META := &"window_mask"
-const WALL_THICKNESS := 64.0
+const LAYOUT_META := &"layout"
+# Umbral delante de la puerta de un edificio (px de mundo) y cuánto más abajo
+# aparece quien sale por ella.
+const DOOR_TRIGGER := Vector2(48, 16)
+const DOOR_ARRIVAL_DEPTH := 40.0
 
-var objects: Node2D
-var _rows: Array = []
-
-func build(level_path: String) -> CharacterBody2D:
-	_rows = MapUtils.read_grid(level_path)
-	var cols := 0
-	for row in _rows:
-		cols = maxi(cols, row.length())
-
+func _build_ground() -> void:
 	var ground := TileMapLayer.new()
 	ground.name = "Ground"
 	ground.tile_set = _make_tile_set()
 	ground.scale = Vector2(TILE_SCALE, TILE_SCALE)
 	add_child(ground)
-
-	objects = Node2D.new()
-	objects.name = "Objects"
-	objects.y_sort_enabled = true
-	add_child(objects)
-
-	var player: CharacterBody2D
 	for row in _rows.size():
 		for col in _rows[row].length():
-			var ch: String = _rows[row][col]
 			ground.set_cell(Vector2i(col, row), 0, _ground_tile(col, row))
-			match ch:
-				'T':
-					_add_tree(col, row)
-				'H':
-					_add_house(col, row)
-				'n', 'N':
-					_add_npc(ch, col, row)
-				'P':
-					player = PLAYER_SCENE.instantiate()
-					player.position = _feet(col, row)
-					player.add_to_group("town_characters")
 
-	var bounds := Rect2(0, 0, cols * CELL, _rows.size() * CELL)
-	_add_boundary(bounds)
-	objects.add_child(player)
-	player.set_camera_limits(bounds)
-	return player
+func _place(ch: String, col: int, row: int) -> void:
+	match ch:
+		'T':
+			_add_tree(col, row)
+		'H':
+			var variant := MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()
+			_add_building(col, row, HOUSE_TEXTURES[variant], HOUSE_WINDOW_MASKS[variant], HouseLayout.HOUSE)
+		'I':
+			_add_building(col, row, INN_TEXTURE, INN_WINDOW_MASK, HouseLayout.INN)
+			_add_building_door(col, row, HouseLayout.INN, DoorData.POSADA)
 
 func _make_tile_set() -> TileSet:
 	var source := TileSetAtlasSource.new()
@@ -115,9 +92,7 @@ func _make_tile_set() -> TileSet:
 # Los objetos (arboles, casas, NPCs, spawn) se paran sobre el suelo de su
 # entorno: camino si tienen camino al lado, pasto si no.
 func _is_path(col: int, row: int) -> bool:
-	if row < 0 or row >= _rows.size() or col < 0 or col >= _rows[row].length():
-		return false
-	return _rows[row][col] == ','
+	return _cell(col, row) == ','
 
 func _ground_tile(col: int, row: int) -> Vector2i:
 	var roll := MapUtils.cell_hash(col, row)
@@ -150,73 +125,21 @@ func _has_path_neighbor(col: int, row: int) -> bool:
 			or _is_path(col, row - 1) or _is_path(col, row + 1)
 
 func _is_object_on_path(col: int, row: int) -> bool:
-	if row < 0 or row >= _rows.size() or col < 0 or col >= _rows[row].length():
-		return false
-	var ch: String = _rows[row][col]
-	return MOBILE_OBJECTS.has(ch) and _has_path_neighbor(col, row)
-
-# Hash determinista por celda: el pasto no cambia de una corrida a otra.
-func _feet(col: int, row: int) -> Vector2:
-	return Vector2((col + 0.5) * CELL, (row + 1) * CELL)
+	return MOBILE_OBJECTS.has(_cell(col, row)) and _has_path_neighbor(col, row)
 
 func _add_tree(col: int, row: int) -> void:
-	var sprite := Sprite2D.new()
-	sprite.texture = TREE_TEXTURES[MapUtils.cell_hash(col, row) % TREE_TEXTURES.size()]
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.centered = false
-	sprite.offset = -TREE_FEET
-	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
-	sprite.position = _feet(col, row)
-	sprite.add_to_group("town_trees")
-	objects.add_child(sprite)
+	var texture: Texture2D = TREE_TEXTURES[MapUtils.cell_hash(col, row) % TREE_TEXTURES.size()]
+	_add_prop(texture, _feet(col, row), TREE_FEET, &"town_trees")
 	_add_blocker(_feet(col, row), TREE_TRUNK * TILE_SCALE)
 
-func _add_house(col: int, row: int) -> void:
-	var sprite := Sprite2D.new()
-	var variant := MapUtils.cell_hash(col, row) % HOUSE_TEXTURES.size()
-	sprite.texture = HOUSE_TEXTURES[variant]
-	sprite.set_meta(WINDOW_MASK_META, HOUSE_WINDOW_MASKS[variant])
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.centered = false
-	sprite.offset = -HouseLayout.FEET
-	sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
-	sprite.position = _feet(col, row)
-	sprite.add_to_group("town_houses")
-	objects.add_child(sprite)
-	_add_blocker(_feet(col, row), HouseLayout.BODY * TILE_SCALE)
+func _add_building(col: int, row: int, texture: Texture2D, window_mask: Texture2D, layout: Dictionary) -> void:
+	var sprite := _add_prop(texture, _feet(col, row), layout.feet, &"town_houses")
+	sprite.set_meta(WINDOW_MASK_META, window_mask)
+	sprite.set_meta(LAYOUT_META, layout)
+	_add_blocker(_feet(col, row), layout.body * TILE_SCALE)
 
-func _add_npc(ch: String, col: int, row: int) -> void:
-	var data: Dictionary = TownNpcData.LIST[ch]
-	var npc := NPC_SCENE.instantiate()
-	npc.configure(data)
-	npc.position = _feet(col, row)
-	npc.add_to_group("town_characters")
-	objects.add_child(npc)
-
-# Cuerpo estatico apoyado en `base` (el centro de su borde inferior), para
-# arboles y casas: la forma crece hacia arriba desde los pies del sprite.
-func _add_blocker(base: Vector2, size: Vector2) -> void:
-	var body := StaticBody2D.new()
-	body.collision_layer = 1
-	body.collision_mask = 0
-	body.position = base
-	var shape := MapUtils.rect_shape(size)
-	shape.position = Vector2(0, -size.y * 0.5)
-	body.add_child(shape)
-	add_child(body)
-
-func _add_boundary(bounds: Rect2) -> void:
-	var t := WALL_THICKNESS
-	var sides := [
-		Rect2(bounds.position.x - t, bounds.position.y - t, bounds.size.x + 2 * t, t),
-		Rect2(bounds.position.x - t, bounds.end.y, bounds.size.x + 2 * t, t),
-		Rect2(bounds.position.x - t, bounds.position.y, t, bounds.size.y),
-		Rect2(bounds.end.x, bounds.position.y, t, bounds.size.y),
-	]
-	for side in sides:
-		var body := StaticBody2D.new()
-		body.collision_layer = 1
-		body.collision_mask = 0
-		body.position = side.get_center()
-		body.add_child(MapUtils.rect_shape(side.size))
-		add_child(body)
+# La puerta sale de los anclajes del edificio, así siempre coincide con el arte.
+func _add_building_door(col: int, row: int, layout: Dictionary, id: StringName) -> void:
+	var door: Vector2 = _feet(col, row) + layout.door * TILE_SCALE
+	var trigger := Rect2(door - Vector2(DOOR_TRIGGER.x * 0.5, 0), DOOR_TRIGGER)
+	_add_door(id, DoorData.INSIDE[id], trigger, door + Vector2(0, DOOR_ARRIVAL_DEPTH))

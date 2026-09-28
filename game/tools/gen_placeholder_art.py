@@ -7,6 +7,7 @@
 from PIL import Image, ImageDraw
 import os
 import house_layout
+import map_grid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(HERE, "..", "assets") + os.sep
@@ -97,23 +98,59 @@ for name, canopy in (("tree_a", (70, 130, 60, 255)), ("tree_b", (50, 110, 80, 25
     td.ellipse((8, 4, 72, 76), fill=canopy)
     save("town/%s.png" % name, tree)
 
-# Casas: mismo tamano que las del kit y una mascara de ventanas propia (la que
-# lee el shader de ventanas encendidas), con las medidas de tools/house_layout.py.
-for name, roof in (("house_a", (214, 182, 72, 255)), ("house_b", (170, 196, 170, 255)), ("house_c", (226, 160, 110, 255))):
-    house = Image.new("RGBA", house_layout.SIZE, (0, 0, 0, 0))
-    window_mask = Image.new("L", house_layout.SIZE, 0)
+# Edificios: mismo tamano que los del kit y una mascara de ventanas propia (la
+# que lee el shader de ventanas encendidas), con las medidas de tools/house_layout.py.
+# La posada es una casa con un piso mas y un bloque de cartel junto a la puerta.
+def building(layout, roof, sign=False):
+    size = layout["size"]
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    window_mask = Image.new("L", size, 0)
     md = ImageDraw.Draw(window_mask)
-    hd = ImageDraw.Draw(house)
-    hd.rectangle((8, 150, 135, 197), fill=(232, 218, 176, 255))
-    hd.rectangle((8, 182, 135, 197), fill=(130, 130, 130, 255))
-    hd.rectangle((52, 150, 91, 181), fill=(90, 110, 160, 255))
-    for rect in house_layout.PLACEHOLDER_WINDOWS:
+    hd = ImageDraw.Draw(image)
+    ground_y = size[1] - 48
+    hd.rectangle((8, 150, 135, size[1] - 1), fill=(232, 218, 176, 255))
+    hd.rectangle((8, size[1] - 16, 135, size[1] - 1), fill=(130, 130, 130, 255))
+    hd.rectangle((52, ground_y, 91, size[1] - 17), fill=(90, 110, 160, 255))
+    for rect in layout["placeholder_windows"]:
         hd.rectangle(rect, fill=(24, 24, 32, 255))
         md.rectangle(rect, fill=255)
+    if sign:
+        hd.rectangle((30, ground_y - 6, 44, ground_y + 12), fill=(150, 100, 50, 255))
     hd.polygon([(0, 150), (40, 20), (104, 20), (144, 150)], fill=roof)
-    hd.rectangle((126, 90, 150, 181), fill=(200, 200, 190, 255))
+    hd.rectangle((126, size[1] - 108, 150, size[1] - 17), fill=(200, 200, 190, 255))
+    return image, window_mask
+
+for name, roof in (("house_a", (214, 182, 72, 255)), ("house_b", (170, 196, 170, 255)), ("house_c", (226, 160, 110, 255))):
+    house, window_mask = building(house_layout.LAYOUTS["house"], roof)
     save("town/%s.png" % name, house)
     save("town/%s_windows.png" % name, window_mask)
+inn, window_mask = building(house_layout.LAYOUTS["inn"], (190, 110, 80, 255), sign=True)
+save("town/inn.png", inn)
+save("town/inn_windows.png", window_mask)
+
+# Interior de la posada: el cuarto sale de levels/inn.txt, como el real ('#'
+# borde, 'W'/'v'/'c' pared, ventana y cuadro, 'D' umbral, el resto piso), y los
+# muebles son cajas del mismo tamano que los del kit (la vela, una tira de 4 cuadros).
+inn_rows = map_grid.read_grid(os.path.join(HERE, "..", "levels", "inn.txt"))
+room = Image.new("RGBA", (max(len(r) for r in inn_rows) * 16, len(inn_rows) * 16), (24, 22, 30, 255))
+rd = ImageDraw.Draw(room)
+ROOM_COLORS = {"W": (150, 100, 60, 255), "v": (240, 210, 120, 255), "c": (180, 140, 60, 255), "D": (120, 120, 120, 255)}
+for row, line in enumerate(inn_rows):
+    for col, ch in enumerate(line):
+        if ch != "#":
+            rd.rectangle((col * 16, row * 16, col * 16 + 15, row * 16 + 15), fill=ROOM_COLORS.get(ch, (90, 80, 70, 255)))
+save("town/inn_room.png", room)
+for name, size, color in (("inn_bed", (32, 64), (70, 120, 150, 255)), ("inn_desk", (32, 40), (140, 100, 60, 255)),
+                          ("inn_trunk", (32, 16), (120, 80, 40, 255))):
+    prop = Image.new("RGBA", size, (0, 0, 0, 0))
+    ImageDraw.Draw(prop).rectangle((1, 1, size[0] - 2, size[1] - 2), fill=color)
+    save("town/%s.png" % name, prop)
+candle = Image.new("RGBA", (64, 16), (0, 0, 0, 0))
+for frame in range(4):
+    cd = ImageDraw.Draw(candle)
+    cd.rectangle((frame * 16 + 6, 8, frame * 16 + 9, 15), fill=(230, 220, 200, 255))
+    cd.ellipse((frame * 16 + 6, 3 + frame % 2, frame * 16 + 9, 7), fill=(255, 170, 60, 255))
+save("town/inn_candle.png", candle)
 
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):

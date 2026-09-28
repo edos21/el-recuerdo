@@ -7,6 +7,8 @@ const GLOW_INTENSITY := 0.7
 const GLOW_BLOOM := 0.04
 const GLOW_THRESHOLD := 0.88
 const SWAY_SHADER := preload("res://shaders/wind_sway.gdshader")
+const PLAYER_LIGHT_COLOR := Color(1.0, 0.9, 0.75)
+const PLAYER_LIGHT_OFFSET := Vector2(0, -20)
 
 # Un solo material aditivo para todos: el batcher 2D agrupa lo que lo comparte.
 static var _additive: CanvasItemMaterial
@@ -38,6 +40,24 @@ static func point_light(texture: Texture2D, color: Color, energy: float, texture
 	light.energy = energy
 	light.texture_scale = texture_scale
 	return light
+
+# Luz tibia que acompaña al jugador en el mundo real: separa al personaje del
+# fondo sin cambiar el tono de la escena.
+static func player_light(texture: Texture2D, energy: float, texture_scale: float) -> PointLight2D:
+	var light := point_light(texture, PLAYER_LIGHT_COLOR, energy, texture_scale)
+	light.position = PLAYER_LIGHT_OFFSET
+	return light
+
+# Sombra suave bajo los pies de cada personaje, dibujada detrás de su sprite:
+# sin ella los personajes parecen flotar sobre el suelo.
+static func add_contact_shadows(characters: Array[Node], texture: Texture2D, size: Vector2) -> void:
+	for character in characters:
+		var shadow := Sprite2D.new()
+		shadow.texture = texture
+		shadow.scale = size / Vector2(texture.get_size())
+		shadow.show_behind_parent = true
+		character.add_child(shadow)
+		character.move_child(shadow, 0)
 
 static func sway_material(strength: float) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
