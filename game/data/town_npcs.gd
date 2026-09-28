@@ -8,14 +8,17 @@ extends RefCounted
 # el mundo que acompana lo que dice: Marta es la que te encontro y se preocupa;
 # Tomas es el que prefiere no mirar lo que pasa en el pueblo.
 #
-# Opcionales: `stationary` (no pasea: sentado, detras de un mostrador),
+# Con `wander_radius` 0 no pasea (sentado, detras de un mostrador). Opcionales:
 # `facing` (hacia donde mira al aparecer) y `only_on_wake` (solo esta mientras
 # el despertar no se mostro: Marta junto a la cama).
 
+const MARTA_NAME := "Marta"
+const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
+
 const LIST := {
 	"n": {
-		"name": "Marta",
-		"frames": "res://assets/characters/topdown_npc_a_frames.tres",
+		"name": MARTA_NAME,
+		"frames": MARTA_FRAMES,
 		"lines": [
 			"¡Ey! ¿Ya tomaste aire? No te exijas, que recién te levantás.",
 			"Tranquilo, respirá. A veces pasa: alguien se pierde en un recuerdo y le cuesta volver.",
@@ -28,17 +31,16 @@ const LIST := {
 	},
 	# Marta junto a la cama de la posada, la primera vez que despierta.
 	"m": {
-		"name": "Marta",
-		"frames": "res://assets/characters/topdown_npc_a_frames.tres",
+		"name": MARTA_NAME,
+		"frames": MARTA_FRAMES,
 		"lines": [
-			"Despacio. Dormiste casi un día entero.",
+			"Tranquilo, acá estás a salvo. Tomate tu tiempo.",
 		],
 		"attitude": Npc.Attitude.CURIOUS,
 		"wander_radius": 0.0,
 		"walk_speed": 0.0,
 		"barks": ["Despacio.", "Estoy acá."],
 		"idle_emotes": [],
-		"stationary": true,
 		"facing": "down",
 		"only_on_wake": true,
 	},
@@ -54,7 +56,6 @@ const LIST := {
 		"walk_speed": 0.0,
 		"barks": ["Buenas.", "¿Dormiste algo?"],
 		"idle_emotes": ["..."],
-		"stationary": true,
 		"facing": "down",
 	},
 	"N": {

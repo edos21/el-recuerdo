@@ -6,8 +6,9 @@ extends TopDownScene
 
 const FIRST_THOUGHT_DELAY := 1.5
 # Un pensamiento nuevo pisa al anterior: se espera a que termine de leerse
-# (aparece, se sostiene, se va) y un respiro más.
-const THOUGHT_STEP := 6.0
+# (aparece, se sostiene, se va, con los tiempos del HUD) y un respiro más.
+const THOUGHT_BREATH := 0.3
+const THOUGHT_STEP := Hud.THOUGHT_FADE_IN + Events.DEFAULT_THOUGHT_HOLD + Hud.THOUGHT_FADE_OUT + THOUGHT_BREATH
 const FIRST_THOUGHT := "...¿Dónde estoy?"
 # La valija queda al pie de la cama, a la izquierda de donde despierta.
 const TRUNK_FACING := "left"
@@ -27,21 +28,32 @@ func _ready() -> void:
 	if GameState.consume_wake():
 		_wake_up()
 
-# Recién despierto no se camina: el jugador se mueve después de elegir.
+# Recién despierto no se camina ni se habla: el jugador vuelve a moverse al elegir.
 func _wake_up() -> void:
-	player.set_physics_process(false)
-	await get_tree().create_timer(FIRST_THOUGHT_DELAY).timeout
+	player.set_locked(true)
+	await _wait(FIRST_THOUGHT_DELAY)
 	Events.thought_requested.emit(FIRST_THOUGHT, Events.DEFAULT_THOUGHT_HOLD)
-	await get_tree().create_timer(THOUGHT_STEP).timeout
+	await _wait(THOUGHT_STEP)
 	player.face(TRUNK_FACING)
 	Events.thought_requested.emit(TRUNK_THOUGHT, Events.DEFAULT_THOUGHT_HOLD)
-	await get_tree().create_timer(THOUGHT_STEP).timeout
+	await _wait(THOUGHT_STEP)
 	for line in MARTA_LINES:
 		Events.message_requested.emit(line)
 	Events.choice_requested.emit(CHOICE_PROMPT, PackedStringArray(CHOICES), _on_first_choice)
 
+# Un Timer hijo de la escena y no uno del árbol: si la escena se cierra a mitad
+# de la secuencia, el Timer se va con ella y la secuencia no sigue sobre nodos
+# liberados.
+func _wait(seconds: float) -> void:
+	var timer := Timer.new()
+	timer.one_shot = true
+	add_child(timer)
+	timer.start(seconds)
+	await timer.timeout
+	timer.queue_free()
+
 func _on_first_choice(index: int) -> void:
-	player.set_physics_process(true)
+	player.set_locked(false)
 	if index == 0:
 		RestSpot.rest.call_deferred(REST_THOUGHT)
 	else:

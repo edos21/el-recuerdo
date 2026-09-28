@@ -35,6 +35,9 @@ var max_stability: float:
 var _low_stability := false
 
 var _facing := "down"
+# Bloqueado (una escena guionada): no camina ni interactúa, pero sigue vivo
+# (animación, cámara, puede girar con face()).
+var _locked := false
 var _step_time := 0.0
 var _base_scale: Vector2
 var _base_offset: Vector2
@@ -65,6 +68,12 @@ func _emit_vitals() -> void:
 		_low_stability = low
 		low_stability_changed.emit(low)
 
+func set_locked(locked: bool) -> void:
+	_locked = locked
+
+func is_locked() -> bool:
+	return _locked
+
 func face(direction: String) -> void:
 	_facing = direction
 	sprite.play("idle_" + _facing)
@@ -76,7 +85,7 @@ func set_camera_limits(bounds: Rect2) -> void:
 	camera.limit_bottom = int(bounds.end.y)
 
 func _physics_process(delta: float) -> void:
-	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction := Vector2.ZERO if _locked else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	velocity = direction * SPEED
 	move_and_slide()
 	var walking := direction != Vector2.ZERO
@@ -105,7 +114,7 @@ func _animate_step(walking: bool, delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_action_pressed("interact"):
+	if _locked or not event.is_action_pressed("interact"):
 		return
 	var target := _nearest_interactable()
 	if target:

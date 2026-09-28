@@ -1,17 +1,14 @@
-extends Node
+extends CheckBase
 # godot --headless --fixed-fps 60 --path . res://tools/check_beats.tscn
 # Comprueba los beats de guion y la elección del HUD sin jugar: cada beat cuenta
 # una sola vez, el alivio no pasa el tope, madurar no pasa el máximo original, el
 # jugador cenital avisa al HUD y una elección llama con la opción elegida y
 # suelta la pausa. Imprime FAIL por cada chequeo roto y sale con código 1.
-# Corre como escena y no como `--script` porque los autoloads (Events,
-# GameState) no compilan en ese modo.
 
 const CORE_SCENE := preload("res://scenes/Core.tscn")
 const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
 const OPTIONS := ["Descansar", "Salir"]
 
-var _failures := 0
 var _frames := 0
 var _chosen := -1
 var _last_stability_signal := -1.0
@@ -45,8 +42,7 @@ func _process(_delta: float) -> void:
 		12:
 			_expect(_chosen == 1, "la elección devuelve la opción marcada (esperado 1, vino %d)" % _chosen)
 			_expect(not get_tree().paused, "confirmar la última elección suelta la pausa")
-			print("check_beats: %s" % ("OK" if _failures == 0 else "%d FALLOS" % _failures))
-			get_tree().quit(0 if _failures == 0 else 1)
+			_finish("check_beats")
 
 func _check_wake_up() -> void:
 	GameState.reset()
@@ -95,14 +91,3 @@ func _check_player_signal() -> void:
 	_expect(is_equal_approx(_last_stability_signal, GameState.stability), "el jugador avisa la Estabilidad nueva al HUD")
 	_expect(is_equal_approx(player.stability, GameState.stability), "el jugador expone la Estabilidad de GameState")
 	player.queue_free()
-
-func _press(action: String) -> void:
-	var event := InputEventAction.new()
-	event.action = action
-	event.pressed = true
-	Input.parse_input_event(event)
-
-func _expect(condition: bool, description: String) -> void:
-	if not condition:
-		_failures += 1
-		print("FAIL: %s" % description)

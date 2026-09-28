@@ -44,10 +44,10 @@ const FURNITURE := {
 			"frames": 5, "flame": Vector2(16, 26)},
 }
 
-# El umbral se dispara en la mitad de la celda más lejana del cuarto: quien
-# llega aparece una celda hacia adentro, ya fuera del umbral.
 # Cuánto más allá de la huella del mueble alcanza para descansar en él (px de mundo).
 const REST_REACH := 16.0
+# El umbral se dispara en la mitad de la celda más lejana del cuarto: quien
+# llega aparece una celda hacia adentro, ya fuera del umbral.
 const DOOR_TRIGGER_DEPTH := 16.0
 const DOOR_ARRIVAL_INSET := 4.0
 

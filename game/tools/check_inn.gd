@@ -1,13 +1,13 @@
-extends Node
+extends CheckBase
 # godot --headless --fixed-fps 60 --path . res://tools/check_inn.tscn
 # Comprueba el despertar en la posada sin jugar: el despertar se consume una
 # sola vez; descansar devuelve la Vida y sube la Estabilidad solo hasta el piso
 # del despertar; el jugador cenital refleja los dos valores; Marta está junto a
 # la cama solo mientras el despertar no se mostró; la cama se puede usar; y la
 # secuencia entera (pensamientos, líneas de Marta, elegir "Descansar", fundido)
-# termina con el jugador libre y la Estabilidad en el piso. Imprime FAIL por
-# cada chequeo roto y sale con código 1. Corre como escena y no como `--script`
-# porque los autoloads no compilan en ese modo.
+# termina con el jugador libre y la Estabilidad en el piso; y durante el
+# despertar apretar Enter no abre el diálogo con Marta, que está al lado.
+# Imprime FAIL por cada chequeo roto y sale con código 1.
 
 const ROOM_SCENE := preload("res://scenes/InnRoom.tscn")
 const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
@@ -15,15 +15,18 @@ const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
 const WAKE_TIMEOUT := 30.0
 const REST_TIMEOUT := 8.0
 const SETTLE_FRAMES := 3
+# Durante el primer pensamiento se aprieta Enter y se espera un poco: si el
+# jugador no estuviera bloqueado, abriría el diálogo con Marta.
+const LOCKED_PRESS_FRAMES := 5
 
-enum Step { CHECK_ROOMS, WAIT_CHOICE, WAIT_REST, DONE }
+enum Step { CHECK_ROOMS, CHECK_LOCKED, WAIT_CHOICE, WAIT_REST, DONE }
 
-var _failures := 0
 var _step := Step.CHECK_ROOMS
 var _frames := 0
 var _elapsed := 0.0
 var _room: TopDownScene
 var _vitals_signals := 0
+var _shown_health := -1
 
 func _ready() -> void:
 	_check_consume_wake()
@@ -44,18 +47,25 @@ func _process(delta: float) -> void:
 			_expect(_marta(_room) != null, "con el despertar pendiente, Marta está junto a la cama")
 			_expect(_rest_spot(_room) != null, "la cama se puede usar para descansar")
 			_expect(not GameState.came_from_expulsion, "la habitación consume el despertar")
-			_expect(not _room.player.is_physics_processing(), "recién despierto no se camina")
+			_expect(_room.player.is_locked(), "recién despierto no se camina ni se habla")
 			# El despertar ya deja la Estabilidad en el piso y la Vida llena: se
 			# bajan para que descansar tenga algo que devolver.
 			GameState.stability = GameState.max_stability * GameState.WAKE_STABILITY_RATIO * 0.5
 			GameState.health = 1
+			_press("interact")
+			_frames = 0
+			_step = Step.CHECK_LOCKED
+		Step.CHECK_LOCKED:
+			if _frames < LOCKED_PRESS_FRAMES:
+				return
+			_expect(not get_tree().paused, "durante el despertar, Enter no abre el diálogo con Marta")
 			_step = Step.WAIT_CHOICE
 			_elapsed = 0.0
 		Step.WAIT_CHOICE:
 			# Los mensajes de Marta pausan el árbol: se avanzan hasta la elección.
 			if get_tree().paused and _frames % 10 == 0:
 				_press("interact")
-			if _room.player.is_physics_processing():
+			if not _room.player.is_locked():
 				_step = Step.WAIT_REST
 				_elapsed = 0.0
 			elif _elapsed > WAKE_TIMEOUT:
@@ -70,8 +80,7 @@ func _process(delta: float) -> void:
 				_check_no_marta_without_wake()
 				_step = Step.DONE
 		Step.DONE:
-			print("check_inn: %s" % ("OK" if _failures == 0 else "%d FALLOS" % _failures))
-			get_tree().quit(0 if _failures == 0 else 1)
+			_finish("check_inn")
 
 func _check_consume_wake() -> void:
 	GameState.reset()
@@ -100,12 +109,11 @@ func _check_player_reflects_rest() -> void:
 	GameState.ensure_defaults()
 	var player := PLAYER_SCENE.instantiate()
 	add_child(player)
-	var shown := {"health": -1}
-	player.health_changed.connect(func(current: int, _max_value: int) -> void: shown.health = current)
+	player.health_changed.connect(func(current: int, _max_value: int) -> void: _shown_health = current)
 	GameState.health = 1
 	GameState.rest()
 	_expect(player.health == GameState.MAX_HEALTH, "el jugador cenital refleja la Vida de GameState")
-	_expect(shown.health == GameState.MAX_HEALTH, "el jugador avisa la Vida nueva al HUD")
+	_expect(_shown_health == GameState.MAX_HEALTH, "el jugador avisa la Vida nueva al HUD")
 	player.free()
 
 func _check_no_marta_without_wake() -> void:
@@ -129,18 +137,6 @@ func _rest_spot(room: TopDownScene) -> RestSpot:
 func _count_vitals() -> void:
 	_vitals_signals += 1
 
-func _press(action: String) -> void:
-	var event := InputEventAction.new()
-	event.action = action
-	event.pressed = true
-	Input.parse_input_event(event)
-
 func _fail_and_quit(description: String) -> void:
 	_expect(false, description)
-	print("check_inn: %d FALLOS" % _failures)
-	get_tree().quit(1)
-
-func _expect(condition: bool, description: String) -> void:
-	if not condition:
-		_failures += 1
-		print("FAIL: %s" % description)
+	_finish("check_inn")
