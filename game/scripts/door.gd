@@ -22,5 +22,9 @@ func _init(door_id: StringName, scene_path: String, trigger: Rect2, arrival: Vec
 func _on_body_entered(body: Node2D) -> void:
 	if not body.is_in_group("player"):
 		return
+	# Con un fundido en curso el cambio no ocurriría: la llegada quedaría
+	# pendiente para una puerta que nunca se cruzó.
+	if SceneRouter.is_busy():
+		return
 	GameState.arrival_door = id
 	SceneRouter.change_scene(target_scene)

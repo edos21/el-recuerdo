@@ -52,9 +52,10 @@ func _wait(seconds: float) -> void:
 	await timer.timeout
 	timer.queue_free()
 
+# Descansar suelta al jugador cuando termina el fundido; salir, en el acto.
 func _on_first_choice(index: int) -> void:
-	player.set_locked(false)
 	if index == 0:
-		RestSpot.rest.call_deferred(REST_THOUGHT)
+		RestSpot.rest.call_deferred(player, REST_THOUGHT)
 	else:
+		player.set_locked(false)
 		Events.message_requested.emit(LEAVE_LINE)

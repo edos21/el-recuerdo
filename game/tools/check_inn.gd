@@ -15,11 +15,14 @@ const PLAYER_SCENE := preload("res://scenes/TopDownPlayer.tscn")
 const WAKE_TIMEOUT := 30.0
 const REST_TIMEOUT := 8.0
 const SETTLE_FRAMES := 3
+const BLINK_HOLD := 0.1
+# Dos fundidos completos (salir, sostener, volver) con margen.
+const BLINKS_TIMEOUT := 10.0
 # Durante el primer pensamiento se aprieta Enter y se espera un poco: si el
 # jugador no estuviera bloqueado, abriría el diálogo con Marta.
 const LOCKED_PRESS_FRAMES := 5
 
-enum Step { CHECK_ROOMS, CHECK_LOCKED, WAIT_CHOICE, WAIT_REST, DONE }
+enum Step { CHECK_ROOMS, CHECK_LOCKED, WAIT_CHOICE, CHECK_REST_LOCK, WAIT_UNLOCK, WAIT_REST, WAIT_BLINKS, DONE }
 
 var _step := Step.CHECK_ROOMS
 var _frames := 0
@@ -27,6 +30,8 @@ var _elapsed := 0.0
 var _room: TopDownScene
 var _vitals_signals := 0
 var _shown_health := -1
+var _saw_dialogue := false
+var _blinks := 0
 
 func _ready() -> void:
 	_check_consume_wake()
@@ -62,14 +67,27 @@ func _process(delta: float) -> void:
 			_step = Step.WAIT_CHOICE
 			_elapsed = 0.0
 		Step.WAIT_CHOICE:
-			# Los mensajes de Marta pausan el árbol: se avanzan hasta la elección.
-			if get_tree().paused and _frames % 10 == 0:
-				_press("interact")
+			# Los mensajes de Marta y la elección van en una sola pausa: se avanzan
+			# con Enter ("Descansar" es la primera opción) hasta que se suelta.
+			if get_tree().paused:
+				_saw_dialogue = true
+				if _frames % 10 == 0:
+					_press("interact")
+			elif _saw_dialogue:
+				_step = Step.CHECK_REST_LOCK
+			elif _elapsed > WAKE_TIMEOUT:
+				_fail_and_quit("la secuencia del despertar llega a la elección")
+		Step.CHECK_REST_LOCK:
+			# El descanso arranca diferido: un frame después de elegir.
+			_expect(_room.player.is_locked(), "durante el fundido de descanso el jugador no se mueve")
+			_elapsed = 0.0
+			_step = Step.WAIT_UNLOCK
+		Step.WAIT_UNLOCK:
 			if not _room.player.is_locked():
 				_step = Step.WAIT_REST
 				_elapsed = 0.0
-			elif _elapsed > WAKE_TIMEOUT:
-				_fail_and_quit("la secuencia del despertar llega a la elección")
+			elif _elapsed > REST_TIMEOUT:
+				_fail_and_quit("el jugador vuelve a moverse al terminar el descanso")
 		Step.WAIT_REST:
 			var floor_value := GameState.max_stability * GameState.WAKE_STABILITY_RATIO
 			if _elapsed > REST_TIMEOUT:
@@ -78,6 +96,14 @@ func _process(delta: float) -> void:
 				_expect(not get_tree().paused, "después de elegir, el juego sigue")
 				_room.free()
 				_check_no_marta_without_wake()
+				# Dos fundidos seguidos: el segundo espera al primero, no se descarta.
+				SceneRouter.blink(BLINK_HOLD, _count_blink)
+				SceneRouter.blink(BLINK_HOLD, _count_blink)
+				_elapsed = 0.0
+				_step = Step.WAIT_BLINKS
+		Step.WAIT_BLINKS:
+			if _elapsed > BLINKS_TIMEOUT:
+				_expect(_blinks == 2, "un descanso durante otro fundido espera en vez de descartarse (%d de 2)" % _blinks)
 				_step = Step.DONE
 		Step.DONE:
 			_finish("check_inn")
@@ -133,6 +159,9 @@ func _rest_spot(room: TopDownScene) -> RestSpot:
 		if child is RestSpot:
 			return child
 	return null
+
+func _count_blink() -> void:
+	_blinks += 1
 
 func _count_vitals() -> void:
 	_vitals_signals += 1

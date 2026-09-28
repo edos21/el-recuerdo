@@ -18,11 +18,16 @@ func _ready() -> void:
 	_shade.modulate.a = 0.0
 	add_child(_shade)
 
+func is_busy() -> bool:
+	return _busy
+
 # Fundido a negro y vuelta sin cambiar de escena (descansar, un salto de
-# tiempo): `on_dark` corre con la pantalla negra.
+# tiempo): `on_dark` corre con la pantalla negra. Si hay otro fundido en curso
+# (recién se entró a la escena) espera a que termine: descartarlo dejaría el
+# descanso sin efecto.
 func blink(hold: float, on_dark: Callable) -> void:
-	if _busy:
-		return
+	while _busy:
+		await get_tree().process_frame
 	_busy = true
 	await _fade(1.0, FADE_OUT_TIME)
 	on_dark.call()
