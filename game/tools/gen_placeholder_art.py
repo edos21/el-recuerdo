@@ -161,7 +161,8 @@ for frame in range(5):
 save("town/inn_pot.png", pot)
 
 DIRS = ["down", "left", "right", "up"]
-for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255))):
+for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255)),
+                   ("innkeeper", (150, 90, 60, 255))):
     sheet = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     for r, direction in enumerate(DIRS):
         for c in range(4):

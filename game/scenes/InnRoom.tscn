@@ -1,6 +1,6 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
-[ext_resource type="Script" path="res://scripts/topdown_scene.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/inn_room.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/interior_loader.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/Core.tscn" id="3"]
 [ext_resource type="Script" path="res://scripts/interior_atmosphere.gd" id="4"]

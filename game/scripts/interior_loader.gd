@@ -29,11 +29,12 @@ const FLAME_FPS := 8.0
 
 # Muebles del kit, por carácter: textura, pies y huella en px de textura;
 # opcionales: cuadros de animación ("frames", la textura es una tira), dónde
-# está su llama ("flame") y dónde va una vela encendida encima ("candle_at",
-# esquina de arriba a la izquierda). Los pies van a un cuarto del ancho de una
+# está su llama ("flame"), dónde va una vela encendida encima ("candle_at",
+# esquina de arriba a la izquierda) y si se puede descansar en él ("rest"). Los pies van a un cuarto del ancho de una
 # celda para que el mueble arranque en el borde izquierdo de su celda.
 const FURNITURE := {
-	'B': {"texture": preload("res://assets/town/inn_bed.png"), "feet": Vector2(8, 64), "body": Vector2(32, 56)},
+	'B': {"texture": preload("res://assets/town/inn_bed.png"), "feet": Vector2(8, 64), "body": Vector2(32, 56),
+			"rest": true},
 	'M': {"texture": preload("res://assets/town/inn_trunk.png"), "feet": Vector2(8, 16), "body": Vector2(30, 12)},
 	'd': {"texture": preload("res://assets/town/inn_desk.png"), "feet": Vector2(8, 40), "body": Vector2(30, 12),
 			"candle_at": Vector2(17, 1)},
@@ -43,6 +44,8 @@ const FURNITURE := {
 			"frames": 5, "flame": Vector2(16, 26)},
 }
 
+# Cuánto más allá de la huella del mueble alcanza para descansar en él (px de mundo).
+const REST_REACH := 16.0
 # El umbral se dispara en la mitad de la celda más lejana del cuarto: quien
 # llega aparece una celda hacia adentro, ya fuera del umbral.
 const DOOR_TRIGGER_DEPTH := 16.0
@@ -107,7 +110,13 @@ func _add_furniture(furniture: Dictionary, base: Vector2) -> void:
 	if furniture.has("flame"):
 		_mark_flame(sprite, furniture.flame - furniture.feet)
 	var center_x: float = (width * 0.5 - furniture.feet.x) * TILE_SCALE
-	_add_blocker(base + Vector2(center_x, 0), furniture.body * TILE_SCALE)
+	var body: Vector2 = furniture.body * TILE_SCALE
+	_add_blocker(base + Vector2(center_x, 0), body)
+	if furniture.get("rest", false):
+		var reach := Rect2(-body.x * 0.5, -body.y, body.x, body.y).grow(REST_REACH)
+		var spot := RestSpot.new(reach)
+		spot.position = base + Vector2(center_x, 0)
+		add_child(spot)
 	if furniture.has("candle_at"):
 		_add_candle(sprite, furniture.candle_at - furniture.feet)
 

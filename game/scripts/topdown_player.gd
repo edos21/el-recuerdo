@@ -19,10 +19,12 @@ const STEP_SQUASH := 0.06
 const STEP_FREQUENCY := 11.0
 const STEP_SETTLE_SPEED := 12.0
 
-var health: int
 var max_health := GameState.MAX_HEALTH
-# En el hub la Estabilidad es de GameState (ver complete_beat alli): el jugador
-# solo la expone con la misma interfaz que el de plataformas.
+# En el hub la Vida y la Estabilidad son de GameState (beats, descanso): el
+# jugador solo las expone con la misma interfaz que el de plataformas.
+var health: int:
+	get:
+		return GameState.health
 var stability: float:
 	get:
 		return GameState.stability
@@ -33,6 +35,9 @@ var max_stability: float:
 var _low_stability := false
 
 var _facing := "down"
+# Bloqueado (una escena guionada): no camina ni interactúa, pero sigue vivo
+# (animación, cámara, puede girar con face()).
+var _locked := false
 var _step_time := 0.0
 var _base_scale: Vector2
 var _base_offset: Vector2
@@ -45,24 +50,33 @@ var _base_camera: Vector2
 
 func _ready() -> void:
 	GameState.ensure_defaults()
-	health = GameState.health
-	GameState.stability_changed.connect(_emit_stability)
+	GameState.vitals_changed.connect(_emit_vitals)
 	camera.zoom = Vector2(CAMERA_ZOOM, CAMERA_ZOOM)
 	_base_scale = sprite.scale
 	_base_offset = sprite.position
 	_base_camera = camera.position
-	health_changed.emit(health, max_health)
-	_emit_stability()
+	_emit_vitals()
 
-# Unico punto que emite stability_changed, con el mismo contrato que player.gd:
-# el umbral de Estabilidad baja se avisa solo al cruzarlo (reemitirlo reinicia
-# el parpadeo del HUD).
-func _emit_stability() -> void:
+# Unico punto que emite health_changed y stability_changed, con el mismo
+# contrato que player.gd: el umbral de Estabilidad baja se avisa solo al
+# cruzarlo (reemitirlo reinicia el parpadeo del HUD).
+func _emit_vitals() -> void:
+	health_changed.emit(health, max_health)
 	stability_changed.emit(stability, max_stability)
 	var low := GameState.is_low_stability(stability, max_stability)
 	if low != _low_stability:
 		_low_stability = low
 		low_stability_changed.emit(low)
+
+func set_locked(locked: bool) -> void:
+	_locked = locked
+
+func is_locked() -> bool:
+	return _locked
+
+func face(direction: String) -> void:
+	_facing = direction
+	sprite.play("idle_" + _facing)
 
 func set_camera_limits(bounds: Rect2) -> void:
 	camera.limit_left = int(bounds.position.x)
@@ -71,7 +85,7 @@ func set_camera_limits(bounds: Rect2) -> void:
 	camera.limit_bottom = int(bounds.end.y)
 
 func _physics_process(delta: float) -> void:
-	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction := Vector2.ZERO if _locked else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	velocity = direction * SPEED
 	move_and_slide()
 	var walking := direction != Vector2.ZERO
@@ -100,7 +114,7 @@ func _animate_step(walking: bool, delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_action_pressed("interact"):
+	if _locked or not event.is_action_pressed("interact"):
 		return
 	var target := _nearest_interactable()
 	if target:

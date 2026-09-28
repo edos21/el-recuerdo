@@ -7,13 +7,20 @@ extends RefCounted
 # `attitude`, `barks` e `idle_emotes` le dan a cada uno una forma de estar en
 # el mundo que acompana lo que dice: Marta es la que te encontro y se preocupa;
 # Tomas es el que prefiere no mirar lo que pasa en el pueblo.
+#
+# Con `wander_radius` 0 no pasea (sentado, detras de un mostrador). Opcionales:
+# `facing` (hacia donde mira al aparecer) y `only_on_wake` (solo esta mientras
+# el despertar no se mostro: Marta junto a la cama).
+
+const MARTA_NAME := "Marta"
+const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
 
 const LIST := {
 	"n": {
-		"name": "Marta",
-		"frames": "res://assets/characters/topdown_npc_a_frames.tres",
+		"name": MARTA_NAME,
+		"frames": MARTA_FRAMES,
 		"lines": [
-			"¡Ey! Menos mal. Te vi caer en plena plaza y no reaccionabas.",
+			"¡Ey! ¿Ya tomaste aire? No te exijas, que recién te levantás.",
 			"Tranquilo, respirá. A veces pasa: alguien se pierde en un recuerdo y le cuesta volver.",
 		],
 		"attitude": Npc.Attitude.CURIOUS,
@@ -21,6 +28,35 @@ const LIST := {
 		"walk_speed": 38.0,
 		"barks": ["¿Ya estás mejor?", "¡Ahí estás!", "No te alejes mucho, ¿eh?"],
 		"idle_emotes": ["?"],
+	},
+	# Marta junto a la cama de la posada, la primera vez que despierta.
+	"m": {
+		"name": MARTA_NAME,
+		"frames": MARTA_FRAMES,
+		"lines": [
+			"Tranquilo, acá estás a salvo. Tomate tu tiempo.",
+		],
+		"attitude": Npc.Attitude.CURIOUS,
+		"wander_radius": 0.0,
+		"walk_speed": 0.0,
+		"barks": ["Despacio.", "Estoy acá."],
+		"idle_emotes": [],
+		"facing": "down",
+		"only_on_wake": true,
+	},
+	"p": {
+		"name": "Posadera",
+		"frames": "res://assets/characters/topdown_innkeeper_frames.tres",
+		"lines": [
+			"Ah, te levantaste. Marta no se movió de al lado tuyo en toda la noche.",
+			"Si necesitás algo, estoy acá. La cama es tuya mientras te haga falta.",
+		],
+		"attitude": Npc.Attitude.CURIOUS,
+		"wander_radius": 0.0,
+		"walk_speed": 0.0,
+		"barks": ["Buenas.", "¿Dormiste algo?"],
+		"idle_emotes": ["..."],
+		"facing": "down",
 	},
 	"N": {
 		"name": "Tomás",

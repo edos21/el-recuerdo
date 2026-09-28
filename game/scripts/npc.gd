@@ -76,6 +76,7 @@ func configure(data: Dictionary) -> void:
 	walk_speed = data.walk_speed
 	barks = PackedStringArray(data.barks)
 	idle_emotes = PackedStringArray(data.idle_emotes)
+	_facing = data.get("facing", _facing)
 
 func _ready() -> void:
 	if sprite_frames_path != "":
@@ -163,6 +164,10 @@ func _process_idle() -> void:
 
 # `away` != cero sesga el paseo en esa direccion (el evasivo se aleja del jugador).
 func _start_walk(away := Vector2.ZERO) -> void:
+	# Sin radio de paseo (sentado, detrás de un mostrador) solo mira alrededor.
+	if wander_radius <= 0.0:
+		_enter_idle()
+		return
 	var direction := Vector2.from_angle(randf() * TAU)
 	if away != Vector2.ZERO:
 		direction = (away.normalized() + direction * 0.4).normalized()

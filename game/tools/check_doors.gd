@@ -1,12 +1,11 @@
-extends Node
+extends CheckBase
 # godot --headless --fixed-fps 60 --path . res://tools/check_doors.tscn
 # Comprueba las puertas entre escenas sin jugar: quien llega por una puerta
 # aparece en la puerta con el mismo id de la otra escena, afuera de su umbral
 # (si no, volvería a cruzarla al aparecer), y la llegada se consume; sin
 # llegada, se aparece en 'P'; cada puerta lleva a la escena del otro lado de
 # DoorData; y el despertar se consume al mostrarse, así salir de la posada no
-# lo repite. Imprime FAIL por cada chequeo roto y sale con código 1. Corre como
-# escena y no como `--script` porque los autoloads no compilan en ese modo.
+# lo repite. Imprime FAIL por cada chequeo roto y sale con código 1.
 
 const TOWN := "res://scenes/Town.tscn"
 const HALL := "res://scenes/InnHall.tscn"
@@ -25,7 +24,6 @@ const SETTLE_FRAMES := 3
 # borde de abajo) y el motor lo separa por su margen de colisión: fracciones de px.
 const POSITION_TOLERANCE := 1.0
 
-var _failures := 0
 var _scene: TopDownScene
 var _case := 0
 var _frames := 0
@@ -51,8 +49,7 @@ func _physics_process(_delta: float) -> void:
 		_load(CASES[_case])
 		return
 	_check_crossing()
-	print("check_doors: %s" % ("OK" if _failures == 0 else "%d FALLOS" % _failures))
-	get_tree().quit(0 if _failures == 0 else 1)
+	_finish("check_doors")
 
 func _load(case: Array) -> void:
 	GameState.arrival_door = case[1]
@@ -84,8 +81,3 @@ func _check_crossing() -> void:
 	var door := _scene.loader.door(DoorData.POSADA_ESCALERA)
 	door._on_body_entered(_scene.player)
 	_expect(GameState.arrival_door == DoorData.POSADA_ESCALERA, "cruzar la puerta guarda la llegada")
-
-func _expect(condition: bool, description: String) -> void:
-	if not condition:
-		_failures += 1
-		print("FAIL: %s" % description)

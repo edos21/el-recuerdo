@@ -18,19 +18,37 @@ func _ready() -> void:
 	_shade.modulate.a = 0.0
 	add_child(_shade)
 
+func is_busy() -> bool:
+	return _busy
+
+# Fundido a negro y vuelta sin cambiar de escena (descansar, un salto de
+# tiempo): `on_dark` corre con la pantalla negra. Si hay otro fundido en curso
+# (recién se entró a la escena) espera a que termine: descartarlo dejaría el
+# descanso sin efecto.
+func blink(hold: float, on_dark: Callable) -> void:
+	while _busy:
+		await get_tree().process_frame
+	_busy = true
+	await _fade(1.0, FADE_OUT_TIME)
+	on_dark.call()
+	await get_tree().create_timer(hold).timeout
+	await _fade(0.0, FADE_IN_TIME)
+	_busy = false
+
 func change_scene(path: String) -> void:
 	if _busy:
 		return
 	_busy = true
-	var tween := create_tween()
-	tween.tween_property(_shade, "modulate:a", 1.0, FADE_OUT_TIME)
-	await tween.finished
+	await _fade(1.0, FADE_OUT_TIME)
 	get_tree().change_scene_to_file(path)
 	# Una pausa es de la escena que la pidio (un dialogo abierto durante el
 	# fundido): la escena nueva arranca sin ella, o quedaria congelada.
 	get_tree().paused = false
 	await get_tree().process_frame
-	var fade_in := create_tween()
-	fade_in.tween_property(_shade, "modulate:a", 0.0, FADE_IN_TIME)
-	await fade_in.finished
+	await _fade(0.0, FADE_IN_TIME)
 	_busy = false
+
+func _fade(alpha: float, time: float) -> void:
+	var tween := create_tween()
+	tween.tween_property(_shade, "modulate:a", alpha, time)
+	await tween.finished
