@@ -25,6 +25,7 @@ var player: CharacterBody2D
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(clear_color)
 	GameState.ensure_defaults()
+	loader.scene_path = scene_file_path
 	player = loader.build(level_path)
 	atmosphere.build(player, loader.bounds)
 	core.apply_look(look)

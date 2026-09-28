@@ -31,6 +31,10 @@ var _case := 0
 var _frames := 0
 
 func _ready() -> void:
+	# Las rutas de DoorData son texto: un .tscn renombrado no las actualiza.
+	for id in DoorData.LINKS:
+		for path in DoorData.LINKS[id]:
+			_expect(ResourceLoader.exists(path), "DoorData: la puerta '%s' apunta a %s, que no existe" % [id, path])
 	GameState.reset()
 	GameState.ensure_defaults()
 	_load(CASES[0])
@@ -60,7 +64,7 @@ func _check(case: Array) -> void:
 	var arrival: StringName = case[1]
 	var label := "%s por '%s'" % [path.get_file(), arrival]
 	_expect(GameState.arrival_door == &"", "%s: la llegada se consume" % label)
-	for door in _scene.loader._doors:
+	for door in _scene.loader.all_doors():
 		_expect(door.target_scene == DoorData.other_side(door.id, path), "%s: la puerta '%s' lleva al otro lado" % [label, door.id])
 	if path == TOWN:
 		_expect(not GameState.came_from_expulsion, "el pueblo consume el despertar: volver a salir no lo repite")

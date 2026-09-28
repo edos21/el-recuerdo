@@ -15,7 +15,7 @@ extends TopDownLoader
 @export var doors: Dictionary[String, StringName] = {}
 
 const WALLS := ['#', 'W', 'v', 'c', 'r']
-const STEPS := ['S']
+const STEP := 'S'
 const EXIT_DOWN := 'D'
 const EXIT_UP := 'U'
 # Lo lee la atmósfera: cada llama (vela, fuego) es una luz del cuarto. El meta
@@ -76,18 +76,21 @@ func _add_room_door(exit: String, row: int, run: Vector2i) -> void:
 	var center_x := left + width * 0.5
 	var trigger: Rect2
 	var arrival: Vector2
-	if exit == EXIT_UP:
-		trigger = Rect2(left, row * CELL, width, DOOR_TRIGGER_DEPTH)
-		var foot := row + 1
-		while STEPS.has(_cell(run.x, foot)):
-			foot += 1
-		arrival = Vector2(center_x, (foot + 1) * CELL - DOOR_ARRIVAL_INSET)
-	else:
-		var bottom := (row + 1) * CELL
-		trigger = Rect2(left, bottom - DOOR_TRIGGER_DEPTH, width, DOOR_TRIGGER_DEPTH)
-		arrival = Vector2(center_x, row * CELL - DOOR_ARRIVAL_INSET)
-	var id: StringName = doors[exit]
-	_add_door(id, DoorData.other_side(id, owner.scene_file_path), trigger, arrival)
+	match exit:
+		EXIT_UP:
+			trigger = Rect2(left, row * CELL, width, DOOR_TRIGGER_DEPTH)
+			var foot := row + 1
+			while _cell(run.x, foot) == STEP:
+				foot += 1
+			arrival = Vector2(center_x, (foot + 1) * CELL - DOOR_ARRIVAL_INSET)
+		EXIT_DOWN:
+			var bottom := (row + 1) * CELL
+			trigger = Rect2(left, bottom - DOOR_TRIGGER_DEPTH, width, DOOR_TRIGGER_DEPTH)
+			arrival = Vector2(center_x, row * CELL - DOOR_ARRIVAL_INSET)
+		_:
+			push_error("InteriorLoader: '%s' no es una salida ('%s' o '%s')." % [exit, EXIT_DOWN, EXIT_UP])
+			return
+	_add_door(doors[exit], trigger, arrival)
 
 # La huella se centra en el sprite, no en la celda: casi todos los muebles son
 # más anchos que una celda.
@@ -98,9 +101,7 @@ func _add_furniture(furniture: Dictionary, base: Vector2) -> void:
 	var sprite: Node2D
 	if frames > 1:
 		sprite = _animated(texture, frames, furniture.feet)
-		sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
-		sprite.position = base
-		objects.add_child(sprite)
+		_place_prop(sprite, base)
 	else:
 		sprite = _add_prop(texture, base, furniture.feet)
 	if furniture.has("flame"):
@@ -114,6 +115,7 @@ func _add_furniture(furniture: Dictionary, base: Vector2) -> void:
 # su escala.
 func _add_candle(furniture: Node2D, at: Vector2) -> void:
 	var candle := _animated(CANDLE_TEXTURE, CANDLE_FRAMES, Vector2.ZERO)
+	candle.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	candle.position = at
 	_mark_flame(candle, CANDLE_FLAME)
 	furniture.add_child(candle)
@@ -134,7 +136,6 @@ func _animated(strip: Texture2D, count: int, feet: Vector2) -> AnimatedSprite2D:
 		frames.add_frame(&"default", frame)
 	var sprite := AnimatedSprite2D.new()
 	sprite.sprite_frames = frames
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.centered = false
 	sprite.offset = -feet
 	sprite.play()

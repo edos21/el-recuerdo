@@ -180,7 +180,7 @@ PAINTING = (5 * 32, 0, 6 * 32, 32)   # paisaje enmarcado, en cozy furnishings 32
 STAIRS = (10, 160, 54, 240)          # escalera que sube, en _extras/bonus wooden stairs.png
 STAIRS_CELLS = "rSU"
 
-def tile(sheet, col, row):
+def sheet_tile(sheet, col, row):
     return kit_piece(sheet, col, row, col + 1, row + 1)
 
 def room_image(map_path, interiors, painting, stairs):
@@ -191,18 +191,21 @@ def room_image(map_path, interiors, painting, stairs):
     wall_top = min(r for r, line in enumerate(rows) if "W" in line)
     room = Image.new("RGBA", (max(len(r) for r in rows) * T, len(rows) * T), interiors.getpixel(BOUNDARY_SAMPLE))
     overlays = []
+    stairs_cells = []
     for row, line in enumerate(rows):
         for col, ch in enumerate(line):
             at = (col * T, row * T)
             band = row - wall_top
-            first = map_grid.at(rows, col - 1, row) != ch and map_grid.at(rows, col, row - 1) != ch
+            if ch in STAIRS_CELLS:
+                stairs_cells.append((col, row))
             if ch == "#":
                 continue
             if ch in "Wvc" or (ch in STAIRS_CELLS and 0 <= band < len(WALL_ROWS)):
                 assert 0 <= band < len(WALL_ROWS), "%s: la pared mide %d filas" % (map_path, len(WALL_ROWS))
                 source = WALL_POST if (col - line.index("W")) % WALL_POST_EVERY == WALL_POST_EVERY - 1 \
                     else WALL_COLUMNS[map_grid.cell_hash(col, row) % len(WALL_COLUMNS)]
-                room.alpha_composite(tile(interiors, source, WALL_ROWS[band]), at)
+                room.alpha_composite(sheet_tile(interiors, source, WALL_ROWS[band]), at)
+                first = map_grid.at(rows, col - 1, row) != ch and map_grid.at(rows, col, row - 1) != ch
                 if ch == "v" and first:
                     assert band == WINDOW_BAND_ROW, "%s: la ventana tiene que caer sobre el revoque" % map_path
                     overlays.append((kit_piece(interiors, WINDOW[0], WINDOW[1], WINDOW[0] + 2, WINDOW[1] + 2), at))
@@ -213,16 +216,15 @@ def room_image(map_path, interiors, painting, stairs):
                                                           row * T + (2 * T - (box[3] - box[1])) // 2)))
             elif ch == "D":
                 offset = 1 if map_grid.at(rows, col - 1, row) == "D" else 0
-                room.alpha_composite(tile(interiors, THRESHOLD[0] + offset, THRESHOLD[1]), at)
+                room.alpha_composite(sheet_tile(interiors, THRESHOLD[0] + offset, THRESHOLD[1]), at)
             else:
                 floor = FLOOR_TILES[map_grid.cell_hash(col, row) % len(FLOOR_TILES)]
-                room.alpha_composite(tile(interiors, *floor), at)
+                room.alpha_composite(sheet_tile(interiors, *floor), at)
     # La escalera sube hacia la pared: se pinta sobre la pared y el piso de su bloque.
-    cells = [(c, r) for r, line in enumerate(rows) for c, ch in enumerate(line) if ch in STAIRS_CELLS]
-    if cells:
-        left, top = min(c for c, _ in cells), min(r for _, r in cells)
-        width = (max(c for c, _ in cells) - left + 1) * T
-        assert (max(r for _, r in cells) - top + 1) * T == stairs.height, "%s: la escalera mide %d filas" % (map_path, stairs.height // T)
+    if stairs_cells:
+        left, top = min(c for c, _ in stairs_cells), min(r for _, r in stairs_cells)
+        width = (max(c for c, _ in stairs_cells) - left + 1) * T
+        assert (max(r for _, r in stairs_cells) - top + 1) * T == stairs.height, "%s: la escalera mide %d filas" % (map_path, stairs.height // T)
         overlays.append((stairs, (left * T + (width - stairs.width) // 2, top * T)))
     for image, at in overlays:
         room.alpha_composite(image, at)
@@ -232,8 +234,8 @@ interiors = Image.open(os.path.join(HOMES, "home interiors, thatch roof v2.png")
 cozy_32 = Image.open(os.path.join(COZY, "cozy furnishings 32x32.png")).convert("RGBA")
 cozy_16 = Image.open(os.path.join(COZY, "cozy furnishings 16x16.png")).convert("RGBA")
 stairs = Image.open(os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "_extras", "bonus wooden stairs.png")).convert("RGBA").crop(STAIRS)
-for map_name, image_name in (("inn_room.txt", "inn_room.png"), ("inn_hall.txt", "inn_hall.png")):
-    room_image(os.path.join(HERE, "..", "levels", map_name), interiors, cozy_32.crop(PAINTING), stairs).save(OUT + image_name)
+for map_name, image_name in map_grid.INTERIORS:
+    room_image(os.path.join(HERE, "..", "levels", map_name), interiors, cozy_32.crop(PAINTING), stairs).save(OUT + image_name + ".png")
 
 SLICEABLE = os.path.join(HOMES, "thatch roof sliceable")
 CANDLES = os.path.join(BUNDLE, "manaseedpixelarttilesetcollection", "19.03a - Animated Candles", "packaged")

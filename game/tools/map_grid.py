@@ -3,6 +3,11 @@
 # mapa (un CRLF, una fila vacia), la imagen y las colisiones se desincronizarian.
 
 
+# Interiores: el mapa de cada cuarto (levels/) y la imagen que se arma con el
+# (assets/town/). Lo leen el generador del arte real y el de placeholders.
+INTERIORS = (("inn_room.txt", "inn_room"), ("inn_hall.txt", "inn_hall"))
+
+
 def read_grid(path):
     """Filas del mapa sin '\\r' y sin la ultima linea vacia, como MapUtils.read_grid."""
     with open(path, newline="") as f:

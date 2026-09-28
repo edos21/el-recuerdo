@@ -134,7 +134,7 @@ save("town/inn_windows.png", window_mask)
 # olla, tiras de 4 y 5 cuadros).
 ROOM_COLORS = {"W": (150, 100, 60, 255), "v": (240, 210, 120, 255), "c": (180, 140, 60, 255), "D": (120, 120, 120, 255),
                "r": (90, 60, 40, 255), "S": (160, 120, 80, 255), "U": (40, 30, 30, 255)}
-for map_name, image_name in (("inn_room.txt", "inn_room"), ("inn_hall.txt", "inn_hall")):
+for map_name, image_name in map_grid.INTERIORS:
     room_rows = map_grid.read_grid(os.path.join(HERE, "..", "levels", map_name))
     room = Image.new("RGBA", (max(len(r) for r in room_rows) * 16, len(room_rows) * 16), (24, 22, 30, 255))
     rd = ImageDraw.Draw(room)
