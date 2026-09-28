@@ -9,6 +9,8 @@ archivo. `tools/gen_placeholder_art.py` crea placeholders.
 - `hero.png`, `npc_a.png`, `npc_b.png`: "Mini Adventure Heroes - Humans" (Beowulf,
   https://beowulf.itch.io/). Hojas copiadas tal cual (`mhap_male_hero_02`,
   `mhap_female_cultivator_01`, `mhap_male_cultivator_01`). Licencia de compra.
+- `innkeeper.png` (la posadera): mismo pack, `Base Characters/Female Base/mhap_female_human_base_01.png`,
+  copiada tal cual. Licencia de compra.
 - `house_a.png`, `house_b.png`, `house_c.png`: Mana Seed "Thatch Roof Home" (Seliel the
   Shaper). Casas armadas por script con piezas del kit modular (`home exteriors, thatch
   roof v1/v2/v3.png`: una variante de color por casa). Junto a cada casa el generador escribe

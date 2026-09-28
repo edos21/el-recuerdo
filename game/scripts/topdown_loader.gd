@@ -114,8 +114,11 @@ func _feet(col: int, row: int) -> Vector2:
 	return Vector2((col + 0.5) * CELL, (row + 1) * CELL)
 
 func _add_npc(ch: String, col: int, row: int) -> void:
+	var data: Dictionary = TownNpcData.LIST[ch]
+	if data.get("only_on_wake", false) and not GameState.came_from_expulsion:
+		return
 	var npc := NPC_SCENE.instantiate()
-	npc.configure(TownNpcData.LIST[ch])
+	npc.configure(data)
 	npc.position = _feet(col, row)
 	npc.add_to_group(CHARACTERS_GROUP)
 	objects.add_child(npc)

@@ -44,6 +44,8 @@ const DIRECTIONS := ["down", "left", "right", "up"]
 @export var barks: PackedStringArray = []
 # Emotes que muestra solo, sin que nadie le hable ("?" = olvido algo).
 @export var idle_emotes: PackedStringArray = []
+# Sentado o detras de un mostrador: no pasea, solo mira alrededor.
+@export var stationary := false
 
 var _state := State.IDLE
 var _state_time := 0.0
@@ -76,6 +78,8 @@ func configure(data: Dictionary) -> void:
 	walk_speed = data.walk_speed
 	barks = PackedStringArray(data.barks)
 	idle_emotes = PackedStringArray(data.idle_emotes)
+	stationary = data.get("stationary", false)
+	_facing = data.get("facing", _facing)
 
 func _ready() -> void:
 	if sprite_frames_path != "":
@@ -163,6 +167,11 @@ func _process_idle() -> void:
 
 # `away` != cero sesga el paseo en esa direccion (el evasivo se aleja del jugador).
 func _start_walk(away := Vector2.ZERO) -> void:
+	# Quien está sentado o detrás de un mostrador solo mira alrededor.
+	if stationary:
+		_enter_idle()
+		_state_time = randf_range(IDLE_TIME_MIN, IDLE_TIME_MAX)
+		return
 	var direction := Vector2.from_angle(randf() * TAU)
 	if away != Vector2.ZERO:
 		direction = (away.normalized() + direction * 0.4).normalized()
