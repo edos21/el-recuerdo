@@ -17,17 +17,25 @@ const GUARD_COOLDOWN := 1.3
 const CHASE_HEIGHT := 60.0
 const EDGE_PROBE_DISTANCE := 10.0
 
-# La embestida se esquiva saltando o alejandose durante el destello; el
-# castigo es el rato que queda aturdido despues, sobre todo si choca contra
-# una pared.
-const CHARGE_TRIGGER_RANGE := 260.0
+# La embestida se esquiva saltando o alejandose durante el destello y es corta
+# a proposito: solo lo aturde chocar contra una pared, asi que hay que "torearlo"
+# (esperarlo con la pared a la espalda y pasarle por encima). Si la embestida
+# termina en el aire, apenas toma aire. De cerca no embiste: pega, con un tajo
+# telegrafiado cuyo alcance queda por debajo del de la espada del jugador.
+const CHARGE_TRIGGER_RANGE := 200.0
 const CHARGE_TRIGGER_HEIGHT := 60.0
 const CHARGE_WINDUP := 0.6
 const CHARGE_SPEED := 330.0
-const CHARGE_MAX_DISTANCE := 280.0
-const CHARGE_RECOVERY := 0.9
+const CHARGE_MAX_DISTANCE := 230.0
+const CHARGE_BREATHER := 0.5
 const CHARGE_WALL_RECOVERY := 1.5
 const CHARGE_COOLDOWN := 0.8
+const CHARGE_APPROACH_SPEED := 80.0
+const CHARGE_STRIKE_RANGE := 44.0
+const CHARGE_STRIKE_WINDUP := 0.35
+const CHARGE_STRIKE_RECOVERY := 0.25
+const CHARGE_STRIKE_COOLDOWN := 0.9
+const CHARGE_BREATHER_TINT_TIME := 0.2
 const CHARGE_WINDUP_TINT := Color(2.4, 2.4, 2.4, 1)
 const CHARGE_STUN_TINT := Color(0.65, 0.75, 1.4, 1)
 # Choque contra la pared: el cuerpo se aplasta contra el muro y vuelve.
@@ -71,6 +79,7 @@ var _charge_cooldown := 0.0
 var _striking := false
 var _strike_cooldown := 0.0
 var _stun_tween: Tween
+var _tension_on := false
 var _squash_tween: Tween
 # Escala del sprite sin deformar: los efectos se miden contra esta, no contra
 # la escala del momento (que puede estar a mitad de un aplastamiento).
@@ -165,44 +174,47 @@ func _process_guard(delta: float) -> void:
 	if _striking or _strike_cooldown > 0.0:
 		return
 	if absf(dx) <= GUARD_STRIKE_RANGE and absf(_player.global_position.y - global_position.y) < GUARD_STRIKE_HEIGHT:
-		_strike()
+		_strike(GUARD_STRIKE_RANGE, GUARD_WINDUP, GUARD_RECOVERY)
 
 # Golpe telegrafado: la animacion de ataque arma el tajo y el dano cae recien
 # a mitad, para que el jugador tenga tiempo de reaccionar o de pegar primero.
-func _strike() -> void:
+func _strike(reach: float, windup: float, recovery: float) -> void:
 	_striking = true
 	var side := 1.0 if _player.global_position.x > global_position.x else -1.0
 	sprite.play("attack")
 	var tween := create_tween()
-	tween.tween_interval(GUARD_WINDUP)
-	tween.tween_callback(_strike_hit.bind(side))
-	tween.tween_interval(GUARD_RECOVERY)
+	tween.tween_interval(windup)
+	tween.tween_callback(_strike_hit.bind(side, reach))
+	tween.tween_interval(recovery)
 	tween.tween_callback(_strike_end)
 
-func _strike_hit(side: float) -> void:
+func _strike_hit(side: float, reach: float) -> void:
 	var dx := _player.global_position.x - global_position.x
-	var in_front := dx * side >= 0.0 and absf(dx) <= GUARD_STRIKE_RANGE
+	var in_front := dx * side >= 0.0 and absf(dx) <= reach
 	if in_front and absf(_player.global_position.y - global_position.y) < GUARD_STRIKE_HEIGHT:
 		_player.take_damage(contact_damage, global_position)
 
 func _strike_end() -> void:
 	_striking = false
-	sprite.play("walk")
-	_strike_cooldown = GUARD_COOLDOWN
+	sprite.play(_current_animation())
+	if behavior == Behavior.CHARGE:
+		_charge_cooldown = CHARGE_STRIKE_COOLDOWN
+	else:
+		_strike_cooldown = GUARD_COOLDOWN
 
 func _process_charge(delta: float) -> void:
 	match _charge_state:
 		ChargeState.IDLE:
-			# Espera parado en su arena: recien ataca cuando el jugador la pisa,
+			# Espera parado en su arena: recien actua cuando el jugador la pisa,
 			# no mientras lo ve desde abajo.
 			velocity.x = 0.0
 			_update_player_on_home_floor()
-			if not _player_on_home_floor:
+			_set_tension(_player_on_home_floor)
+			if not _player_on_home_floor or _striking:
 				return
 			sprite.flip_h = _player.global_position.x < global_position.x
 			_charge_cooldown = maxf(_charge_cooldown - delta, 0.0)
-			if _charge_cooldown <= 0.0 and _player_in_charge_range():
-				_start_windup()
+			_decide_charge_action()
 		ChargeState.WINDUP:
 			velocity.x = 0.0
 			_charge_timer -= delta
@@ -217,11 +229,23 @@ func _process_charge(delta: float) -> void:
 			if _charge_timer <= 0.0:
 				_end_recovery()
 
-func _player_in_charge_range() -> bool:
-	if not _player:
-		return false
-	return absf(_player.global_position.x - global_position.x) <= CHARGE_TRIGGER_RANGE \
-			and absf(_player.global_position.y - global_position.y) < CHARGE_TRIGGER_HEIGHT
+# Lejos camina hacia el jugador para no dejar la arena en tablas, a distancia
+# de embestida carga y de cerca pega; embestir a quien ya tiene encima
+# lo dejaria pasar de largo sin lastimar.
+func _decide_charge_action() -> void:
+	var dx := _player.global_position.x - global_position.x
+	if absf(_player.global_position.y - global_position.y) >= CHARGE_TRIGGER_HEIGHT:
+		return
+	var distance := absf(dx)
+	if distance > CHARGE_TRIGGER_RANGE:
+		var direction := 1 if dx > 0.0 else -1
+		if _has_floor_ahead(direction):
+			velocity.x = direction * CHARGE_APPROACH_SPEED
+	elif _charge_cooldown <= 0.0:
+		if distance <= CHARGE_STRIKE_RANGE:
+			_strike(CHARGE_STRIKE_RANGE, CHARGE_STRIKE_WINDUP, CHARGE_STRIKE_RECOVERY)
+		else:
+			_start_windup()
 
 func _start_windup() -> void:
 	_charge_state = ChargeState.WINDUP
@@ -249,13 +273,16 @@ func _process_dash() -> void:
 	if connected or hit_wall or not _has_floor_ahead(_charge_direction) or traveled >= CHARGE_MAX_DISTANCE:
 		if hit_wall:
 			_crash_into_wall()
-		_start_recovery(CHARGE_WALL_RECOVERY if hit_wall else CHARGE_RECOVERY)
+		_start_recovery(CHARGE_WALL_RECOVERY if hit_wall else CHARGE_BREATHER, hit_wall)
 
-func _start_recovery(duration: float) -> void:
+func _start_recovery(duration: float, stunned: bool) -> void:
 	_charge_state = ChargeState.RECOVER
 	_striking = false
 	_charge_timer = duration
 	velocity.x = 0.0
+	if not stunned:
+		create_tween().tween_property(sprite, "modulate", Color.WHITE, CHARGE_BREATHER_TINT_TIME)
+		return
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", CHARGE_STUN_TINT, 0.1)
 	var head := CharacterScale.frame_rect(Rect2(STUN_HEAD_TEXELS, Vector2.ZERO), _base_sprite_scale.x).position
@@ -267,7 +294,9 @@ func _start_recovery(duration: float) -> void:
 func _end_recovery() -> void:
 	_charge_state = ChargeState.IDLE
 	_charge_cooldown = CHARGE_COOLDOWN
-	_stun_tween.kill()
+	if _stun_tween:
+		_stun_tween.kill()
+		_stun_tween = null
 	sprite.rotation = 0.0
 	create_tween().tween_property(sprite, "modulate", Color.WHITE, 0.15)
 
@@ -340,6 +369,7 @@ func take_hit(amount: int = 1) -> bool:
 	return true
 
 func _die() -> void:
+	_set_tension(false)
 	Events.sfx_requested.emit("enemy_die")
 	defeated.emit()
 	# Para el juego ya no existe (ni choca ni lastima); lo que queda es solo
@@ -358,6 +388,17 @@ func _die() -> void:
 		Effects.pop(get_parent(), sprite.global_position, outline)
 		queue_free()
 	)
+
+# Avisa a la musica que la pelea con el elite empezo o termino; al salir del
+# arbol se apaga siempre, porque el audio es un autoload y sobrevive al nivel.
+func _set_tension(active: bool) -> void:
+	if active == _tension_on:
+		return
+	_tension_on = active
+	Events.tension_changed.emit(active)
+
+func _exit_tree() -> void:
+	_set_tension(false)
 
 func _flash() -> void:
 	var tween := create_tween()

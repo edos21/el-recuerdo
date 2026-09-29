@@ -76,3 +76,23 @@ save("sfx_checkpoint", ck)
 tt = t(0.2); save("sfx_spike", np.sign(np.sin(2 * np.pi * 140 * tt)) * env(len(tt), 0.002, 0.15) * np.exp(-tt * 12))
 # Rafaga de aire que sube: al final del archivo para no correr la semilla de `rng` de los demas.
 tt = t(0.16); save("sfx_dash", lowpass(rng.normal(0, 1, len(tt)), 1800) * env(len(tt), 0.01, 0.12) * (0.4 + tt / 0.16) + 0.25 * np.sin(2 * np.pi * (400 + 700 * tt / 0.16) * tt) * env(len(tt), 0.005, 0.1))
+# Fanfarria de recuerdo recuperado: arpegio de La mayor que sube y una nota larga
+# con eco y un acorde debajo. Al final del archivo para no correr la semilla de `rng`.
+def bell(freq, sec, amp=1.0):
+    tt = t(sec)
+    x = sum(h * np.sin(2 * np.pi * freq * m * tt) * np.exp(-tt * d) for m, h, d in ((1, 1.0, 2.2), (2, 0.4, 3.5), (3.01, 0.15, 6.0)))
+    return x * amp * env(len(tt), 0.004, 0.05)
+total = 2.6
+fan = np.zeros(int(SR * total))
+def put(sig, at):
+    i = int(SR * at); fan[i:i + len(sig)] += sig[:len(fan) - i]
+for k, f in enumerate((440.0, 554.37, 659.25, 880.0)):
+    put(bell(f, 0.9, 0.7), k * 0.11)
+put(bell(1318.5, 1.9, 0.9), 0.55)
+put(bell(1108.7, 1.9, 0.5), 0.55)
+put(bell(880.0, 1.9, 0.5), 0.55)
+put(lowpass(sum(note(f, 2.0, 0.25, (1.0, 0.2)) for f in (220.0, 277.18, 329.63)) * env(int(SR * 2.0), 0.3, 1.2), 1500), 0.5)
+echo = np.zeros_like(fan)
+for delay, gain in ((0.19, 0.35), (0.38, 0.18), (0.57, 0.08)):
+    d = int(SR * delay); echo[d:] += fan[:-d] * gain
+save("sfx_memory", (fan + echo) * env(len(fan), 0.0, 0.4), 0.85)
