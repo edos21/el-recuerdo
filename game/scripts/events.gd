@@ -12,6 +12,8 @@ signal choice_requested(prompt: String, options: PackedStringArray, on_chosen: C
 signal thought_requested(text: String, hold: float)
 signal memory_dimmed(ability: String)
 signal sfx_requested(sfx: String)
+# Una pelea que pide mas tension en la musica (el elite con el jugador en su arena).
+signal tension_changed(active: bool)
 
 # show_thought() en hud.gd tenia un default propio; las senales no aceptan
 # defaults, asi que los emisores que no pasan hold usan esta constante.
