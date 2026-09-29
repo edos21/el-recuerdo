@@ -70,8 +70,8 @@ const EXPULSION_DURATION = 21.0
 const EXPULSION_STABILITY_SHARE = 0.6
 # El paso se hace mas pesado con el progreso, asi el esfuerzo se siente crecer
 # de forma continua hasta el desplome.
-# Con estos valores, caminando sin parar los 21 s, el desplome llega a unas 4
-# celdas de la puerta: se ve, pero no se alcanza.
+# Fijan hasta dónde llega el jugador antes del desplome: la puerta se ve pero no
+# se alcanza (lo comprueba tools/check_expulsion).
 const EXPULSION_START_SPEED_FACTOR = 0.65
 const EXPULSION_END_SPEED_FACTOR = 0.05
 const STABILITY_HIT_COST = 20.0
@@ -360,8 +360,8 @@ func begin_expulsion() -> void:
 func _expulsion_progress() -> float:
 	return clampf(_expulsion_time / EXPULSION_DURATION, 0.0, 1.0)
 
-# `minf`/`mini` contra el valor actual: un golpe recibido durante la expulsion
-# sigue contando y la animacion nunca devuelve lo perdido.
+# La animacion nunca devuelve lo perdido: un golpe recibido durante la
+# expulsion sigue contando.
 func _tick_expulsion(delta: float) -> void:
 	_expulsion_time += delta
 	var progress := _expulsion_progress()
@@ -369,8 +369,10 @@ func _tick_expulsion(delta: float) -> void:
 	var has_health := GameState.has_ability("health")
 	var stability_share := EXPULSION_STABILITY_SHARE if has_health else 1.0
 	var stability_left := 1.0 - clampf(progress / stability_share, 0.0, 1.0)
+	var stability_before := stability
 	stability = minf(stability, _expulsion_start_stability * stability_left)
-	_emit_stability()
+	if stability != stability_before:
+		_emit_stability()
 	if has_health:
 		var health_lost := clampf((progress - stability_share) / (1.0 - stability_share), 0.0, 1.0)
 		var target_health := _expulsion_start_health - floori(health_lost * _expulsion_start_health)
@@ -378,7 +380,7 @@ func _tick_expulsion(delta: float) -> void:
 			health = target_health
 			health_changed.emit(health, max_health)
 			Events.sfx_requested.emit("hit_take")
-	if progress >= 1.0 or (has_health and health <= 0):
+	if progress >= 1.0:
 		_collapse()
 
 func _collapse() -> void:

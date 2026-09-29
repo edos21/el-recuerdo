@@ -7,11 +7,11 @@ extends CheckBase
 # chequeo roto y sale con código 1.
 
 const PLAYER_SCENE := preload("res://scenes/Player.tscn")
+const LevelLoader := preload("res://scripts/level_loader.gd")
 const STEP := 1.0 / 60.0
 const TOLERANCE := 0.1
 const MAX_STEPS := 60 * 60
 const LEVEL_PATH := "res://levels/level1.txt"
-const CELL := 36.0
 # La puerta se ve pero no se alcanza: el desplome cae entre estas celdas antes de ella.
 const MIN_GAP_CELLS := 3.0
 const MAX_GAP_CELLS := 6.0
@@ -89,14 +89,14 @@ func _check_no_health_ability() -> void:
 func _check_door_out_of_reach() -> void:
 	var trigger_col := -1
 	var door_col := -1
-	for line in FileAccess.get_file_as_string(LEVEL_PATH).split("\n"):
-		if line.contains("X"):
+	for line: String in MapUtils.read_grid(LEVEL_PATH):
+		if trigger_col < 0:
 			trigger_col = line.find("X")
-		if line.contains("d"):
+		if door_col < 0:
 			door_col = line.find("d")
 	_expect(trigger_col >= 0 and door_col > trigger_col, "el nivel tiene trigger de expulsión y puerta después")
 	var average_factor := (Player.EXPULSION_START_SPEED_FACTOR + Player.EXPULSION_END_SPEED_FACTOR) / 2.0
 	var walked := Player.WALK_SPEED * average_factor * Player.EXPULSION_DURATION
-	var gap_cells := ((door_col - trigger_col) * CELL - walked) / CELL
+	var gap_cells := ((door_col - trigger_col) * LevelLoader.CELL - walked) / LevelLoader.CELL
 	_expect(gap_cells >= MIN_GAP_CELLS and gap_cells <= MAX_GAP_CELLS,
 		"el desplome queda a %.1f celdas de la puerta (esperado %.0f-%.0f)" % [gap_cells, MIN_GAP_CELLS, MAX_GAP_CELLS])

@@ -128,12 +128,13 @@ func _standing_on_cell(col: int, row: int) -> Vector2:
 
 # Sprite suelto de la capa de props (que escala x2, asi que se mide en
 # unidades de tile) con los pies en el borde de abajo de su celda.
-static func bottom_anchored_sprite(texture: Texture2D, col: int, row: int) -> Sprite2D:
+static func bottom_anchored_sprite(texture: Texture2D, col: int, row: int, sprite_scale := 1.0) -> Sprite2D:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var size := texture.get_size()
+	sprite.scale = Vector2.ONE * sprite_scale
+	var size := texture.get_size() * sprite_scale
 	var tile := CELL / TILE_SCALE.x
 	sprite.position = Vector2((col + 0.5) * tile - size.x / 2.0, (row + 1) * tile - size.y)
 	return sprite
@@ -260,12 +261,7 @@ func _add_expulsion_trigger(col: int, row: int) -> void:
 # La puerta no es un tile del atlas (el tile que se usaba era una llave): es un
 # sprite propio, hijo de la capa de props para heredar su aparicion gradual.
 func _add_door(col: int, row: int) -> void:
-	var door := bottom_anchored_sprite(DOOR_TEXTURE, col, row)
-	# Se achica desde la esquina superior izquierda: hay que devolverla al piso y al centro de su celda.
-	var size := DOOR_TEXTURE.get_size()
-	door.scale = Vector2.ONE * DOOR_SCALE
-	door.position += Vector2(size.x * (1.0 - DOOR_SCALE) / 2.0, size.y * (1.0 - DOOR_SCALE))
-	props_layer.add_child(door)
+	props_layer.add_child(bottom_anchored_sprite(DOOR_TEXTURE, col, row, DOOR_SCALE))
 
 # Las plantas son sprites y no celdas para que el viento pueda moverlas una
 # por una. Cuelgan de la capa de props (aparecen con ella) y apoyan los pies
