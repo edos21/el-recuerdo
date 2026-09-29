@@ -10,6 +10,7 @@ signal ability_unlocked(ability: String)
 signal respawn_requested
 signal died
 signal collapsed
+signal expulsion_progressed(progress: float)
 
 const WALK_SPEED = 150.0
 const RUN_SPEED = 260.0
@@ -60,17 +61,19 @@ const HIT_RECOIL_TIME = 0.12
 # en el centro del cuerpo el sprite del enemigo lo tapa.
 const HIT_DUST_OFFSET = Vector2(-12, -10)
 
-# Expulsion del recuerdo: la Estabilidad se drena sola (mas rapido si camina),
-# el paso se vuelve pesado y, ya sin Estabilidad, empieza a perder Vida hasta
-# desplomarse. No es una muerte: no hay respawn.
-const EXPULSION_BASE_DRAIN = 3.0
-const EXPULSION_WALK_DRAIN = 5.0
-const EXPULSION_HEALTH_INTERVAL = 1.6
-# El paso se hace mas pesado con cada paso recorrido (no con la Estabilidad),
-# asi el esfuerzo se siente crecer de forma continua hasta el desplome.
-const EXPULSION_START_SPEED_FACTOR = 0.7
-const EXPULSION_END_SPEED_FACTOR = 0.2
-const EXPULSION_FULL_DISTANCE = 1100.0
+# Expulsion del recuerdo: dura lo mismo llegues como llegues. El progreso
+# avanza por tiempo y la Estabilidad y la Vida solo se animan hacia el desplome
+# ya decidido (primero la Estabilidad, despues la Vida). No es una muerte: no
+# hay respawn.
+const EXPULSION_DURATION = 21.0
+# Sin la habilidad de Vida no hay corazones que perder: toda la duracion es Estabilidad.
+const EXPULSION_STABILITY_SHARE = 0.6
+# El paso se hace mas pesado con el progreso, asi el esfuerzo se siente crecer
+# de forma continua hasta el desplome.
+# Con estos valores, caminando sin parar los 21 s, el desplome llega a unas 4
+# celdas de la puerta: se ve, pero no se alcanza.
+const EXPULSION_START_SPEED_FACTOR = 0.65
+const EXPULSION_END_SPEED_FACTOR = 0.05
 const STABILITY_HIT_COST = 20.0
 const STABILITY_JUMP_COST = 15.0
 const STABILITY_ATTACK_COST = 15.0
@@ -122,8 +125,9 @@ var _hit_shield_timer := 0.0
 var _expelling := false
 # Un solo dash por salto: se repone al volver a tocar el suelo.
 var _dash_available := true
-var _expulsion_health_timer := 0.0
-var _expulsion_distance := 0.0
+var _expulsion_time := 0.0
+var _expulsion_start_stability := 0.0
+var _expulsion_start_health := 0
 var _jumps_before_stability := 0
 var _exhaustion_attempts := 0
 var _idle_timer := 0.0
@@ -199,7 +203,7 @@ func _physics_process(delta: float) -> void:
 	_hit_shield_timer = maxf(_hit_shield_timer - delta, 0.0)
 
 	if _expelling:
-		_tick_expulsion(direction, delta)
+		_tick_expulsion(delta)
 	else:
 		_regen_stability(direction, delta)
 
@@ -260,8 +264,7 @@ func _tick_state(delta: float) -> void:
 
 func _current_speed(direction: float, delta: float) -> float:
 	if _expelling:
-		var progress := clampf(_expulsion_distance / EXPULSION_FULL_DISTANCE, 0.0, 1.0)
-		return WALK_SPEED * lerpf(EXPULSION_START_SPEED_FACTOR, EXPULSION_END_SPEED_FACTOR, progress)
+		return WALK_SPEED * lerpf(EXPULSION_START_SPEED_FACTOR, EXPULSION_END_SPEED_FACTOR, _expulsion_progress())
 	var sprinting := GameState.has_ability("sprint") and direction != 0.0 and Input.is_action_pressed("sprint")
 	if not sprinting:
 		return WALK_SPEED
@@ -351,27 +354,31 @@ func _regen_stability(direction: float, delta: float) -> void:
 
 func begin_expulsion() -> void:
 	_expelling = true
+	_expulsion_start_stability = stability
+	_expulsion_start_health = health
 
-func _tick_expulsion(direction: float, delta: float) -> void:
-	_expulsion_distance += absf(velocity.x) * delta
-	if stability > 0.0:
-		var drain := EXPULSION_BASE_DRAIN
-		if direction != 0.0:
-			drain += EXPULSION_WALK_DRAIN
-		stability = maxf(stability - drain * delta, 0.0)
-		_emit_stability()
-		return
-	if not GameState.has_ability("health"):
-		_collapse()
-		return
-	_expulsion_health_timer += delta
-	if _expulsion_health_timer < EXPULSION_HEALTH_INTERVAL:
-		return
-	_expulsion_health_timer = 0.0
-	health = maxi(health - 1, 0)
-	health_changed.emit(health, max_health)
-	Events.sfx_requested.emit("hit_take")
-	if health <= 0:
+func _expulsion_progress() -> float:
+	return clampf(_expulsion_time / EXPULSION_DURATION, 0.0, 1.0)
+
+# `minf`/`mini` contra el valor actual: un golpe recibido durante la expulsion
+# sigue contando y la animacion nunca devuelve lo perdido.
+func _tick_expulsion(delta: float) -> void:
+	_expulsion_time += delta
+	var progress := _expulsion_progress()
+	expulsion_progressed.emit(progress)
+	var has_health := GameState.has_ability("health")
+	var stability_share := EXPULSION_STABILITY_SHARE if has_health else 1.0
+	var stability_left := 1.0 - clampf(progress / stability_share, 0.0, 1.0)
+	stability = minf(stability, _expulsion_start_stability * stability_left)
+	_emit_stability()
+	if has_health:
+		var health_lost := clampf((progress - stability_share) / (1.0 - stability_share), 0.0, 1.0)
+		var target_health := _expulsion_start_health - floori(health_lost * _expulsion_start_health)
+		if target_health < health:
+			health = target_health
+			health_changed.emit(health, max_health)
+			Events.sfx_requested.emit("hit_take")
+	if progress >= 1.0 or (has_health and health <= 0):
 		_collapse()
 
 func _collapse() -> void:

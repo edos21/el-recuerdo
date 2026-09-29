@@ -22,6 +22,8 @@ const MEMORY_SCENE := preload("res://scenes/MemoryPickup.tscn")
 const CHECKPOINT_SCENE := preload("res://scenes/Checkpoint.tscn")
 
 const DOOR_TEXTURE := preload("res://assets/props/door.png")
+# Sin achicarla, la puerta se ve desproporcionada frente al jugador.
+const DOOR_SCALE := 0.85
 const PINE_TEXTURE := preload("res://assets/props/plant_pine.png")
 const SPROUT_TEXTURE := preload("res://assets/props/plant_sprout.png")
 
@@ -258,7 +260,12 @@ func _add_expulsion_trigger(col: int, row: int) -> void:
 # La puerta no es un tile del atlas (el tile que se usaba era una llave): es un
 # sprite propio, hijo de la capa de props para heredar su aparicion gradual.
 func _add_door(col: int, row: int) -> void:
-	props_layer.add_child(bottom_anchored_sprite(DOOR_TEXTURE, col, row))
+	var door := bottom_anchored_sprite(DOOR_TEXTURE, col, row)
+	# Se achica desde la esquina superior izquierda: hay que devolverla al piso y al centro de su celda.
+	var size := DOOR_TEXTURE.get_size()
+	door.scale = Vector2.ONE * DOOR_SCALE
+	door.position += Vector2(size.x * (1.0 - DOOR_SCALE) / 2.0, size.y * (1.0 - DOOR_SCALE))
+	props_layer.add_child(door)
 
 # Las plantas son sprites y no celdas para que el viento pueda moverlas una
 # por una. Cuelgan de la capa de props (aparecen con ella) y apoyan los pies

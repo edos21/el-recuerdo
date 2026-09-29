@@ -62,9 +62,9 @@ func setup(player: Node2D, props_layer: CanvasItem, audio: Node, world_material:
 		_props_layer.modulate.a = 0.0
 	if _audio:
 		_audio.set_layer("wind", -14.0, 0.1)
-	player.stability_changed.connect(_on_stability_changed)
 	player.low_stability_changed.connect(_on_low_stability_changed)
 	player.health_changed.connect(_on_health_changed)
+	player.expulsion_progressed.connect(_on_expulsion_progressed)
 
 func _process(_delta: float) -> void:
 	if _focus_active and _player:
@@ -157,9 +157,11 @@ func _on_health_changed(current: int, max_value: int) -> void:
 	var lost := 1.0 - float(current) / float(max_value)
 	_set_param("vignette", lerpf(EXPULSION_VIGNETTE_START, 0.95, lost))
 
-func _on_stability_changed(current: float, max_value: float) -> void:
+# El ritmo de la expulsion lo marca el progreso, no la Estabilidad: llegar con
+# poca no acorta lo que se ve.
+func _on_expulsion_progressed(progress: float) -> void:
 	if _expelling:
-		_apply_expulsion(current / max_value)
+		_apply_expulsion(1.0 - progress)
 
 # El jugador es el unico dueno del umbral (GameState.is_low_stability): acá
 # solo reaccionamos al cruce, ya no lo recalculamos.
