@@ -42,6 +42,8 @@ func build(level_path: String) -> CharacterBody2D:
 				spawn = _feet(col, row)
 			elif TownNpcData.LIST.has(ch):
 				_add_npc(ch, col, row)
+			elif StoryObjectData.LIST.has(ch):
+				_add_story_object(ch, col, row)
 			else:
 				_place(ch, col, row)
 	bounds = Rect2(0, 0, _cols * CELL, _rows.size() * CELL)
@@ -115,13 +117,29 @@ func _feet(col: int, row: int) -> Vector2:
 
 func _add_npc(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = TownNpcData.LIST[ch]
-	if data.get("only_on_wake", false) and not GameState.came_from_expulsion:
+	if not GameState.is_met(data.get("present_if", {})):
 		return
 	var npc := NPC_SCENE.instantiate()
 	npc.configure(data)
 	npc.position = _feet(col, row)
 	npc.add_to_group(CHARACTERS_GROUP)
 	objects.add_child(npc)
+
+func _add_story_object(ch: String, col: int, row: int) -> void:
+	var data: Dictionary = StoryObjectData.LIST[ch]
+	if not GameState.is_met(data.get("present_if", {})):
+		return
+	var base := _feet(col, row)
+	var texture: Texture2D = data.texture
+	var feet: Vector2 = data.feet
+	var prop := _add_prop(texture, base, feet)
+	# La zona cubre el objeto con un margen, para usarlo desde cualquier lado.
+	var area := Rect2(-feet * TILE_SCALE, Vector2(texture.get_size()) * TILE_SCALE).grow(data.get("reach", 0.0))
+	var story_object := StoryObject.new(area, data.hint, data.dialogue, prop)
+	story_object.position = base
+	add_child(story_object)
+	if data.body != Vector2.ZERO:
+		_add_blocker(base, data.body * TILE_SCALE)
 
 # Sprite apoyado en `base`, con el origen de la textura en `feet` (px de textura).
 func _add_prop(texture: Texture2D, base: Vector2, feet: Vector2, group: StringName = &"") -> Sprite2D:

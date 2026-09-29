@@ -11,6 +11,13 @@ extends Resource
 
 enum Kind { RELIEF, MATURITY }
 
+# Ids de los beats que el guion nombra desde código (Dialogues, present_if):
+# tienen que existir en data/beats.tres, y GameState avisa si no.
+const TOMAS_KEYS := "tomas_keys"
+const INN_WATER := "inn_water"
+const BROTH := "broth"
+const DONT_KNOW := "dont_know_who_i_am"
+
 @export var entries: Array[BeatDef] = []
 
 var _by_id: Dictionary[String, BeatDef] = {}

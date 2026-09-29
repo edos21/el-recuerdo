@@ -81,3 +81,4 @@ func _check_crossing() -> void:
 	var door := _scene.loader.door(DoorData.POSADA_ESCALERA)
 	door._on_body_entered(_scene.player)
 	_expect(GameState.arrival_door == DoorData.POSADA_ESCALERA, "cruzar la puerta guarda la llegada")
+	_expect(_scene.player.is_locked(), "al cruzar la puerta el jugador deja de caminar durante el fundido")

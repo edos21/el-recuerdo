@@ -9,15 +9,19 @@ extends RefCounted
 # Tomas es el que prefiere no mirar lo que pasa en el pueblo.
 #
 # Con `wander_radius` 0 no pasea (sentado, detras de un mostrador). Opcionales:
-# `facing` (hacia donde mira al aparecer) y `only_on_wake` (solo esta mientras
-# el despertar no se mostro: Marta junto a la cama).
+# `facing` (hacia donde mira al aparecer), `dialogue` (lo que dice segun el
+# estado, en Dialogues) y `present_if` (cuando esta: GameState.is_met; Marta
+# junto a la cama solo mientras el despertar no se mostro).
 
 const MARTA_NAME := "Marta"
+const TOMAS_NAME := "Tomás"
+const POSADERA_NAME := "Posadera"
 const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
 
 const LIST := {
 	"n": {
 		"name": MARTA_NAME,
+		"dialogue": &"marta",
 		"frames": MARTA_FRAMES,
 		"lines": [
 			"¡Ey! ¿Ya tomaste aire? No te exijas, que recién te levantás.",
@@ -30,8 +34,9 @@ const LIST := {
 		"idle_emotes": ["?"],
 	},
 	# Marta junto a la cama de la posada, la primera vez que despierta.
-	"m": {
+	"a": {
 		"name": MARTA_NAME,
+		"dialogue": &"marta",
 		"frames": MARTA_FRAMES,
 		"lines": [
 			"Tranquilo, acá estás a salvo. Tomate tu tiempo.",
@@ -42,10 +47,11 @@ const LIST := {
 		"barks": ["Despacio.", "Estoy acá."],
 		"idle_emotes": [],
 		"facing": "down",
-		"only_on_wake": true,
+		"present_if": {"wake_pending": true},
 	},
 	"p": {
-		"name": "Posadera",
+		"name": POSADERA_NAME,
+		"dialogue": &"posadera",
 		"frames": "res://assets/characters/topdown_innkeeper_frames.tres",
 		"lines": [
 			"Ah, te levantaste. Marta no se movió de al lado tuyo en toda la noche.",
@@ -59,7 +65,8 @@ const LIST := {
 		"facing": "down",
 	},
 	"N": {
-		"name": "Tomás",
+		"name": TOMAS_NAME,
+		"dialogue": &"tomas",
 		"frames": "res://assets/characters/topdown_npc_b_frames.tres",
 		"lines": [
 			"El pueblo anda raro estos días. Todos olvidan cosas chicas: dónde dejaron las llaves, cómo se llamaba alguien.",

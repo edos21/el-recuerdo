@@ -51,27 +51,27 @@ func _check_wake_up() -> void:
 		"despierta con WAKE_STABILITY_RATIO del tope")
 
 func _check_relief() -> void:
-	var beat := Catalogs.beats.entry("tomas_keys")
+	var beat := Catalogs.beats.entry(BeatData.TOMAS_KEYS)
 	var before := GameState.stability
-	_expect(GameState.complete_beat("tomas_keys"), "el alivio se aplica la primera vez")
+	_expect(GameState.complete_beat(BeatData.TOMAS_KEYS), "el alivio se aplica la primera vez")
 	_expect(is_equal_approx(GameState.stability, before + beat.amount), "el alivio suma su cantidad a la actual")
-	_expect(not GameState.complete_beat("tomas_keys"), "el alivio no se aplica dos veces")
+	_expect(not GameState.complete_beat(BeatData.TOMAS_KEYS), "el alivio no se aplica dos veces")
 	_expect(is_equal_approx(GameState.stability, before + beat.amount), "repetir el alivio no suma")
 	GameState.stability = GameState.max_stability
-	GameState.complete_beat("inn_water")
+	GameState.complete_beat(BeatData.INN_WATER)
 	_expect(is_equal_approx(GameState.stability, GameState.max_stability), "el alivio no pasa el tope")
 
 func _check_maturity() -> void:
-	var beat := Catalogs.beats.entry("broth")
+	var beat := Catalogs.beats.entry(BeatData.BROTH)
 	var before := GameState.max_stability
 	GameState.stability = before * 0.5
 	var before_current := GameState.stability
-	_expect(GameState.complete_beat("broth"), "madurar se aplica la primera vez")
+	_expect(GameState.complete_beat(BeatData.BROTH), "madurar se aplica la primera vez")
 	_expect(is_equal_approx(GameState.max_stability, before + beat.amount), "madurar sube el tope")
 	_expect(is_equal_approx(GameState.stability, before_current + beat.amount), "madurar sube la actual en lo mismo que el tope")
 	GameState.max_stability = GameState.STABILITY_ORIGINAL_MAX - 1.0
 	before_current = GameState.stability
-	GameState.complete_beat("dont_know_who_i_am")
+	GameState.complete_beat(BeatData.DONT_KNOW)
 	_expect(is_equal_approx(GameState.max_stability, GameState.STABILITY_ORIGINAL_MAX), "madurar no pasa el máximo original")
 	_expect(is_equal_approx(GameState.stability, before_current + 1.0), "contra el máximo original, la actual sube solo lo que creció el tope")
 
@@ -85,9 +85,9 @@ func _check_player_signal() -> void:
 	player.low_stability_changed.connect(func(_is_low: bool) -> void: _low_signals += 1)
 	# Despierta en zona baja y madurar agranda el tope: sigue en zona baja, asi
 	# que el umbral no se reavisa (reavisarlo reinicia el parpadeo del HUD).
-	GameState.complete_beat("dont_know_who_i_am")
+	GameState.complete_beat(BeatData.DONT_KNOW)
 	_expect(_low_signals == 0, "un beat que no cruza el umbral no reavisa la Estabilidad baja")
-	GameState.complete_beat("inn_water")
+	GameState.complete_beat(BeatData.INN_WATER)
 	_expect(is_equal_approx(_last_stability_signal, GameState.stability), "el jugador avisa la Estabilidad nueva al HUD")
 	_expect(is_equal_approx(player.stability, GameState.stability), "el jugador expone la Estabilidad de GameState")
 	player.queue_free()
