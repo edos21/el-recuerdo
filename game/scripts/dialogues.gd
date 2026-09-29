@@ -59,7 +59,13 @@ static func _tomas() -> bool:
 			"Yo ya no pregunto. Pero lo de las llaves... gracias.",
 		])
 		return true
-	return false
+	# Lo olvidó, pero no del todo: la pista de dónde buscarlas.
+	_say(TownNpcData.TOMAS_NAME, [
+		"El pueblo anda raro estos días. Todos olvidan cosas chicas.",
+		"Yo mismo... juraría que esta mañana tenía las llaves en la mano. Bajando por el camino del sur, creo. ¿O era ayer?",
+		"Ya no pregunto. Es más fácil hacer como que no pasa.",
+	])
+	return true
 
 # Alivio: el agua que la posadera no puede ir a buscar. Madurar: aceptar el
 # caldo aunque no tenga con qué pagarlo (rechazarlo no cuesta nada: se puede
