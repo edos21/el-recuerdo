@@ -5,8 +5,10 @@ extends Node2D
 # y la pista con la acción. El jugador busca `interact` en el padre de las
 # áreas que toca (topdown_player.gd).
 
-const HINT_OFFSET := Vector2(-60, -96)
 const HINT_SIZE := Vector2(120, 26)
+# Cuánto por encima de la zona flota la pista: la zona ya envuelve al objeto,
+# así la pista queda sobre él sea una llave o un pozo.
+const HINT_GAP := 4.0
 const HINT_FONT_SIZE := 14
 const HINT_OUTLINE := 4
 
@@ -24,7 +26,7 @@ func _init(area: Rect2, hint_text: String) -> void:
 	zone.area_exited.connect(_on_zone_area_exited)
 	add_child(zone)
 	_hint.text = hint_text
-	_hint.position = HINT_OFFSET
+	_hint.position = Vector2(area.get_center().x - HINT_SIZE.x * 0.5, area.position.y - HINT_SIZE.y - HINT_GAP)
 	_hint.size = HINT_SIZE
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.add_theme_font_size_override("font_size", HINT_FONT_SIZE)

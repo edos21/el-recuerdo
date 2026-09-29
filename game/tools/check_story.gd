@@ -45,6 +45,7 @@ func _ready() -> void:
 		func() -> void: _expect(_object(&"llaves") == null, "devueltas, las llaves ya no aparecen en el suelo"),
 		func() -> void: _expect(not _npc(&"tomas").barks.has("¿Dónde dejé...?"), "Tomás deja de buscar sus llaves"),
 		func() -> void: _load(HALL),
+		func() -> void: _check_hall_tables(),
 		func() -> void: _talk(_npc(&"posadera"), []),
 		func() -> void: _check_water_delivered(),
 		func() -> void: _talk(_npc(&"posadera"), ["move_down", "interact"]),
@@ -97,6 +98,16 @@ func _check_seen() -> void:
 func _check_water_delivered() -> void:
 	_expect(GameState.is_beat_done(BeatData.INN_WATER), "llevarle el balde a la posadera es el alivio")
 	_expect(not GameState.has_item(Dialogues.BUCKET), "el balde ya no está encima")
+
+# La letra de las mesas del salón chocaba con la de Marta: las mesas no se
+# dibujaban (y con el despertar pendiente habrían aparecido dos Martas).
+func _check_hall_tables() -> void:
+	var table_texture: Texture2D = InteriorLoader.FURNITURE["m"].texture
+	var tables := 0
+	for sprite in _scene.find_children("*", "Sprite2D", true, false):
+		if sprite.texture == table_texture:
+			tables += 1
+	_expect(tables == 2, "el salón tiene sus dos mesas (hay %d)" % tables)
 
 func _keys_sprite_left() -> bool:
 	var keys_texture: Texture2D = StoryObjectData.LIST["L"].texture

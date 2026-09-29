@@ -52,6 +52,7 @@ const DOOR_TRIGGER_DEPTH := 16.0
 const DOOR_ARRIVAL_INSET := 4.0
 
 func _build_ground() -> void:
+	_check_legend()
 	var room := Sprite2D.new()
 	room.name = "Room"
 	room.texture = room_texture
@@ -65,6 +66,13 @@ func _build_ground() -> void:
 		for exit in doors:
 			for run in _runs(row, [exit]):
 				_add_room_door(exit, row, run)
+
+# Los NPCs y los objetos del guion se resuelven antes que los muebles: una letra
+# compartida haría desaparecer el mueble (o aparecer un NPC donde va una mesa).
+func _check_legend() -> void:
+	for ch in FURNITURE:
+		if TownNpcData.LIST.has(ch) or StoryObjectData.LIST.has(ch):
+			push_error("InteriorLoader: la letra '%s' es un mueble y también un NPC u objeto del guion." % ch)
 
 func _place(ch: String, col: int, row: int) -> void:
 	if FURNITURE.has(ch):

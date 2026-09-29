@@ -34,7 +34,7 @@ const LIST := {
 		"idle_emotes": ["?"],
 	},
 	# Marta junto a la cama de la posada, la primera vez que despierta.
-	"m": {
+	"a": {
 		"name": MARTA_NAME,
 		"dialogue": &"marta",
 		"frames": MARTA_FRAMES,
