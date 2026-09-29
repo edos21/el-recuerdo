@@ -27,4 +27,6 @@ func _on_body_entered(body: Node2D) -> void:
 	if SceneRouter.is_busy():
 		return
 	GameState.arrival_door = id
+	# Durante el fundido ya se está yendo: no sigue caminando por la escena que deja.
+	body.set_locked(true)
 	SceneRouter.change_scene(target_scene)
