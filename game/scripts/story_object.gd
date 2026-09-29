@@ -1,28 +1,22 @@
 class_name StoryObject
 extends Interactable
-# Un objeto del guion en el mapa (unas llaves en el suelo, el pozo): se ve, a
-# veces bloquea el paso, y al usarlo corre su diálogo (Dialogues), que decide
-# qué pasa según el estado. Los datos vienen de data/story_objects.gd.
+# Un objeto del guion en el mapa (unas llaves en el suelo, el pozo): la zona
+# para usarlo y su diálogo (Dialogues), que decide qué pasa según el estado. El
+# sprite lo pone el loader como cualquier objeto del mapa; este nodo lo conoce
+# para poder hacerlo desaparecer. Los datos vienen de data/story_objects.gd.
 
 var dialogue: StringName
+var _prop: Node2D
 
-func _init(data: Dictionary) -> void:
-	var texture: Texture2D = data.texture
-	var feet: Vector2 = data.feet
-	var scale_factor := float(TopDownLoader.TILE_SCALE)
-	var size := Vector2(texture.get_size()) * scale_factor
-	# La zona cubre el objeto con un margen, para usarlo desde cualquier lado.
-	var area := Rect2(-feet * scale_factor, size).grow(data.get("reach", 0.0))
-	super(area, data.hint)
-	dialogue = data.dialogue
-	var sprite := Sprite2D.new()
-	sprite.texture = texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.centered = false
-	sprite.offset = -feet
-	sprite.scale = Vector2(scale_factor, scale_factor)
-	add_child(sprite)
-	move_child(sprite, 0)
+func _init(area: Rect2, hint_text: String, dialogue_id: StringName, prop: Node2D) -> void:
+	super(area, hint_text)
+	dialogue = dialogue_id
+	_prop = prop
 
-func interact(player: Node2D) -> void:
-	Dialogues.run(dialogue, self, player)
+func interact(_player: Node2D) -> void:
+	Dialogues.run(dialogue, self)
+
+# Se lo lleva el protagonista (las llaves): se va con su sprite.
+func vanish() -> void:
+	_prop.queue_free()
+	queue_free()

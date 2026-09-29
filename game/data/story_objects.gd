@@ -14,7 +14,7 @@ const LIST := {
 		"body": Vector2.ZERO,
 		"hint": "[Enter] mirar",
 		"dialogue": &"llaves",
-		"present_if": {"beat_pending": "tomas_keys", "lacks_item": "llaves_de_tomas"},
+		"present_if": {"beat_pending": BeatData.TOMAS_KEYS, "lacks_item": Dialogues.KEYS},
 		"reach": 24.0,
 	},
 	"O": {

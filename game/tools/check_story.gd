@@ -28,13 +28,14 @@ func _ready() -> void:
 	_steps = [
 		func() -> void: _load(TOWN),
 		func() -> void: _talk(_npc(&"tomas"), []),
-		func() -> void: _expect(not GameState.is_beat_done("tomas_keys"), "hablarle a Tomás sin las llaves no cuenta"),
+		func() -> void: _expect(not GameState.is_beat_done(BeatData.TOMAS_KEYS), "hablarle a Tomás sin las llaves no cuenta"),
 		func() -> void: _talk(_object(&"llaves"), []),
 		func() -> void: _expect(GameState.has_item(Dialogues.KEYS), "levantar las llaves las deja encima"),
+		func() -> void: _expect(not _keys_sprite_left(), "levantadas, las llaves ya no se ven en el suelo"),
 		func() -> void: _talk(_npc(&"tomas"), []),
 		func() -> void: _check_keys_returned(),
 		func() -> void: _talk(_npc(&"marta"), ["interact"]),
-		func() -> void: _expect(not GameState.is_beat_done("dont_know_who_i_am"), "\"Estoy bien\" no cuenta"),
+		func() -> void: _expect(not GameState.is_beat_done(BeatData.DONT_KNOW), "\"Estoy bien\" no cuenta"),
 		func() -> void: _max_before = GameState.max_stability,
 		func() -> void: _talk(_npc(&"marta"), ["move_down", "interact"]),
 		func() -> void: _check_seen(),
@@ -47,9 +48,9 @@ func _ready() -> void:
 		func() -> void: _talk(_npc(&"posadera"), []),
 		func() -> void: _check_water_delivered(),
 		func() -> void: _talk(_npc(&"posadera"), ["move_down", "interact"]),
-		func() -> void: _expect(not GameState.is_beat_done("broth"), "rechazar el caldo no cuenta ni cuesta nada"),
+		func() -> void: _expect(not GameState.is_beat_done(BeatData.BROTH), "rechazar el caldo no cuenta ni cuesta nada"),
 		func() -> void: _talk(_npc(&"posadera"), ["interact"]),
-		func() -> void: _expect(GameState.is_beat_done("broth"), "aceptar el caldo después cuenta"),
+		func() -> void: _expect(GameState.is_beat_done(BeatData.BROTH), "aceptar el caldo después cuenta"),
 	]
 
 func _process(delta: float) -> void:
@@ -86,16 +87,23 @@ func _talk(target: Node2D, keys: Array[String]) -> void:
 	target.interact(_scene.player)
 
 func _check_keys_returned() -> void:
-	_expect(GameState.is_beat_done("tomas_keys"), "devolverle las llaves a Tomás es el alivio")
+	_expect(GameState.is_beat_done(BeatData.TOMAS_KEYS), "devolverle las llaves a Tomás es el alivio")
 	_expect(not GameState.has_item(Dialogues.KEYS), "las llaves ya no están encima")
 
 func _check_seen() -> void:
-	_expect(GameState.is_beat_done("dont_know_who_i_am"), "\"No sé quién soy\" es madurar")
+	_expect(GameState.is_beat_done(BeatData.DONT_KNOW), "\"No sé quién soy\" es madurar")
 	_expect(GameState.max_stability > _max_before, "madurar sube el tope")
 
 func _check_water_delivered() -> void:
-	_expect(GameState.is_beat_done("inn_water"), "llevarle el balde a la posadera es el alivio")
+	_expect(GameState.is_beat_done(BeatData.INN_WATER), "llevarle el balde a la posadera es el alivio")
 	_expect(not GameState.has_item(Dialogues.BUCKET), "el balde ya no está encima")
+
+func _keys_sprite_left() -> bool:
+	var keys_texture: Texture2D = StoryObjectData.LIST["L"].texture
+	for sprite in _scene.find_children("*", "Sprite2D", true, false):
+		if sprite.texture == keys_texture and not sprite.is_queued_for_deletion():
+			return true
+	return false
 
 func _npc(dialogue: StringName) -> Npc:
 	for node in _scene.find_children("*", "Npc", true, false):

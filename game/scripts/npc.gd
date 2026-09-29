@@ -47,6 +47,8 @@ const DIRECTIONS := ["down", "left", "right", "up"]
 # Diálogo según el estado (Dialogues); sin él, o si no tiene nada especial, dice `lines`.
 @export var dialogue: StringName = &""
 
+# Los comentarios al pasar de sus datos: Dialogues los cambia según el estado.
+var _default_barks: PackedStringArray = []
 var _state := State.IDLE
 var _state_time := 0.0
 var _home: Vector2
@@ -80,7 +82,8 @@ func configure(data: Dictionary) -> void:
 	idle_emotes = PackedStringArray(data.idle_emotes)
 	_facing = data.get("facing", _facing)
 	dialogue = data.get("dialogue", &"")
-	barks = Dialogues.barks(dialogue, barks)
+	_default_barks = barks
+	barks = Dialogues.barks(dialogue, _default_barks)
 
 func _ready() -> void:
 	if sprite_frames_path != "":
@@ -117,7 +120,9 @@ func interact(player: Node2D) -> void:
 	# El dialogo pausa el arbol: hay que girar ya, no en el proximo frame.
 	sprite.play("idle_" + _facing)
 	_hop()
-	if dialogue != &"" and Dialogues.run(dialogue, self, player):
+	if dialogue != &"" and Dialogues.run(dialogue, self):
+		# Lo que se dijo puede haber cambiado el estado (un beat).
+		barks = Dialogues.barks(dialogue, _default_barks)
 		return
 	for i in lines.size():
 		var text := lines[i]

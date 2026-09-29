@@ -14,6 +14,8 @@ extends RefCounted
 # junto a la cama solo mientras el despertar no se mostro).
 
 const MARTA_NAME := "Marta"
+const TOMAS_NAME := "Tomás"
+const POSADERA_NAME := "Posadera"
 const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
 
 const LIST := {
@@ -48,7 +50,7 @@ const LIST := {
 		"present_if": {"wake_pending": true},
 	},
 	"p": {
-		"name": "Posadera",
+		"name": POSADERA_NAME,
 		"dialogue": &"posadera",
 		"frames": "res://assets/characters/topdown_innkeeper_frames.tres",
 		"lines": [
@@ -63,7 +65,7 @@ const LIST := {
 		"facing": "down",
 	},
 	"N": {
-		"name": "Tomás",
+		"name": TOMAS_NAME,
 		"dialogue": &"tomas",
 		"frames": "res://assets/characters/topdown_npc_b_frames.tres",
 		"lines": [

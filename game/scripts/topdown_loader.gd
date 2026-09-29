@@ -129,11 +129,17 @@ func _add_story_object(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = StoryObjectData.LIST[ch]
 	if not GameState.is_met(data.get("present_if", {})):
 		return
-	var story_object := StoryObject.new(data)
-	story_object.position = _feet(col, row)
-	objects.add_child(story_object)
+	var base := _feet(col, row)
+	var texture: Texture2D = data.texture
+	var feet: Vector2 = data.feet
+	var prop := _add_prop(texture, base, feet)
+	# La zona cubre el objeto con un margen, para usarlo desde cualquier lado.
+	var area := Rect2(-feet * TILE_SCALE, Vector2(texture.get_size()) * TILE_SCALE).grow(data.get("reach", 0.0))
+	var story_object := StoryObject.new(area, data.hint, data.dialogue, prop)
+	story_object.position = base
+	add_child(story_object)
 	if data.body != Vector2.ZERO:
-		_add_blocker(_feet(col, row), data.body * TILE_SCALE)
+		_add_blocker(base, data.body * TILE_SCALE)
 
 # Sprite apoyado en `base`, con el origen de la textura en `feet` (px de textura).
 func _add_prop(texture: Texture2D, base: Vector2, feet: Vector2, group: StringName = &"") -> Sprite2D:

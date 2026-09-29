@@ -65,7 +65,7 @@ func complete_beat(beat_id: String) -> bool:
 	if beat == null:
 		push_error("Beat desconocido: %s" % beat_id)
 		return false
-	if completed_beats.has(beat_id):
+	if is_beat_done(beat_id):
 		return false
 	completed_beats.append(beat_id)
 	match beat.kind:
@@ -105,7 +105,11 @@ func add_item(item: StringName) -> void:
 func remove_item(item: StringName) -> void:
 	items.erase(item)
 
+# Un id que no está en el catálogo daría false para siempre sin avisar (el NPC
+# nunca cambia, el objeto nunca desaparece): se avisa acá, igual que al completarlo.
 func is_beat_done(beat_id: String) -> bool:
+	if Catalogs.beats.entry(beat_id) == null:
+		push_error("Beat desconocido: %s" % beat_id)
 	return completed_beats.has(beat_id)
 
 # Condición de guion para que algo esté o pase (un NPC presente, un objeto en
