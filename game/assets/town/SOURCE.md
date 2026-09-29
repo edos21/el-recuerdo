@@ -43,6 +43,12 @@ archivo. `tools/gen_placeholder_art.py` crea placeholders.
 - `inn_candle.png` (tira de 4 cuadros): la vela en candelero de
   `animated candles anim 16x16 v01.png`, Mana Seed "Animated Candles". Licencia de compra.
 
+- `well.png`: el pozo con manivela de `village accessories 48x80.png` (Mana Seed "Village
+  Accessories"). Licencia de compra.
+- `keys.png`: la llave de `PNGs/key.png` del pack "Pixel Art Dungeon Level 4" (Acasas), sin la
+  sombra que trae pegada. Es la unica pieza del pueblo que no es Mana Seed (no hay llaves en la
+  coleccion); a reemplazar en la pasada de arte (#65). Licencia de compra.
+
 Los packs originales viven fuera del repo (por defecto en ~/Downloads/rpg_bundle;
 variable RPG_BUNDLE para cambiarlo). Regenerar: `python3 tools/gen_town_assets.py`
 y luego `godot --headless --script res://tools/build_topdown_frames.gd`.

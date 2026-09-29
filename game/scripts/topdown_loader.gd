@@ -42,6 +42,8 @@ func build(level_path: String) -> CharacterBody2D:
 				spawn = _feet(col, row)
 			elif TownNpcData.LIST.has(ch):
 				_add_npc(ch, col, row)
+			elif StoryObjectData.LIST.has(ch):
+				_add_story_object(ch, col, row)
 			else:
 				_place(ch, col, row)
 	bounds = Rect2(0, 0, _cols * CELL, _rows.size() * CELL)
@@ -115,13 +117,23 @@ func _feet(col: int, row: int) -> Vector2:
 
 func _add_npc(ch: String, col: int, row: int) -> void:
 	var data: Dictionary = TownNpcData.LIST[ch]
-	if data.get("only_on_wake", false) and not GameState.came_from_expulsion:
+	if not GameState.is_met(data.get("present_if", {})):
 		return
 	var npc := NPC_SCENE.instantiate()
 	npc.configure(data)
 	npc.position = _feet(col, row)
 	npc.add_to_group(CHARACTERS_GROUP)
 	objects.add_child(npc)
+
+func _add_story_object(ch: String, col: int, row: int) -> void:
+	var data: Dictionary = StoryObjectData.LIST[ch]
+	if not GameState.is_met(data.get("present_if", {})):
+		return
+	var story_object := StoryObject.new(data)
+	story_object.position = _feet(col, row)
+	objects.add_child(story_object)
+	if data.body != Vector2.ZERO:
+		_add_blocker(_feet(col, row), data.body * TILE_SCALE)
 
 # Sprite apoyado en `base`, con el origen de la textura en `feet` (px de textura).
 func _add_prop(texture: Texture2D, base: Vector2, feet: Vector2, group: StringName = &"") -> Sprite2D:

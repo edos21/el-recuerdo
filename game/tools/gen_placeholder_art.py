@@ -160,6 +160,21 @@ for frame in range(5):
     ImageDraw.Draw(pot).ellipse((frame * 32 + 4, 8, frame * 32 + 27, 30 - frame % 2), fill=(50, 50, 55, 255))
 save("town/inn_pot.png", pot)
 
+# Objetos del guion: el pozo (48x80) y las llaves (16x8).
+well = Image.new("RGBA", (48, 80), (0, 0, 0, 0))
+wd = ImageDraw.Draw(well)
+wd.ellipse((4, 44, 43, 78), fill=(130, 130, 125, 255))
+wd.ellipse((12, 50, 35, 66), fill=(30, 30, 40, 255))
+wd.rectangle((6, 16, 9, 56), fill=(110, 75, 45, 255))
+wd.rectangle((38, 16, 41, 56), fill=(110, 75, 45, 255))
+wd.rectangle((6, 16, 41, 19), fill=(110, 75, 45, 255))
+save("town/well.png", well)
+keys = Image.new("RGBA", (16, 8), (0, 0, 0, 0))
+kd = ImageDraw.Draw(keys)
+kd.rectangle((1, 2, 11, 5), fill=(90, 90, 100, 255))
+kd.rectangle((10, 0, 15, 7), fill=(90, 90, 100, 255))
+save("town/keys.png", keys)
+
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255)),
                    ("innkeeper", (150, 90, 60, 255))):

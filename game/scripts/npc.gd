@@ -44,6 +44,8 @@ const DIRECTIONS := ["down", "left", "right", "up"]
 @export var barks: PackedStringArray = []
 # Emotes que muestra solo, sin que nadie le hable ("?" = olvido algo).
 @export var idle_emotes: PackedStringArray = []
+# Diálogo según el estado (Dialogues); sin él, o si no tiene nada especial, dice `lines`.
+@export var dialogue: StringName = &""
 
 var _state := State.IDLE
 var _state_time := 0.0
@@ -77,6 +79,8 @@ func configure(data: Dictionary) -> void:
 	barks = PackedStringArray(data.barks)
 	idle_emotes = PackedStringArray(data.idle_emotes)
 	_facing = data.get("facing", _facing)
+	dialogue = data.get("dialogue", &"")
+	barks = Dialogues.barks(dialogue, barks)
 
 func _ready() -> void:
 	if sprite_frames_path != "":
@@ -113,6 +117,8 @@ func interact(player: Node2D) -> void:
 	# El dialogo pausa el arbol: hay que girar ya, no en el proximo frame.
 	sprite.play("idle_" + _facing)
 	_hop()
+	if dialogue != &"" and Dialogues.run(dialogue, self, player):
+		return
 	for i in lines.size():
 		var text := lines[i]
 		if i == 0 and npc_name != "":

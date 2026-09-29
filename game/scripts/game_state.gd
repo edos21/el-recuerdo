@@ -31,6 +31,9 @@ var completed_beats: Array[String] = []
 # Puerta por la que se sale de una escena (DoorData): la de destino hace aparecer
 # al jugador en la puerta con el mismo id y la limpia.
 var arrival_door: StringName = &""
+# Lo que el protagonista lleva encima para dárselo a alguien (las llaves que
+# encontró, un balde lleno). No es un inventario: son encargos del guion.
+var items: Array[StringName] = []
 
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
@@ -92,6 +95,44 @@ func begin_wake_up() -> void:
 	health = MAX_HEALTH
 	stability = max_stability * WAKE_STABILITY_RATIO
 
+func has_item(item: StringName) -> bool:
+	return items.has(item)
+
+func add_item(item: StringName) -> void:
+	if not items.has(item):
+		items.append(item)
+
+func remove_item(item: StringName) -> void:
+	items.erase(item)
+
+func is_beat_done(beat_id: String) -> bool:
+	return completed_beats.has(beat_id)
+
+# Condición de guion para que algo esté o pase (un NPC presente, un objeto en
+# el suelo): se cumplen todas las claves. Vacía, siempre se cumple.
+# wake_pending: bool; beat_done / beat_pending: id de beat; has_item / lacks_item: objeto.
+func is_met(condition: Dictionary) -> bool:
+	for key in condition:
+		var value: Variant = condition[key]
+		var holds: bool
+		match key:
+			"wake_pending":
+				holds = came_from_expulsion == value
+			"beat_done":
+				holds = is_beat_done(value)
+			"beat_pending":
+				holds = not is_beat_done(value)
+			"has_item":
+				holds = has_item(value)
+			"lacks_item":
+				holds = not has_item(value)
+			_:
+				push_error("GameState: condición desconocida '%s'." % key)
+				holds = false
+		if not holds:
+			return false
+	return true
+
 # Descansar (la cama de la posada, se puede repetir) devuelve la Vida entera y
 # levanta la Estabilidad hasta el piso del despertar, nunca mas: es para no
 # quedar sin salida, no una fuente de Estabilidad (esa es alivio y madurar).
@@ -125,3 +166,4 @@ func reset() -> void:
 	came_from_expulsion = false
 	completed_beats.clear()
 	arrival_door = &""
+	items.clear()

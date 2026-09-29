@@ -275,5 +275,15 @@ table_set.alpha_composite(chair.transpose(Image.FLIP_LEFT_RIGHT), (48, 0))
 table_set.save(OUT + "inn_table_set.png")
 shutil.copyfile(os.path.join(SLICEABLE, "animated cooking pot 32x32.png"), OUT + "inn_pot.png")
 
+# --- Objetos del guion en el pueblo ---
+# El pozo con manivela de "Village Accessories". Las llaves no existen en Mana
+# Seed: salen del pack "Pixel Art Dungeon Level 4" (Acasas) sin la sombra que
+# traen pegada (filas de abajo).
+WELL = (2 * 48, 0, 3 * 48, 80)
+KEY_SHEET = os.path.join(BUNDLE, "pixelartdungeonlevel4", "Pixel Art Dungeon Level 4-By Acasas-", "PNGs", "key.png")
+KEY = (8, 9, 24, 17)
+Image.open(os.path.join(ACCESSORIES, "village accessories 48x80.png")).convert("RGBA").crop(WELL).save(OUT + "well.png")
+Image.open(KEY_SHEET).convert("RGBA").crop(KEY).save(OUT + "keys.png")
+
 house_layout.write_layout_gd()
 print("ok")

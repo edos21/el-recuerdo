@@ -4,8 +4,8 @@ extends TopDownLoader
 # que level_loader.gd hace con el Nivel 1: editar el pueblo es editar el .txt.
 #
 # Leyenda: '.' pasto, ',' camino de tierra, 'T' arbol, 'H' casa e 'I' posada
-# (la letra marca el centro de su base), 'n'/'N' NPCs (data/town_npcs.gd), 'P'
-# donde aparece el jugador.
+# (la letra marca el centro de su base), 'n'/'N' NPCs (data/town_npcs.gd), 'O'
+# pozo y 'L' llaves (data/story_objects.gd), 'P' donde aparece el jugador.
 
 const GROUND_TEXTURE := preload("res://assets/town/ground.png")
 const HOUSE_TEXTURES := [
@@ -38,7 +38,7 @@ const DIRT_EDGES := {
 }
 
 # Objetos que se paran sobre el suelo de su entorno (camino si hay camino al lado).
-const MOBILE_OBJECTS := ['P', 'n', 'N']
+const MOBILE_OBJECTS := ['P', 'n', 'N', 'L']
 
 # Dimensiones de las imagenes de arboles (px de la textura) y metas con las que
 # cada edificio lleva a la atmosfera su mascara de ventanas y sus anclajes
