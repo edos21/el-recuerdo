@@ -61,7 +61,7 @@ static func _tomas() -> bool:
 		return true
 	# Lo olvidó, pero no del todo: la pista de dónde buscarlas.
 	_say(TownNpcData.TOMAS_NAME, [
-		"El pueblo anda raro estos días. Todos olvidan cosas chicas.",
+		"El pueblo anda raro estos días. Todos olvidan cosas pequeñas.",
 		"Yo mismo... juraría que esta mañana tenía las llaves en la mano. Bajando por el camino del sur, creo. ¿O era ayer?",
 		"Ya no pregunto. Es más fácil hacer como que no pasa.",
 	])
@@ -88,14 +88,14 @@ static func _posadera() -> bool:
 static func _on_broth_chosen(index: int) -> void:
 	if index == 0:
 		GameState.complete_beat(BeatData.BROTH)
-		_say(TownNpcData.POSADERA_NAME, ["Tomá. Despacio, que quema."])
+		_say(TownNpcData.POSADERA_NAME, ["Toma. Despacio, que quema."])
 	else:
 		_say(TownNpcData.POSADERA_NAME, ["¿Y quién te habló de pagar? Bueno... la olla no se va a ningún lado."])
 	if not GameState.is_beat_done(BeatData.INN_WATER):
 		_ask_for_water()
 
 static func _ask_for_water() -> void:
-	_say(TownNpcData.POSADERA_NAME, ["Si salís, ¿me traerías un balde del pozo? No puedo dejar el mostrador."])
+	_say(TownNpcData.POSADERA_NAME, ["Si sales, ¿me traerías un balde del pozo? No puedo dejar el mostrador."])
 
 # Madurar: dejar que te vean. "Estoy bien" no castiga: solo deja el beat pendiente.
 static func _marta() -> bool:
@@ -109,10 +109,10 @@ static func _on_marta_chosen(index: int) -> void:
 		GameState.complete_beat(BeatData.DONT_KNOW)
 		_say(TownNpcData.MARTA_NAME, [
 			"...",
-			"Gracias por decírmelo. No tenés que saberlo hoy. Lo vamos a ir viendo.",
+			"Gracias por decírmelo. No tienes que saberlo hoy. Lo vamos a ir viendo.",
 		])
 	else:
-		_say(TownNpcData.MARTA_NAME, ["Mm. Bueno. Si cambia, acá estoy."])
+		_say(TownNpcData.MARTA_NAME, ["Mm. Bueno. Si cambia, aquí estoy."])
 
 static func _keys(keys: StoryObject) -> bool:
 	GameState.add_item(KEYS)
@@ -127,5 +127,5 @@ static func _well() -> bool:
 		GameState.add_item(BUCKET)
 		_say("", ["Lleno el balde en el pozo. El agua sale fría y huele a piedra."])
 	else:
-		_say("", ["El pozo. El agua está lejos, allá abajo."])
+		_say("", ["El pozo. El agua está lejos, allí abajo."])
 	return true

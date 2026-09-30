@@ -15,7 +15,7 @@ kind = 1
 icon = ExtResource("2_ojr4l")
 pickup_char = "1"
 pickup_icon_scale = 2.0
-pickup_message = "Una cuerda de saltar, gastada por el uso. Recuerdo el sonido que hacía al golpear el suelo, una y otra vez, sin pensar. Así se sentía moverse sin dudar. Presioná Espacio para saltar. [Recuerdo del Saltador recuperado]"
+pickup_message = "Una cuerda de saltar, gastada por el uso. Recuerdo el sonido que hacía al golpear el suelo, una y otra vez, sin pensar. Así se sentía moverse sin dudar. Presiona Espacio para saltar. [Recuerdo del Saltador recuperado]"
 
 [sub_resource type="Resource" id="Resource_tslmd"]
 script = ExtResource("1_01mlc")
@@ -25,7 +25,7 @@ icon = ExtResource("3_ac5jn")
 fades_at = 0.25
 pickup_char = "2"
 pickup_icon_scale = 2.0
-pickup_message = "Unos zapatos viejos, todavía atados. Me gustaba salir a correr con ellos — me sentía ágil, liviano, rápido. Como un corredor. Mantené Shift apretado mientras te movés para correr. [Recuerdo del Corredor recuperado]"
+pickup_message = "Unos zapatos viejos, todavía atados. Me gustaba salir a correr con ellos — me sentía ágil, liviano, rápido. Como un corredor. Mantén Shift presionado mientras te mueves para correr. [Recuerdo del Corredor recuperado]"
 
 [sub_resource type="Resource" id="Resource_dtna5"]
 script = ExtResource("1_01mlc")
@@ -50,7 +50,7 @@ icon = ExtResource("5_av7be")
 fades_at = 0.75
 pickup_char = "4"
 pickup_icon_scale = 2.0
-pickup_message = "Una espada corta, con el filo gastado de uso real, no de exhibición. Recuerdo la firmeza de sostenerla, la decisión de no quedarme quieto. Presioná X para atacar. [Recuerdo del Guerrero recuperado]"
+pickup_message = "Una espada corta, con el filo gastado de uso real, no de exhibición. Recuerdo la firmeza de sostenerla, la decisión de no quedarme quieto. Presiona X para atacar. [Recuerdo del Guerrero recuperado]"
 
 [sub_resource type="Resource" id="Resource_44f0c"]
 script = ExtResource("1_01mlc")
