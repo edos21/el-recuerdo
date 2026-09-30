@@ -15,13 +15,13 @@ const TRUNK_FACING := "left"
 const TRUNK_THOUGHT := "Esto... ¿es mío?"
 const MARTA_LINES := [
 	"Marta: ¡Ey! Menos mal. Te encontramos en el puerto y no reaccionabas. Te trajimos entre varios.",
-	"Marta: Dormiste casi un día entero. Todavía tenés la mirada lejos, ¿eh?",
+	"Marta: Dormiste casi un día entero. Todavía tienes la mirada lejos, ¿eh?",
 ]
-const CHOICE_PROMPT := "Marta: Quedate a descansar un rato, o si querés aire, la puerta está ahí."
+const CHOICE_PROMPT := "Marta: Quédate a descansar un rato, o si quieres aire, la puerta está ahí."
 const CHOICES := ["Descansar", "Salir"]
 # Al descansar: un destello de la llegada, sin explicarla todavía.
 const REST_THOUGHT := "...agua. El ruido de un barco. ¿Un barco?"
-const LEAVE_LINE := "Marta: Abajo está la posadera, te va a querer ver. Afuera tenés el mercado, la iglesia, y el puerto... por allá. Despacio, ¿sí?"
+const LEAVE_LINE := "Marta: Abajo está la posadera, te va a querer ver. Afuera tienes el mercado, la iglesia, y el puerto... por allí. Despacio, ¿sí?"
 
 func _ready() -> void:
 	super._ready()

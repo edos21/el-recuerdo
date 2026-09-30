@@ -21,7 +21,7 @@ func _ready() -> void:
 	_check_player_signal()
 	add_child(CORE_SCENE.instantiate())
 	Events.message_requested.emit("Antes de la pregunta.")
-	Events.choice_requested.emit("¿Qué hacés?", PackedStringArray(OPTIONS), func(index: int) -> void: _chosen = index)
+	Events.choice_requested.emit("¿Qué haces?", PackedStringArray(OPTIONS), func(index: int) -> void: _chosen = index)
 
 # La elección necesita frames: el HUD procesa la entrada simulada en el
 # siguiente ciclo, y el árbol está en pausa mientras tanto.
