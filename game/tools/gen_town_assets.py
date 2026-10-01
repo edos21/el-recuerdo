@@ -277,6 +277,8 @@ table_set.alpha_composite(chair, (0, 0))
 table_set.alpha_composite(cozy_32.crop(ROUND_TABLE), (16, 0))
 table_set.alpha_composite(chair.transpose(Image.FLIP_LEFT_RIGHT), (48, 0))
 table_set.save(OUT + "inn_table_set.png")
+# La silla del rincon (la del marido de Dona Flor): sola, mirando al salon.
+chair.transpose(Image.FLIP_LEFT_RIGHT).save(OUT + "inn_chair.png")
 shutil.copyfile(os.path.join(SLICEABLE, "animated cooking pot 32x32.png"), OUT + "inn_pot.png")
 
 # --- Objetos del guion en el pueblo ---

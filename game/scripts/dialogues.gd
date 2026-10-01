@@ -24,6 +24,8 @@ static func run(id: StringName, speaker: Node2D) -> bool:
 			return POSADERA.run()
 		&"pozo":
 			return POSADERA.use_well()
+		&"silla":
+			return POSADERA.look_at_chair()
 		&"marta":
 			return MARTA.run()
 	push_error("Dialogues: no hay diálogo '%s'." % id)

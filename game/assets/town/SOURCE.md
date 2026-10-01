@@ -43,7 +43,7 @@ llevar los PNG. Uso de este proyecto: personal, sin venta.
   de la coleccion). Licencia de compra.
 - `inn_counter.png` (el mostrador): escritorio ancho de `cozy furnishings 48x32.png`.
   `inn_table_set.png`: la mesa redonda de `cozy furnishings 32x32.png` con una silla de
-  `cozy furnishings 16x32.png` a cada lado (la derecha, espejada). `inn_pot.png` (tira de 5
+  `cozy furnishings 16x32.png` a cada lado (la derecha, espejada). `inn_chair.png` (la silla del rincon): esa misma silla, sola y espejada. `inn_pot.png` (tira de 5
   cuadros): copia de `thatch roof sliceable/animated cooking pot 32x32.png`. Todo Mana Seed,
   licencia de compra.
 - `inn_bed.png`: copia de `thatch roof sliceable/thatch roof bed 32x64.png` (Thatch Roof Home).

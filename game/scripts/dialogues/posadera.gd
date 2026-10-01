@@ -32,6 +32,14 @@ static func use_well() -> bool:
 		Dialogues.say("", ["El pozo. El agua está lejos, allí abajo."])
 	return true
 
+# Nadie la usa y no junta polvo: el pueblo no se sorprende, el jugador decide.
+static func look_at_chair() -> bool:
+	Dialogues.say("", [
+		"Una silla en el rincón, girada hacia la mesa. Nadie la usa. Aun así, no tiene polvo.",
+		"...Juraría que hace un rato estaba girada para el otro lado.",
+	])
+	return true
+
 static func _on_broth_chosen(index: int) -> void:
 	if index == 0:
 		GameState.complete_beat(BeatData.BROTH)
