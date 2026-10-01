@@ -1,5 +1,5 @@
 extends RefCounted
-# La posadera. Alivio: el agua que no puede ir a buscar. Madurar:
+# Doña Flor, la posadera. Alivio: el agua que no puede ir a buscar. Madurar:
 # aceptar el caldo aunque no tenga con qué pagarlo (rechazarlo no cuesta nada:
 # se puede aceptar después).
 
@@ -7,7 +7,11 @@ static func run() -> bool:
 	if GameState.has_item(Dialogues.BUCKET):
 		GameState.remove_item(Dialogues.BUCKET)
 		GameState.complete_beat(BeatData.INN_WATER)
-		Dialogues.say(TownNpcData.POSADERA_NAME, ["¿Me trajiste agua? ¡Ay, gracias! No podía dejar el mostrador solo."])
+		Dialogues.say(TownNpcData.POSADERA_NAME, [
+			"¿Me trajiste agua? ¡Ay, gracias! No podía dejar el mostrador solo.",
+			"¿Sabes para qué más sirve un balde? Cuando alguien se va del pueblo, se le tira agua por detrás, para que vuelva.",
+			"Estos años se gastó mucha agua aquí.",
+		])
 		return true
 	if not GameState.is_beat_done(BeatData.BROTH):
 		Dialogues.ask(TownNpcData.POSADERA_NAME, "Tengo caldo recién hecho. ¿Te sirvo un plato?",
@@ -31,7 +35,10 @@ static func use_well() -> bool:
 static func _on_broth_chosen(index: int) -> void:
 	if index == 0:
 		GameState.complete_beat(BeatData.BROTH)
-		Dialogues.say(TownNpcData.POSADERA_NAME, ["Toma. Despacio, que quema."])
+		Dialogues.say(TownNpcData.POSADERA_NAME, [
+			"Toma. Despacio, que quema.",
+			"Hoy me salió contento. Los días que cocino triste, aquí nadie habla.",
+		])
 	else:
 		Dialogues.say(TownNpcData.POSADERA_NAME, ["¿Y quién te habló de pagar? Bueno... la olla no se va a ningún lado."])
 	if not GameState.is_beat_done(BeatData.INN_WATER):

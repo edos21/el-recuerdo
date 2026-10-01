@@ -1,5 +1,6 @@
 extends RefCounted
-# Tomás y sus llaves. Alivio: devolverle algo que perdió.
+# Tomás y sus llaves. Alivio: devolverle algo que "perdió". No las perdió del
+# todo, y por eso el agradecimiento no le sale del todo aliviado.
 
 const BARKS_AFTER := ["Mm.", "Buen día... creo.", "Hoy no perdí nada. Todavía."]
 
@@ -8,8 +9,9 @@ static func run() -> bool:
 		GameState.remove_item(Dialogues.KEYS)
 		GameState.complete_beat(BeatData.TOMAS_KEYS)
 		Dialogues.say(TownNpcData.TOMAS_NAME, [
-			"¿Esas son...? ¡Mis llaves! Las busqué toda la mañana.",
+			"¿Esas son...? Mis llaves.",
 			"Gracias. De verdad. Hace mucho que nadie me devolvía nada.",
+			"...Ya me había acostumbrado a no tenerlas.",
 		])
 		return true
 	if GameState.is_beat_done(BeatData.TOMAS_KEYS):

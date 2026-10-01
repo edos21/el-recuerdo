@@ -21,7 +21,7 @@ const CHOICE_PROMPT := "Marta: Quédate a descansar un rato, o si quieres aire, 
 const CHOICES := ["Descansar", "Salir"]
 # Al descansar: un destello de la llegada, sin explicarla todavía.
 const REST_THOUGHT := "...agua. El ruido de un barco. ¿Un barco?"
-const LEAVE_LINE := "Marta: Abajo está la posadera, te va a querer ver. Afuera tienes el mercado, la iglesia, y el puerto... por allí. Despacio, ¿sí?"
+const LEAVE_LINE := "Marta: Abajo está Doña Flor, la de la posada; te va a querer ver. Afuera tienes el mercado, la iglesia, y el puerto... por allí. Despacio, ¿sí?"
 
 func _ready() -> void:
 	super._ready()
