@@ -11,7 +11,6 @@ signal finished
 
 enum Target { NONE, HINGE, BOOK, NEIGHBOR, TOMAS }
 
-const FEET_Y := 560.0
 const CAMERA_ZOOM := 1.5
 # Alto del escenario en px de mundo: con el ancho de los mapas (40 x 32) llena
 # el viewport de 1920x1080 a este zoom.
@@ -36,9 +35,8 @@ const FLASH_TIME := 0.3
 const THOUGHT_HOLD := 4.0
 const HINT_OFFSET := Vector2(-70, -96)
 const HINT_SIZE := Vector2(140, 26)
-const HINT_FONT_SIZE := 14
-const HINT_OUTLINE := 4
 const ENDING_BREATH := 0.5
+const DELIVERY_THOUGHT_DELAY := 0.4
 
 # Acompañar a Tomás en Ayer: quedarse a su lado mientras dice cada línea.
 const ACCOMPANY_HOLD := 1.8
@@ -59,6 +57,7 @@ const BOOK_LINES := {
 }
 const BOOK_SERVED_LINE := "Última línea: una bisagra, traída de otro día."
 const NEIGHBOR_ASKS := "Vecino: Busco una bisagra. Tomás dice que ya no le quedan."
+const NEIGHBOR_THANKS := "Vecino: Gracias por la bisagra. Tomás siempre encuentra algo guardado, ¿verdad?"
 # Lo que pasa al completar cada entrega, por objeto: lo que dice el cliente, lo
 # que le contesta Tomás, lo que cuenta el narrador y lo que piensa el
 # protagonista cuando se cierra el cuadro de diálogo.
@@ -71,8 +70,6 @@ const DELIVERIES := {
 		"thought": "Anota sin mirar el cuaderno, como quien firma algo que ya sabía.",
 	},
 }
-const DELIVERY_THOUGHT_DELAY := 0.4
-const NEIGHBOR_THANKS := "Vecino: Gracias por la bisagra. Tomás siempre encuentra algo guardado, ¿verdad?"
 const TOMAS_NOT_YET := "Tomás: Ahora no."
 const TOMAS_OPENS_UP := "Tomás: No sé cómo seguir con esto. Quédate un rato, si quieres."
 const TOMAS_LINES: Array[String] = [
@@ -90,10 +87,10 @@ const HINT_TEXTS := {
 const HINT_DROP := "[Enter] soltar"
 const HINT_DELIVER := "[Enter] entregar la bisagra"
 const TARGET_CHARS := {
-	Target.HINGE: 'b',
-	Target.BOOK: 'l',
-	Target.NEIGHBOR: 'V',
-	Target.TOMAS: 'T',
+	Target.HINGE: StageMap.HINGE,
+	Target.BOOK: StageMap.BOOK,
+	Target.NEIGHBOR: StageMap.NEIGHBOR,
+	Target.TOMAS: StageMap.TOMAS,
 }
 
 @export var looks: Array[WorldLook] = []
@@ -108,7 +105,7 @@ var day := StageMap.Day.HOY
 var carried := NO_ITEM
 var served := false
 var player: StagePlayer
-
+# Quedarse junto a Tomás en Ayer hasta que termine de hablar.
 var accompanying := false
 
 var _blockers: Dictionary = {}
@@ -141,7 +138,7 @@ func _build_blockers() -> void:
 		var bodies: Array[StaticBody2D] = []
 		for run in map.blocker_runs(d as StageMap.Day):
 			var body := StaticBody2D.new()
-			body.position = Vector2((run.x + run.y) * StageMap.CELL * 0.5, FEET_Y - BLOCKER_HEIGHT * 0.5)
+			body.position = Vector2((run.x + run.y) * StageMap.CELL * 0.5, StageMap.FEET_Y - BLOCKER_HEIGHT * 0.5)
 			body.add_child(MapUtils.rect_shape(Vector2((run.y - run.x) * StageMap.CELL, BLOCKER_HEIGHT)))
 			add_child(body)
 			bodies.append(body)
@@ -149,7 +146,7 @@ func _build_blockers() -> void:
 
 func _build_player() -> void:
 	player = preload("res://scenes/StagePlayer.tscn").instantiate()
-	player.position = Vector2(StageMap.center_x(map.first_column(StageMap.SPAWN_DAY, StageMap.SPAWN)), FEET_Y - CharacterScale.FEET_Y)
+	player.position = Vector2(StageMap.center_x(map.first_column(StageMap.SPAWN_DAY, StageMap.SPAWN)), StageMap.FEET_Y - CharacterScale.FEET_Y)
 	player.min_x = 0.0
 	player.max_x = map.width_of(day) * StageMap.CELL
 	add_child(player)
@@ -157,9 +154,9 @@ func _build_player() -> void:
 func _build_overlays() -> void:
 	_hint.size = HINT_SIZE
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.add_theme_font_size_override("font_size", HINT_FONT_SIZE)
+	_hint.add_theme_font_size_override("font_size", Interactable.HINT_FONT_SIZE)
 	_hint.add_theme_color_override("font_outline_color", Color.BLACK)
-	_hint.add_theme_constant_override("outline_size", HINT_OUTLINE)
+	_hint.add_theme_constant_override("outline_size", Interactable.HINT_OUTLINE)
 	_hint.visible = false
 	add_child(_hint)
 	var layer := CanvasLayer.new()
@@ -173,9 +170,7 @@ func _build_overlays() -> void:
 	add_child(layer)
 
 func _process(delta: float) -> void:
-	var rate: float = STABILITY_RATE[day]
-	if (rate > 0.0 and GameState.stability < GameState.max_stability) or (rate < 0.0 and GameState.stability > 0.0):
-		GameState.shift_stability(rate * delta)
+	GameState.shift_stability(STABILITY_RATE[day] * delta)
 	_drop_if_exhausted()
 	_update_accompany(delta)
 	_update_hint()
@@ -203,12 +198,17 @@ func _switch_day(target: int) -> void:
 	_drop_if_exhausted()
 
 func _apply_day() -> void:
-	view.show_state(day, _hinge_on_shelf())
+	_refresh_view()
 	keyring.show_day(day)
 	core.apply_look(looks[day])
 	for d in _blockers:
 		for body in _blockers[d]:
 			body.collision_layer = 1 if d == day else 0
+
+# Lo que se ve del día actual y de lo que se lleva; cambiar de día además
+# cambia el llavero, el look y qué cajas bloquean (_apply_day).
+func _refresh_view() -> void:
+	view.show_state(day, _hinge_on_shelf())
 
 func _flash_screen() -> void:
 	if _flash_tween and _flash_tween.is_valid():
@@ -247,7 +247,8 @@ func _update_hint() -> void:
 	elif carried != NO_ITEM:
 		text = HINT_DROP
 	_hint.visible = text != "" and not _ending
-	_hint.text = text
+	if _hint.text != text:
+		_hint.text = text
 	_hint.position = player.position + HINT_OFFSET
 
 func _interact() -> void:
@@ -269,14 +270,14 @@ func _pick_up(item: StringName) -> void:
 		Events.thought_requested.emit(HANDS_FULL_THOUGHT, THOUGHT_HOLD)
 		return
 	carried = item
-	_apply_day()
+	_refresh_view()
 	Events.thought_requested.emit(HINGE_THOUGHT, THOUGHT_HOLD)
 
 # Lo soltado vuelve a su lugar: no hay suelo donde dejar cosas, así que cargar
 # algo es siempre una decisión.
 func _drop(thought: String) -> void:
 	carried = NO_ITEM
-	_apply_day()
+	_refresh_view()
 	Events.thought_requested.emit(thought, THOUGHT_HOLD)
 
 func _drop_if_exhausted() -> void:
@@ -299,7 +300,7 @@ func _talk_to_neighbor() -> void:
 func _deliver(lines: Dictionary) -> void:
 	carried = NO_ITEM
 	served = true
-	_apply_day()
+	_refresh_view()
 	for key in ["give", "client", "tomas", "narration"]:
 		Events.message_requested.emit(lines[key])
 	# El mensaje pausa la escena: el pensamiento llega recién cuando se lo cierra.
@@ -322,16 +323,18 @@ func _talk_to_tomas() -> void:
 func _update_accompany(delta: float) -> void:
 	if not accompanying or _ending:
 		return
-	var at := map.first_column(day, TARGET_CHARS[Target.TOMAS])
+	var at := map.first_column(day, StageMap.TOMAS)
 	if at < 0 or not StageMap.within_reach(StageMap.col_of(player.position.x), at):
 		accompanying = false
 		Events.thought_requested.emit(SILENT_THOUGHT, THOUGHT_HOLD)
 		return
 	_accompany_time += delta
-	if _lines_said < TOMAS_LINES.size() and _accompany_time >= _lines_said * ACCOMPANY_STEP:
+	if _accompany_time < _lines_said * ACCOMPANY_STEP:
+		return
+	if _lines_said < TOMAS_LINES.size():
 		Events.thought_requested.emit(TOMAS_LINES[_lines_said], ACCOMPANY_HOLD)
 		_lines_said += 1
-	elif _lines_said == TOMAS_LINES.size() and _accompany_time >= _lines_said * ACCOMPANY_STEP:
+	else:
 		_finish()
 
 func _finish() -> void:

@@ -12,8 +12,8 @@ extends CheckBase
 
 const SCENE := preload("res://scenes/Ferreteria.tscn")
 const PLAYER_HALF_WIDTH := StagePlayer.BODY_WIDTH * 0.5
-const LEGEND_WALL := ".EevMd"
-const LEGEND_FLOOR := ".CRblVTSg"
+const LEGEND_WALL := "." + StageMap.SHELF_FULL + StageMap.SHELF_EMPTY + StageMap.WINDOW + StageMap.COUNTER + StageMap.BACK_DOOR
+const LEGEND_FLOOR := "." + StageMap.CRATE + StageMap.GATE + StageMap.HINGE + StageMap.BOOK + StageMap.NEIGHBOR + StageMap.TOMAS + StageMap.BAG + StageMap.SPAWN
 const SETTLE_FRAMES := 3
 const INPUT_FRAMES := 2
 const RATE_FRAMES := 60
@@ -24,24 +24,16 @@ const LOW_STABILITY := 1.0
 const MID_STABILITY := 10.0
 const EPSILON := 0.05
 
-# Columnas de la prueba (ver levels/ferreteria_*.txt).
-const COL_BEFORE_CRATE := 5
-const COL_FREE_IN_ANTES_ONLY := 7
-const COL_HINGE := 8
-const COL_NOTHING_NEAR := 12
-const COL_FREE_EVERYWHERE := 13
-const COL_NEXT_TO_NEIGHBOR := 30
-const COL_NEXT_TO_TOMAS := 33
-
 var _finished_memory := false
 
 func _ready() -> void:
 	var map := StageMap.new()
 	_check_maps(map)
 	_check_solvable(map)
-	_check_scene()
+	_check_scene(map)
 
 func _check_maps(map: StageMap) -> void:
+	_expect(StageMap.DAY_COUNT == StageMap.Day.size(), "DAY_COUNT cuenta todos los días")
 	for day in StageMap.DAY_COUNT:
 		_expect(map.row_text(day, StageMap.WALL_ROW).length() == StageMap.COLS and map.row_text(day, StageMap.FLOOR_ROW).length() == StageMap.COLS,
 				"el día %d mide %d columnas en sus dos filas" % [day, StageMap.COLS])
@@ -52,15 +44,20 @@ func _check_maps(map: StageMap) -> void:
 	_expect(map.columns_of(StageMap.Day.HOY, StageMap.SPAWN).size() == 1, "hay un solo lugar de partida, en Hoy")
 	for day in [StageMap.Day.ANTES, StageMap.Day.AYER]:
 		_expect(map.columns_of(day, StageMap.SPAWN).is_empty(), "el lugar de partida solo está en Hoy")
-	_expect(map.columns_of(StageMap.Day.ANTES, 'b').size() == 1, "la bisagra está una vez, en Antes")
-	_expect(map.columns_of(StageMap.Day.HOY, 'b').is_empty() and map.columns_of(StageMap.Day.AYER, 'b').is_empty(), "la bisagra solo está en Antes")
-	_expect(map.columns_of(StageMap.Day.HOY, 'V').size() == 1, "el vecino está una vez, en Hoy")
-	_expect(map.columns_of(StageMap.Day.AYER, 'T').size() == 1, "Tomás está una vez, en Ayer")
-	_expect(map.columns_of(StageMap.Day.AYER, 'g').size() == 1, "el bolso está una vez, en Ayer")
-	_expect(map.columns_of(StageMap.Day.ANTES, 'g').is_empty() and map.columns_of(StageMap.Day.HOY, 'g').is_empty(), "el bolso solo está en Ayer")
-	var book := map.first_column(StageMap.Day.ANTES, 'l')
+	_expect(map.columns_of(StageMap.Day.ANTES, StageMap.HINGE).size() == 1, "la bisagra está una vez, en Antes")
+	_expect(map.columns_of(StageMap.Day.HOY, StageMap.HINGE).is_empty() and map.columns_of(StageMap.Day.AYER, StageMap.HINGE).is_empty(), "la bisagra solo está en Antes")
+	_expect(map.columns_of(StageMap.Day.HOY, StageMap.NEIGHBOR).size() == 1, "el vecino está una vez, en Hoy")
+	_expect(map.columns_of(StageMap.Day.AYER, StageMap.TOMAS).size() == 1, "Tomás está una vez, en Ayer")
+	_expect(map.columns_of(StageMap.Day.AYER, StageMap.BAG).size() == 1, "el bolso está una vez, en Ayer")
+	_expect(map.columns_of(StageMap.Day.ANTES, StageMap.BAG).is_empty() and map.columns_of(StageMap.Day.HOY, StageMap.BAG).is_empty(), "el bolso solo está en Ayer")
+	var book := map.first_column(StageMap.Day.ANTES, StageMap.BOOK)
 	for day in StageMap.DAY_COUNT:
-		_expect(map.first_column(day, 'l') == book, "el cuaderno está en la misma columna los tres días")
+		_expect(map.first_column(day, StageMap.BOOK) == book, "el cuaderno está en la misma columna los tres días")
+	# El puzzle arranca en la primera caja de Hoy, que Antes no tiene.
+	var crate := map.blocker_runs(StageMap.Day.HOY)[0].x
+	_expect(map.is_blocked(StageMap.Day.HOY, crate) and not map.is_blocked(StageMap.Day.ANTES, crate), "la primera caja de Hoy no existe en Antes")
+	_expect(crate > 0 and not map.is_blocked(StageMap.Day.HOY, crate - 1) and not map.is_blocked(StageMap.Day.ANTES, crate - 1), "queda lugar libre antes de la primera caja")
+	_expect(_quiet_column(map) >= 0, "hay una columna libre en los tres días y lejos de todo lo que se usa")
 
 func _check_solvable(map: StageMap) -> void:
 	var switches := _min_switches(map, true)
@@ -74,9 +71,9 @@ func _check_solvable(map: StageMap) -> void:
 # si lleva la bisagra, si ya la entregó): se relajan las distancias hasta que
 # no mejora ninguna. Si `ayer_libre` es falso, Ayer queda vedado hasta entregarla.
 func _min_switches(map: StageMap, ayer_libre: bool) -> int:
-	var hinge := map.first_column(StageMap.Day.ANTES, 'b')
-	var neighbor := map.first_column(StageMap.Day.HOY, 'V')
-	var tomas := map.first_column(StageMap.Day.AYER, 'T')
+	var hinge := map.first_column(StageMap.Day.ANTES, StageMap.HINGE)
+	var neighbor := map.first_column(StageMap.Day.HOY, StageMap.NEIGHBOR)
+	var tomas := map.first_column(StageMap.Day.AYER, StageMap.TOMAS)
 	var start := Vector4i(map.first_column(StageMap.SPAWN_DAY, StageMap.SPAWN), StageMap.SPAWN_DAY, 0, 0)
 	var best := {start: 0}
 	var changed := true
@@ -120,7 +117,30 @@ func _moves(map: StageMap, state: Vector4i, ayer_libre: bool, hinge: int, neighb
 		moves.append([Vector4i(col, day, 0, 1), 0])
 	return moves
 
-func _check_scene() -> void:
+# Una columna donde el cuerpo cabe en los tres días y no hay nada para usar
+# cerca: sirve para cambiar de día o soltar sin que otra cosa interfiera.
+func _quiet_column(map: StageMap) -> int:
+	var targets: Array[int] = [
+		map.first_column(StageMap.Day.ANTES, StageMap.HINGE),
+		map.first_column(StageMap.Day.ANTES, StageMap.BOOK),
+		map.first_column(StageMap.Day.HOY, StageMap.NEIGHBOR),
+		map.first_column(StageMap.Day.AYER, StageMap.TOMAS),
+	]
+	for col in StageMap.COLS:
+		var everywhere := true
+		for day in StageMap.DAY_COUNT:
+			everywhere = everywhere and map.fits(day as StageMap.Day, StageMap.center_x(col), PLAYER_HALF_WIDTH)
+		var near := targets.any(func(target: int) -> bool: return StageMap.within_reach(col, target))
+		if everywhere and not near:
+			return col
+	return -1
+
+func _check_scene(map: StageMap) -> void:
+	var hinge := map.first_column(StageMap.Day.ANTES, StageMap.HINGE)
+	var crate := map.blocker_runs(StageMap.Day.HOY)[0].x
+	var quiet := _quiet_column(map)
+	var next_to_neighbor := map.first_column(StageMap.Day.HOY, StageMap.NEIGHBOR) - 1
+	var next_to_tomas := map.first_column(StageMap.Day.AYER, StageMap.TOMAS) - 1
 	GameState.reset()
 	var scene: Ferreteria = SCENE.instantiate()
 	add_child(scene)
@@ -129,33 +149,33 @@ func _check_scene() -> void:
 	_expect(GameState.stability > 0.0, "se entra con Estabilidad")
 
 	# Cambiar de llave cuesta.
-	await _teleport(scene, COL_BEFORE_CRATE)
+	await _teleport(scene, crate - 1)
 	var before := GameState.stability
 	await _press_and_wait("keyring_prev")
 	_expect(scene.day == StageMap.Day.ANTES, "Q lleva al día anterior")
 	_expect(before - GameState.stability > Ferreteria.SWITCH_COST * 0.5, "cambiar de llave gasta Estabilidad")
 
 	# Donde hay una caja en el otro día no se puede cambiar, y no cuesta.
-	await _teleport(scene, COL_FREE_IN_ANTES_ONLY)
+	await _teleport(scene, crate)
 	before = GameState.stability
 	await _press_and_wait("keyring_next")
 	_expect(scene.day == StageMap.Day.ANTES, "no se cambia a un día donde hay una caja en ese lugar")
 	_expect(is_equal_approx(before, GameState.stability), "el cambio rechazado no cuesta Estabilidad")
 
 	# Recoger y soltar: lo soltado vuelve a su lugar.
-	await _teleport(scene, COL_HINGE)
+	await _teleport(scene, hinge)
 	await _press_and_wait("interact")
 	_expect(scene.carried == Ferreteria.ITEM_HINGE, "se recoge la bisagra junto al estante")
 	_expect(not scene.view.hinge_visible, "la bisagra sale del estante mientras se lleva")
-	await _teleport(scene, COL_NOTHING_NEAR)
+	await _teleport(scene, quiet)
 	await _press_and_wait("interact")
 	_expect(scene.carried == Ferreteria.NO_ITEM and scene.view.hinge_visible, "lo soltado vuelve al estante")
 
 	# Agotarse suelta lo que se lleva.
-	await _teleport(scene, COL_HINGE)
+	await _teleport(scene, hinge)
 	await _press_and_wait("interact")
 	GameState.stability = LOW_STABILITY
-	await _teleport(scene, COL_FREE_EVERYWHERE)
+	await _teleport(scene, quiet)
 	await _press_and_wait("keyring_next")
 	_expect(scene.day == StageMap.Day.HOY, "se cambia a Hoy donde cabe")
 	_expect(scene.carried == Ferreteria.NO_ITEM, "sin Estabilidad se cae lo que se lleva")
@@ -172,15 +192,23 @@ func _check_scene() -> void:
 	_expect(GameState.stability < at_ayer - EPSILON, "Ayer gasta Estabilidad")
 
 	# Tomás no habla hasta que se entregó la bisagra.
-	await _teleport(scene, COL_NEXT_TO_TOMAS)
+	await _teleport(scene, next_to_tomas)
 	await _press_and_wait("interact")
 	await _dismiss_dialogue()
 	_expect(not scene.accompanying, "Tomás no deja que lo acompañen antes de entregar la bisagra")
 
-	# Entregar la bisagra al vecino.
-	await _teleport(scene, COL_NEXT_TO_NEIGHBOR)
+	# Entregar la bisagra al vecino, recogida de verdad y llevada de Antes a Hoy.
+	GameState.stability = GameState.max_stability
+	await _teleport(scene, quiet)
 	await _press_and_wait("keyring_prev")
-	scene.carried = Ferreteria.ITEM_HINGE
+	await _press_and_wait("keyring_prev")
+	_expect(scene.day == StageMap.Day.ANTES, "se vuelve a Antes pasando por Hoy")
+	await _teleport(scene, hinge)
+	await _press_and_wait("interact")
+	_expect(scene.carried == Ferreteria.ITEM_HINGE, "se recoge la bisagra para entregarla")
+	await _teleport(scene, next_to_neighbor)
+	await _press_and_wait("keyring_next")
+	_expect(scene.day == StageMap.Day.HOY and scene.carried == Ferreteria.ITEM_HINGE, "la bisagra viaja de Antes a Hoy en la mano")
 	await _press_and_wait("interact")
 	await _dismiss_dialogue()
 	_expect(scene.served and scene.carried == Ferreteria.NO_ITEM, "el vecino se lleva la bisagra")
@@ -189,7 +217,7 @@ func _check_scene() -> void:
 	# Acompañar a Tomás hasta que lo diga termina el recuerdo.
 	GameState.stability = GameState.max_stability
 	scene.finished.connect(func() -> void: _finished_memory = true)
-	await _teleport(scene, COL_NEXT_TO_TOMAS)
+	await _teleport(scene, next_to_tomas)
 	await _press_and_wait("keyring_next")
 	await _press_and_wait("interact")
 	await _dismiss_dialogue()

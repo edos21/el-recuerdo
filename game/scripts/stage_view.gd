@@ -23,6 +23,7 @@ const SEATED_HEIGHT := 40.0
 const HINGE_SIZE := Vector2(14, 10)
 const BOOK_SIZE := Vector2(18, 10)
 const SHELF_PLANKS := 3
+const STROKE_WIDTH := 3.0
 const STOCK_MARGIN := 8.0
 const STOCK_STEP := 22.0
 const LABEL_SIZE := 14
@@ -71,27 +72,27 @@ func _draw() -> void:
 	_draw_floor()
 
 func _draw_wall(palette: Dictionary) -> void:
-	for run in map.runs_of(day, StageMap.WALL_ROW, ['E', 'e']):
-		_draw_shelf(run, map.char_at(day, StageMap.WALL_ROW, run.x) == 'E', palette.wood)
-	for run in map.runs_of(day, StageMap.WALL_ROW, ['v']):
+	for run in map.runs_of(day, StageMap.WALL_ROW, [StageMap.SHELF_FULL, StageMap.SHELF_EMPTY]):
+		_draw_shelf(run, map.char_at(day, StageMap.WALL_ROW, run.x) == StageMap.SHELF_FULL, palette.wood)
+	for run in map.runs_of(day, StageMap.WALL_ROW, [StageMap.WINDOW]):
 		draw_rect(_span(run, WINDOW_TOP, WINDOW_HEIGHT), palette.window)
-	for run in map.runs_of(day, StageMap.WALL_ROW, ['M']):
+	for run in map.runs_of(day, StageMap.WALL_ROW, [StageMap.COUNTER]):
 		var counter := _span(run, COUNTER_TOP, WALL_BOTTOM - COUNTER_TOP)
 		draw_rect(counter, COUNTER_COLOR)
-		_label("mostrador", counter.position + Vector2(counter.size.x * 0.5, counter.size.y * 0.5))
-	for run in map.runs_of(day, StageMap.WALL_ROW, ['d']):
+		_label("mostrador", counter.get_center())
+	for run in map.runs_of(day, StageMap.WALL_ROW, [StageMap.BACK_DOOR]):
 		var door := _span(run, DOOR_TOP, WALL_BOTTOM - DOOR_TOP)
 		draw_rect(door, DOOR_COLOR)
-		_label("puerta del fondo", door.position + Vector2(door.size.x * 0.5, door.size.y * 0.5))
+		_label("puerta del fondo", door.get_center())
 	if hinge_visible and day == StageMap.Day.ANTES:
 		_draw_hinge()
 
 func _draw_shelf(run: Vector2i, stocked: bool, wood: Color) -> void:
 	var shelf := _span(run, SHELF_TOP, SHELF_HEIGHT)
-	draw_rect(shelf, wood, false, 3.0)
+	draw_rect(shelf, wood, false, STROKE_WIDTH)
 	for plank in SHELF_PLANKS:
 		var y := shelf.position.y + shelf.size.y * (plank + 1) / (SHELF_PLANKS + 1)
-		draw_line(Vector2(shelf.position.x, y), Vector2(shelf.end.x, y), wood, 3.0)
+		draw_line(Vector2(shelf.position.x, y), Vector2(shelf.end.x, y), wood, STROKE_WIDTH)
 		if not stocked:
 			continue
 		for i in int((shelf.size.x - STOCK_MARGIN * 2) / STOCK_STEP):
@@ -100,45 +101,46 @@ func _draw_shelf(run: Vector2i, stocked: bool, wood: Color) -> void:
 	_label("estante" if stocked else "estante vacío", shelf.position + Vector2(shelf.size.x * 0.5, -LABEL_OFFSET))
 
 func _draw_hinge() -> void:
-	for col in map.columns_of(StageMap.Day.ANTES, 'b'):
+	for col in map.columns_of(StageMap.Day.ANTES, StageMap.HINGE):
 		var at := Vector2(StageMap.center_x(col), SHELF_TOP + SHELF_HEIGHT * 0.5)
 		draw_rect(Rect2(at - HINGE_SIZE * 0.5, HINGE_SIZE), HINGE_COLOR)
 		_label("bisagra", at + Vector2(0, -LABEL_OFFSET * 2))
 
 func _draw_floor() -> void:
-	var feet := Ferreteria.FEET_Y
-	for run in map.runs_of(day, StageMap.FLOOR_ROW, ['C']):
+	var feet := StageMap.FEET_Y
+	for run in map.runs_of(day, StageMap.FLOOR_ROW, [StageMap.CRATE]):
 		var crate := _span(run, feet - CRATE_HEIGHT, CRATE_HEIGHT)
 		draw_rect(crate, CRATE_COLOR)
-		_label("caja", crate.position + Vector2(crate.size.x * 0.5, crate.size.y * 0.5))
-	for run in map.runs_of(day, StageMap.FLOOR_ROW, ['R']):
+		_label("caja", crate.get_center())
+	for run in map.runs_of(day, StageMap.FLOOR_ROW, [StageMap.GATE]):
 		var gate := _span(run, feet - GATE_HEIGHT, GATE_HEIGHT)
 		draw_rect(gate, GATE_COLOR, false, GATE_BAR_WIDTH)
 		for bar in GATE_BARS:
 			var x := gate.position.x + gate.size.x * (bar + 1) / (GATE_BARS + 1)
 			draw_line(Vector2(x, gate.position.y), Vector2(x, gate.end.y), GATE_COLOR, GATE_BAR_WIDTH)
 		_label("reja", gate.position + Vector2(gate.size.x * 0.5, -LABEL_OFFSET))
-	for col in map.columns_of(day, 'l'):
+	for col in map.columns_of(day, StageMap.BOOK):
 		var at := Vector2(StageMap.center_x(col), COUNTER_TOP)
 		draw_rect(Rect2(at - BOOK_SIZE * 0.5 - Vector2(0, BOOK_SIZE.y), BOOK_SIZE), BOOK_COLOR)
 		_label("cuaderno", at + Vector2(0, -BOOK_SIZE.y - LABEL_OFFSET * 2))
-	for col in map.columns_of(day, 'g'):
+	for col in map.columns_of(day, StageMap.BAG):
 		_draw_bag(StageMap.center_x(col))
-	_draw_person('V', NPC_HEIGHT, NEIGHBOR_COLOR, "vecino")
-	_draw_person('T', SEATED_HEIGHT, TOMAS_COLOR, "Tomás")
+	_draw_person(StageMap.NEIGHBOR, NPC_HEIGHT, NEIGHBOR_COLOR, "vecino")
+	_draw_person(StageMap.TOMAS, SEATED_HEIGHT, TOMAS_COLOR, "Tomás")
 
 # Armado y listo junto a Tomás: dice que está listo para irse sin decirlo.
 func _draw_bag(center_x: float) -> void:
-	var bag := Rect2(center_x - BAG_SIZE.x * 0.5, Ferreteria.FEET_Y - BAG_SIZE.y, BAG_SIZE.x, BAG_SIZE.y)
+	var bag := Rect2(center_x - BAG_SIZE.x * 0.5, StageMap.FEET_Y - BAG_SIZE.y, BAG_SIZE.x, BAG_SIZE.y)
 	draw_rect(bag, BAG_COLOR)
-	draw_line(bag.position + Vector2(BAG_STRAP, 0), bag.position + Vector2(BAG_STRAP, -BAG_STRAP), BAG_COLOR, 3.0)
-	draw_line(bag.position + Vector2(bag.size.x - BAG_STRAP, 0), bag.position + Vector2(bag.size.x - BAG_STRAP, -BAG_STRAP), BAG_COLOR, 3.0)
-	draw_line(bag.position + Vector2(BAG_STRAP, -BAG_STRAP), bag.position + Vector2(bag.size.x - BAG_STRAP, -BAG_STRAP), BAG_COLOR, 3.0)
+	var left := bag.position + Vector2(BAG_STRAP, 0)
+	var right := bag.position + Vector2(bag.size.x - BAG_STRAP, 0)
+	var rise := Vector2(0, -BAG_STRAP)
+	draw_polyline(PackedVector2Array([left, left + rise, right + rise, right]), BAG_COLOR, STROKE_WIDTH)
 	_label("bolso", bag.position + Vector2(bag.size.x * 0.5, -BAG_STRAP - LABEL_OFFSET))
 
 func _draw_person(ch: String, height: float, color: Color, name_text: String) -> void:
 	for col in map.columns_of(day, ch):
-		var body := Rect2(StageMap.center_x(col) - NPC_WIDTH * 0.5, Ferreteria.FEET_Y - height, NPC_WIDTH, height)
+		var body := Rect2(StageMap.center_x(col) - NPC_WIDTH * 0.5, StageMap.FEET_Y - height, NPC_WIDTH, height)
 		draw_rect(body, color)
 		_label(name_text, body.position + Vector2(body.size.x * 0.5, -LABEL_OFFSET))
 

@@ -5,6 +5,7 @@ extends CanvasLayer
 
 const TOP_MARGIN := 24.0
 const FONT_SIZE := 30
+const OUTLINE_SIZE := 4
 const DAY_NAMES: Array[String] = ["Antes", "Hoy", "Ayer"]
 const ACTIVE_COLOR := "#ffe9a0"
 const INACTIVE_COLOR := "#6e6e78"
@@ -24,14 +25,17 @@ func _ready() -> void:
 	_label.add_theme_font_size_override("normal_font_size", FONT_SIZE)
 	_label.add_theme_font_size_override("bold_font_size", FONT_SIZE)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_label.add_theme_constant_override("outline_size", 4)
+	_label.add_theme_constant_override("outline_size", OUTLINE_SIZE)
 	add_child(_label)
 
-func show_day(day: int) -> void:
+# Los nombres de las teclas son los de las acciones keyring_prev y keyring_next.
+func show_day(day: StageMap.Day) -> void:
 	var names: Array[String] = []
 	for i in DAY_NAMES.size():
-		var color := ACTIVE_COLOR if i == day else INACTIVE_COLOR
-		var text := "[b]%s[/b]" % DAY_NAMES[i] if i == day else DAY_NAMES[i]
-		names.append("[color=%s]%s[/color]" % [color, text])
-	var keys := "[color=%s]%s[/color]"
-	_label.text = "[center]%s%s%s%s%s[/center]" % [keys % [KEY_COLOR, "Q"], SEPARATOR, SEPARATOR.join(names), SEPARATOR, keys % [KEY_COLOR, "E"]]
+		var active := i == day
+		names.append(_tint("[b]%s[/b]" % DAY_NAMES[i] if active else DAY_NAMES[i], ACTIVE_COLOR if active else INACTIVE_COLOR))
+	var days := SEPARATOR.join(names)
+	_label.text = "[center]%s%s%s%s%s[/center]" % [_tint("Q", KEY_COLOR), SEPARATOR, days, SEPARATOR, _tint("E", KEY_COLOR)]
+
+func _tint(text: String, color: String) -> String:
+	return "[color=%s]%s[/color]" % [color, text]

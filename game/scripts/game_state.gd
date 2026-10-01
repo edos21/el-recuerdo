@@ -148,7 +148,10 @@ func rest() -> void:
 # Lo que cuesta o devuelve un recuerdo ajeno mientras se juega (cambiar de día,
 # quedarse en uno), sin pasar del tope ni bajar de cero.
 func shift_stability(delta: float) -> void:
-	stability = clampf(stability + delta, 0.0, max_stability)
+	var shifted := clampf(stability + delta, 0.0, max_stability)
+	if is_equal_approx(shifted, stability):
+		return
+	stability = shifted
 	vitals_changed.emit()
 
 # El despertar se muestra una sola vez: la escena que lo muestra lo consume. Si

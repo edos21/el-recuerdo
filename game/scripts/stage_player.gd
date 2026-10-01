@@ -28,6 +28,9 @@ var max_stability: float:
 var min_x := 0.0
 var max_x := 0.0
 
+var _last_health := -1
+var _last_stability := -1.0
+var _last_max_stability := -1.0
 var _low_stability := false
 var _facing := 1
 var _locked := false
@@ -41,11 +44,19 @@ func _ready() -> void:
 	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, CharacterScale.PLATFORMER)
 	_emit_vitals()
 
-# Mismo contrato que los otros jugadores: el umbral de Estabilidad baja se avisa
-# solo al cruzarlo (reemitirlo reinicia el parpadeo del HUD).
+# Mismo contrato que los otros jugadores, salvo que acá solo se emite lo que
+# cambió: la Estabilidad se mueve casi todos los cuadros y cada emisión de la
+# Vida reiniciaría la animación de su barra sin motivo. El umbral de
+# Estabilidad baja se avisa solo al cruzarlo (reemitirlo reinicia el parpadeo
+# del HUD).
 func _emit_vitals() -> void:
-	health_changed.emit(health, max_health)
-	stability_changed.emit(stability, max_stability)
+	if health != _last_health:
+		_last_health = health
+		health_changed.emit(health, max_health)
+	if not is_equal_approx(stability, _last_stability) or not is_equal_approx(max_stability, _last_max_stability):
+		_last_stability = stability
+		_last_max_stability = max_stability
+		stability_changed.emit(stability, max_stability)
 	var low := GameState.is_low_stability(stability, max_stability)
 	if low != _low_stability:
 		_low_stability = low
@@ -53,9 +64,6 @@ func _emit_vitals() -> void:
 
 func set_locked(locked: bool) -> void:
 	_locked = locked
-
-func is_locked() -> bool:
-	return _locked
 
 func _physics_process(_delta: float) -> void:
 	var direction := 0.0 if _locked else Input.get_axis("move_left", "move_right")

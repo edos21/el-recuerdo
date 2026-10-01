@@ -19,22 +19,41 @@ const CELL := 32
 const COLS := 40
 const WALL_ROW := 0
 const FLOOR_ROW := 1
+# Donde apoyan los pies todo lo que se camina: la lógica y el dibujo comparten esta altura.
+const FEET_Y := 560.0
 const PATHS := {
 	Day.ANTES: "res://levels/ferreteria_antes.txt",
 	Day.HOY: "res://levels/ferreteria_hoy.txt",
 	Day.AYER: "res://levels/ferreteria_ayer.txt",
 }
-const BLOCKERS := ['C', 'R']
+
+const SHELF_FULL := 'E'
+const SHELF_EMPTY := 'e'
+const WINDOW := 'v'
+const COUNTER := 'M'
+const BACK_DOOR := 'd'
+const CRATE := 'C'
+const GATE := 'R'
+const HINGE := 'b'
+const BOOK := 'l'
+const NEIGHBOR := 'V'
+const TOMAS := 'T'
+const BAG := 'g'
 const SPAWN := 'S'
+const BLOCKERS := [CRATE, GATE]
 const SPAWN_DAY := Day.HOY
 # A cuántas columnas de distancia se alcanza algo para usarlo.
 const REACH := 2
 
 var _rows: Dictionary = {}
+# Día -> carácter del piso -> columnas donde está. Los mapas no cambian: se
+# recorren una vez en vez de en cada consulta.
+var _floor_columns: Dictionary = {}
 
 func _init() -> void:
 	for day in PATHS:
 		_rows[day] = MapUtils.read_grid(PATHS[day])
+		_floor_columns[day] = _index_columns(row_text(day, FLOOR_ROW))
 
 static func col_of(x: float) -> int:
 	return floori(x / CELL)
@@ -56,16 +75,13 @@ func is_blocked(day: Day, col: int) -> bool:
 	return BLOCKERS.has(char_at(day, FLOOR_ROW, col))
 
 # Columnas de un carácter del piso (la bisagra, el vecino): casi siempre una.
-func columns_of(day: Day, ch: String, row: int = FLOOR_ROW) -> Array[int]:
+func columns_of(day: Day, ch: String) -> Array[int]:
 	var found: Array[int] = []
-	var text := row_text(day, row)
-	for col in text.length():
-		if text[col] == ch:
-			found.append(col)
+	found.assign(_floor_columns[day].get(ch, []))
 	return found
 
 func first_column(day: Day, ch: String) -> int:
-	var found := columns_of(day, ch)
+	var found: Array = _floor_columns[day].get(ch, [])
 	return found[0] if not found.is_empty() else -1
 
 # Tramos contiguos [desde, hasta) de columnas de un mismo carácter: así una
@@ -99,3 +115,11 @@ func fits(day: Day, x: float, half_width: float) -> bool:
 
 static func within_reach(col: int, other: int) -> bool:
 	return absi(col - other) <= REACH
+
+static func _index_columns(text: String) -> Dictionary:
+	var index := {}
+	for col in text.length():
+		var found: Array = index.get(text[col], [])
+		found.append(col)
+		index[text[col]] = found
+	return index
