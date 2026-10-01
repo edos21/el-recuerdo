@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="WorldLook" format=3]
+
+[ext_resource type="Script" path="res://scripts/world_look.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+saturation = 0.8
+vignette = 0.35

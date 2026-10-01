@@ -7,6 +7,8 @@
 # scene = "res://scenes/Town.tscn"
 # scene = "res://scenes/InnHall.tscn"
 # scene = "res://scenes/InnRoom.tscn"
+# El recuerdo de Tomás (prototipo): Q/E cambian de día, Enter interactúa.
+# scene = "res://scenes/Ferreteria.tscn"
 
 # En el Nivel 1: aparecer junto al último banco (útil para probar combate y expulsión).
 # level_end = true

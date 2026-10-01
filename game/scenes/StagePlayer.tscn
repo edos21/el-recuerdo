@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/stage_player.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/characters/player_frames.tres" id="2"]
+[ext_resource type="Shader" path="res://shaders/character_outline.gdshader" id="3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_Outline"]
+shader = ExtResource("3")
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_Body"]
+size = Vector2(26, 39.6)
+
+[node name="StagePlayer" type="CharacterBody2D" groups=["player"]]
+motion_mode = 1
+script = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 0.2)
+shape = SubResource("RectangleShape2D_Body")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+material = SubResource("ShaderMaterial_Outline")
+sprite_frames = ExtResource("2")
+animation = &"idle"
