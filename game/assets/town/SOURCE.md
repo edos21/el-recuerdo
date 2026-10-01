@@ -18,6 +18,9 @@ llevar los PNG. Uso de este proyecto: personal, sin venta.
   `mhap_female_cultivator_01`, `mhap_male_cultivator_01`). Licencia de compra.
 - `innkeeper.png` (la posadera): mismo pack, `Base Characters/Female Base/mhap_female_human_base_01.png`,
   copiada tal cual. Licencia de compra.
+- `elder.png` (Don Arcadio) y `neighbor.png` (la vecina de las llaves): mismo pack,
+  `Base Characters/Male Base/mhap_male_human_base_03.png` y
+  `Base Characters/Female Base/mhap_female_human_base_02.png`, copiadas tal cual. Licencia de compra.
 - `house_a.png`, `house_b.png`, `house_c.png`: Mana Seed "Thatch Roof Home" (Seliel the
   Shaper). Casas armadas por script con piezas del kit modular (`home exteriors, thatch
   roof v1/v2/v3.png`: una variante de color por casa). Junto a cada casa el generador escribe
@@ -40,7 +43,7 @@ llevar los PNG. Uso de este proyecto: personal, sin venta.
   de la coleccion). Licencia de compra.
 - `inn_counter.png` (el mostrador): escritorio ancho de `cozy furnishings 48x32.png`.
   `inn_table_set.png`: la mesa redonda de `cozy furnishings 32x32.png` con una silla de
-  `cozy furnishings 16x32.png` a cada lado (la derecha, espejada). `inn_pot.png` (tira de 5
+  `cozy furnishings 16x32.png` a cada lado (la derecha, espejada). `inn_chair.png` (la silla del rincon): esa misma silla, sola y espejada. `inn_pot.png` (tira de 5
   cuadros): copia de `thatch roof sliceable/animated cooking pot 32x32.png`. Todo Mana Seed,
   licencia de compra.
 - `inn_bed.png`: copia de `thatch roof sliceable/thatch roof bed 32x64.png` (Thatch Roof Home).

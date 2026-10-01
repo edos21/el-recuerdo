@@ -1,12 +1,12 @@
 class_name TownNpcData
 extends RefCounted
 # Personajes del pueblo real, por caracter del mapa (levels/town.txt).
-# Los textos son de prueba: todavia falta la sesion de escritura de los NPCs
-# (historia_lore.md sec. 15).
 #
 # `attitude`, `barks` e `idle_emotes` le dan a cada uno una forma de estar en
 # el mundo que acompana lo que dice: Marta es la que te encontro y se preocupa;
-# Tomas es el que prefiere no mirar lo que pasa en el pueblo.
+# Tomas es el que prefiere no mirar lo que pasa en el pueblo; Doña Flor sostiene
+# la posada con humor; Don Arcadio practica un idioma que solo suena bien en su
+# cabeza; la vecina cuida casas de gente que no va a volver.
 #
 # Con `wander_radius` 0 no pasea (sentado, detras de un mostrador). Opcionales:
 # `facing` (hacia donde mira al aparecer), `dialogue` (lo que dice segun el
@@ -15,7 +15,7 @@ extends RefCounted
 
 const MARTA_NAME := "Marta"
 const TOMAS_NAME := "Tomás"
-const POSADERA_NAME := "Posadera"
+const POSADERA_NAME := "Doña Flor"
 const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
 
 const LIST := {
@@ -25,12 +25,13 @@ const LIST := {
 		"frames": MARTA_FRAMES,
 		"lines": [
 			"¡Ey! ¿Ya tomaste aire? No te exijas, que te acabas de levantar.",
-			"Tranquilo, respira. A veces pasa: alguien se pierde en un recuerdo y le cuesta volver.",
+			"Yo me acuerdo de todo, ¿sabes? Hasta de las nubes del día que te fuiste...",
+			"...Del día que llegaste, digo. Había unas nubes largas, como de algodón estirado.",
 		],
 		"attitude": Npc.Attitude.CURIOUS,
 		"wander_radius": 40.0,
 		"walk_speed": 38.0,
-		"barks": ["¿Ya estás mejor?", "¡Ahí estás!", "No te alejes mucho, ¿eh?"],
+		"barks": ["¿Ya estás mejor?", "¡Ahí estás!", "No te alejes mucho, ¿eh?", "¿Comiste algo?"],
 		"idle_emotes": ["?"],
 	},
 	# Marta junto a la cama de la posada, la primera vez que despierta.
@@ -54,13 +55,14 @@ const LIST := {
 		"dialogue": &"posadera",
 		"frames": "res://assets/characters/topdown_innkeeper_frames.tres",
 		"lines": [
-			"Ah, te levantaste. Marta no se movió de tu lado en toda la noche.",
 			"Si necesitas algo, estoy aquí. La cama es tuya mientras te haga falta.",
+			"Siéntate donde quieras. Menos en la silla del rincón, que es de mi marido.",
+			"Del primero. El segundo se sienta donde le dicen.",
 		],
 		"attitude": Npc.Attitude.CURIOUS,
 		"wander_radius": 0.0,
 		"walk_speed": 0.0,
-		"barks": ["Buenas.", "¿Dormiste algo?"],
+		"barks": ["Buenas.", "¿Dormiste algo?", "Esa silla no.", "¿Un animalito de caramelo? Mañana, que hoy no hay azúcar."],
 		"idle_emotes": ["..."],
 		"facing": "down",
 	},
@@ -77,5 +79,39 @@ const LIST := {
 		"walk_speed": 30.0,
 		"barks": ["Mm.", "Buen día... creo.", "¿Dónde dejé...?"],
 		"idle_emotes": ["?", "..."],
+	},
+	# Bajo el árbol de la plaza practica el idioma del país donde viven sus
+	# hijos. Lo habla mal y está orgulloso: el chiste nunca es contra él.
+	"A": {
+		"name": "Don Arcadio",
+		"frames": "res://assets/characters/topdown_elder_frames.tres",
+		"lines": [
+			"Gud morning, mai friend! Ai am practicando. For de trip.",
+			"Mai sons live veri far, in de oder side of de mar. Dey say mi: papá, lern de inglish. Ai am lerning veri fasteishon.",
+			"De nietos no espik espanish. So ai espik inglish. Is veri importeishon, de comunicación.",
+			"Tumorrow ai practice de verbs. De verbs are veri difficulteishon.",
+		],
+		"attitude": Npc.Attitude.CURIOUS,
+		"wander_radius": 0.0,
+		"walk_speed": 0.0,
+		"barks": ["Gud morning!", "Ai am practicando.", "Veri importeishon.", "Hau ar yu? ...Ai am fain, tenkiu."],
+		"idle_emotes": ["..."],
+		"facing": "down",
+	},
+	# Riega y ventila las casas de los que se fueron. Habla de ellas como de
+	# vecinos que salieron un rato.
+	"V": {
+		"name": "La vecina",
+		"frames": "res://assets/characters/topdown_neighbor_frames.tres",
+		"lines": [
+			"Tengo las llaves de doce casas. Les riego las plantas y las ventilo los domingos, para que no huelan a cerrado.",
+			"Los dueños están de viaje. Algunos hace mucho, pero de viaje.",
+			"¿La de la esquina? No. Esa nunca me la dejaron.",
+		],
+		"attitude": Npc.Attitude.CURIOUS,
+		"wander_radius": 56.0,
+		"walk_speed": 32.0,
+		"barks": ["Hoy toca regar.", "¿Y esa llave de qué era?", "Domingo, ventanas abiertas."],
+		"idle_emotes": ["..."],
 	},
 }

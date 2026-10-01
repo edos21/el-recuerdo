@@ -17,6 +17,15 @@ const LIST := {
 		"present_if": {"beat_pending": BeatData.TOMAS_KEYS, "lacks_item": Dialogues.KEYS},
 		"reach": 24.0,
 	},
+	# La silla del rincón del salón, la del marido de Doña Flor.
+	"h": {
+		"texture": preload("res://assets/town/inn_chair.png"),
+		"feet": Vector2(8, 31),
+		"body": Vector2(12, 8),
+		"hint": "[Enter] mirar",
+		"dialogue": &"silla",
+		"reach": 16.0,
+	},
 	"O": {
 		"texture": preload("res://assets/town/well.png"),
 		"feet": Vector2(24, 79),

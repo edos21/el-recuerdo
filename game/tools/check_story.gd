@@ -5,7 +5,8 @@ extends CheckBase
 # cuenta; levantarlas y devolvérselas es el alivio, y después no vuelven a
 # aparecer en el suelo; "Estoy bien" con Marta no cuenta y "No sé quién soy"
 # sí; el pozo da el balde y la posadera lo recibe; rechazar el caldo no cuesta
-# nada y aceptarlo después cuenta. Imprime FAIL por cada chequeo roto y sale con
+# nada y aceptarlo después cuenta; la silla del rincón de la que habla está en
+# el salón y se puede mirar. Imprime FAIL por cada chequeo roto y sale con
 # código 1.
 
 const TOWN := preload("res://scenes/Town.tscn")
@@ -46,6 +47,7 @@ func _ready() -> void:
 		func() -> void: _expect(not _npc(&"tomas").barks.has("¿Dónde dejé...?"), "Tomás deja de buscar sus llaves"),
 		func() -> void: _load(HALL),
 		func() -> void: _check_hall_tables(),
+		func() -> void: _talk(_object(&"silla"), []),
 		func() -> void: _talk(_npc(&"posadera"), []),
 		func() -> void: _check_water_delivered(),
 		func() -> void: _talk(_npc(&"posadera"), ["move_down", "interact"]),

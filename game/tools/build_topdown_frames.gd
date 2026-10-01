@@ -35,4 +35,6 @@ func _initialize() -> void:
 	_make("npc_a", "topdown_npc_a_frames")
 	_make("npc_b", "topdown_npc_b_frames")
 	_make("innkeeper", "topdown_innkeeper_frames")
+	_make("elder", "topdown_elder_frames")
+	_make("neighbor", "topdown_neighbor_frames")
 	quit()
