@@ -11,10 +11,6 @@ signal finished
 
 enum Target { NONE, HINGE, BOOK, NEIGHBOR, TOMAS }
 
-const CAMERA_ZOOM := 1.5
-# Alto del escenario en px de mundo: con el ancho de los mapas (40 x 32) llena
-# el viewport de 1920x1080 a este zoom.
-const VIEW_HEIGHT := 720.0
 const BLOCKER_HEIGHT := 128.0
 const TOWN_SCENE := "res://scenes/Town.tscn"
 const ITEM_HINGE := &"bisagra"
@@ -84,7 +80,7 @@ const HINT_TEXTS := {
 	Target.NEIGHBOR: "[Enter] hablar con el vecino",
 	Target.TOMAS: "[Enter] hablar con Tomás",
 }
-const HINT_DROP := "[Enter] soltar"
+const HINT_DROP := "[S] soltar"
 const HINT_DELIVER := "[Enter] entregar la bisagra"
 const TARGET_CHARS := {
 	Target.HINGE: StageMap.HINGE,
@@ -123,8 +119,7 @@ func _ready() -> void:
 	_build_blockers()
 	_build_player()
 	_build_overlays()
-	camera.position = Vector2(map.width_of(day) * StageMap.CELL, VIEW_HEIGHT) * 0.5
-	camera.zoom = Vector2(CAMERA_ZOOM, CAMERA_ZOOM)
+	_frame_stage()
 	core.bind_player(player, camera)
 	core.restore_hud()
 	core.bind_hud(player)
@@ -132,6 +127,14 @@ func _ready() -> void:
 	core.audio.set_layer("pad", PAD_DB, PAD_FADE)
 	_apply_day()
 	Events.thought_requested.emit(FIRST_THOUGHT, THOUGHT_HOLD)
+
+# El escenario llena el ancho de la pantalla sea cual sea su tamaño.
+func _frame_stage() -> void:
+	var stage_width := map.width_of(day) * StageMap.CELL
+	var viewport_size := get_viewport_rect().size
+	var zoom := viewport_size.x / stage_width
+	camera.zoom = Vector2(zoom, zoom)
+	camera.position = Vector2(stage_width, viewport_size.y / zoom) * 0.5
 
 func _build_blockers() -> void:
 	for d in StageMap.DAY_COUNT:
@@ -170,6 +173,8 @@ func _build_overlays() -> void:
 	add_child(layer)
 
 func _process(delta: float) -> void:
+	if _ending:
+		return
 	GameState.shift_stability(STABILITY_RATE[day] * delta)
 	_drop_if_exhausted()
 	_update_accompany(delta)
@@ -182,6 +187,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_switch_day(day - 1)
 	elif event.is_action_pressed("keyring_next"):
 		_switch_day(day + 1)
+	elif event.is_action_pressed("move_down") and carried != NO_ITEM:
+		_drop(DROP_THOUGHT)
 	elif event.is_action_pressed("interact"):
 		_interact()
 
@@ -195,6 +202,8 @@ func _switch_day(target: int) -> void:
 	GameState.shift_stability(-SWITCH_COST)
 	_apply_day()
 	_flash_screen()
+	# Se mira acá y no solo cada cuadro: Hoy recupera antes del siguiente chequeo
+	# y el cero que dejó este cambio de llave no se vería.
 	_drop_if_exhausted()
 
 func _apply_day() -> void:
@@ -261,9 +270,6 @@ func _interact() -> void:
 			_talk_to_neighbor()
 		Target.TOMAS:
 			_talk_to_tomas()
-		Target.NONE:
-			if carried != NO_ITEM:
-				_drop(DROP_THOUGHT)
 
 func _pick_up(item: StringName) -> void:
 	if carried != NO_ITEM:
@@ -341,6 +347,7 @@ func _finish() -> void:
 	finished.emit()
 	_ending = true
 	accompanying = false
+	_hint.visible = false
 	player.set_locked(true)
 	Events.message_requested.emit(TOMAS_ENDING)
 	await _wait(ENDING_BREATH)

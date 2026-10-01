@@ -63,8 +63,12 @@ func _check_solvable(map: StageMap) -> void:
 	var switches := _min_switches(map, true)
 	_expect(switches >= 0, "el puzzle tiene solución")
 	_expect(_min_switches(map, false) < 0, "sin pasar por Ayer antes de entregar la bisagra no hay solución")
-	_expect(switches * Ferreteria.SWITCH_COST < GameState.max_stability * GameState.WAKE_STABILITY_RATIO,
-			"los cambios de llave del camino más corto (%d) caben en la Estabilidad del despertar" % switches)
+	# Cambios del camino más corto más acompañar a Tomás en Ayer, que gasta
+	# mientras dura; caminar por Ayer en el camino no se cuenta.
+	var accompany_drain := Ferreteria.TOMAS_LINES.size() * Ferreteria.ACCOMPANY_STEP * -Ferreteria.STABILITY_RATE[StageMap.Day.AYER]
+	var cost := switches * Ferreteria.SWITCH_COST + accompany_drain
+	_expect(cost < GameState.max_stability * GameState.WAKE_STABILITY_RATIO,
+			"el camino más corto (%d cambios) y acompañar a Tomás cuestan %.1f y caben en la Estabilidad del despertar" % [switches, cost])
 
 # Menos cambios de llave para recoger la bisagra, entregarla y llegar a Tomás.
 # Caminar es gratis; cambiar de día cuesta 1. Son pocos estados (columna, día,
@@ -168,7 +172,7 @@ func _check_scene(map: StageMap) -> void:
 	_expect(scene.carried == Ferreteria.ITEM_HINGE, "se recoge la bisagra junto al estante")
 	_expect(not scene.view.hinge_visible, "la bisagra sale del estante mientras se lleva")
 	await _teleport(scene, quiet)
-	await _press_and_wait("interact")
+	await _press_and_wait("move_down")
 	_expect(scene.carried == Ferreteria.NO_ITEM and scene.view.hinge_visible, "lo soltado vuelve al estante")
 
 	# Agotarse suelta lo que se lleva.

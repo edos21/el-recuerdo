@@ -42,6 +42,8 @@ func _ready() -> void:
 	GameState.vitals_changed.connect(_emit_vitals)
 	CharacterScale.place_sprite(sprite, CharacterScale.PLATFORMER)
 	CharacterScale.fit_height($CollisionShape2D, BODY_HEIGHT_TEXELS, CharacterScale.PLATFORMER)
+	# El ancho que usan StageMap.fits y el clamp tiene que ser el del cuerpo real.
+	($CollisionShape2D.shape as RectangleShape2D).size.x = BODY_WIDTH
 	_emit_vitals()
 
 # Mismo contrato que los otros jugadores, salvo que acá solo se emite lo que
