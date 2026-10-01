@@ -2,10 +2,17 @@ Arte del pueblo real (vista cenital). Son recortes/copias de packs COMPRADOS, no
 CC0. Por eso NO estan en el repositorio (ver .gitignore): solo se versiona este
 archivo. `tools/gen_placeholder_art.py` crea placeholders.
 
+Licencia de Mana Seed (Seliel the Shaper): https://selieltheshaper.weebly.com/user-license.html
+Comprado en GameDevMarket (https://www.gamedevmarket.net/asset/mana-seed-pixel-art-tileset-collection).
+Resumen: se puede usar en un juego (incluso comercial), recolorear y modificar, y no exige
+credito. NO se puede revender ni redistribuir el asset suelto. Una build del juego con el arte
+empaquetado (demo, prueba con amigos) entra en el uso permitido; el repo publico no debe
+llevar los PNG. Uso de este proyecto: personal, sin venta.
+
 - `ground.png`, `tree_a.png`, `tree_b.png`: Mana Seed "Summer Forest" (Seliel the
   Shaper, https://seliel-the-shaper.itch.io/). Tiles sueltos de `summer forest.png` y
-  arboles de `summer trees 80x112.png`. Licencia de compra en itch.io: no
-  redistribuir el asset por separado.
+  arboles de `summer trees 80x112.png`. Licencia de compra: no redistribuir el asset por
+  separado.
 - `hero.png`, `npc_a.png`, `npc_b.png`: "Mini Adventure Heroes - Humans" (Beowulf,
   https://beowulf.itch.io/). Hojas copiadas tal cual (`mhap_male_hero_02`,
   `mhap_female_cultivator_01`, `mhap_male_cultivator_01`). Licencia de compra.
