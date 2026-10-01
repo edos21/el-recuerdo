@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ferreteria.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/stage_view.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/keyring_hud.gd" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/Core.tscn" id="4"]
+[ext_resource type="Resource" path="res://looks/ferreteria_antes.tres" id="5"]
+[ext_resource type="Resource" path="res://looks/ferreteria_hoy.tres" id="6"]
+[ext_resource type="Resource" path="res://looks/ferreteria_ayer.tres" id="7"]
+
+[node name="Ferreteria" type="Node2D"]
+script = ExtResource("1")
+looks = Array[Resource]([ExtResource("5"), ExtResource("6"), ExtResource("7")])
+
+[node name="View" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Keyring" type="CanvasLayer" parent="."]
+script = ExtResource("3")
+
+[node name="Core" parent="." instance=ExtResource("4")]

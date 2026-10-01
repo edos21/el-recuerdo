@@ -30,23 +30,8 @@ func _ready() -> void:
 	atmosphere.build(player, loader.bounds)
 	core.apply_look(look)
 	core.bind_player(player, player.camera)
-	_restore_hud()
+	core.restore_hud()
 	core.audio.set_muffled(false)
 	core.audio.set_layer("wind", wind_db, WIND_FADE)
 	core.audio.set_layer("pad", pad_db, PAD_FADE)
-	player.health_changed.connect(core.hud.set_health)
-	player.stability_changed.connect(core.hud.set_stability)
-	player.low_stability_changed.connect(core.hud.set_low_stability)
-	# El jugador ya emitio en su _ready, antes de estas conexiones.
-	core.hud.set_health(player.health, player.max_health)
-	core.hud.set_stability(player.stability, player.max_stability)
-	core.hud.set_low_stability(GameState.is_low_stability(player.stability, player.max_stability))
-
-# Los recuerdos ya recuperados siguen encendidos en el HUD.
-func _restore_hud() -> void:
-	for ability in GameState.abilities:
-		core.hud.note_ability_unlocked(ability)
-	if GameState.has_ability("health"):
-		core.hud.show_health_bar()
-	if GameState.has_ability("stability"):
-		core.hud.show_stability_bar()
+	core.bind_hud(player)

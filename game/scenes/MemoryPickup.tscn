@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cb0cpqrsad2xk"]
 
 [ext_resource type="Script" uid="uid://b15gdjbh688bo" path="res://scripts/memory_pickup.gd" id="1"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx_memory.wav" id="2"]
+[ext_resource type="AudioStream" uid="uid://c4qxgl6icotg8" path="res://assets/audio/sfx_memory.wav" id="2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
 size = Vector2(24, 24)
