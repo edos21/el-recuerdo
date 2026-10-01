@@ -18,6 +18,9 @@ llevar los PNG. Uso de este proyecto: personal, sin venta.
   `mhap_female_cultivator_01`, `mhap_male_cultivator_01`). Licencia de compra.
 - `innkeeper.png` (la posadera): mismo pack, `Base Characters/Female Base/mhap_female_human_base_01.png`,
   copiada tal cual. Licencia de compra.
+- `elder.png` (Don Arcadio) y `neighbor.png` (la vecina de las llaves): mismo pack,
+  `Base Characters/Male Base/mhap_male_human_base_03.png` y
+  `Base Characters/Female Base/mhap_female_human_base_02.png`, copiadas tal cual. Licencia de compra.
 - `house_a.png`, `house_b.png`, `house_c.png`: Mana Seed "Thatch Roof Home" (Seliel the
   Shaper). Casas armadas por script con piezas del kit modular (`home exteriors, thatch
   roof v1/v2/v3.png`: una variante de color por casa). Junto a cada casa el generador escribe

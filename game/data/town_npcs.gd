@@ -16,6 +16,8 @@ extends RefCounted
 const MARTA_NAME := "Marta"
 const TOMAS_NAME := "Tomás"
 const POSADERA_NAME := "Doña Flor"
+const ARCADIO_NAME := "Don Arcadio"
+const NEIGHBOR_NAME := "La vecina"
 const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
 
 const LIST := {
@@ -79,5 +81,39 @@ const LIST := {
 		"walk_speed": 30.0,
 		"barks": ["Mm.", "Buen día... creo.", "¿Dónde dejé...?"],
 		"idle_emotes": ["?", "..."],
+	},
+	# Bajo el árbol de la plaza practica el idioma del país donde viven sus
+	# hijos. Lo habla mal y está orgulloso: el chiste nunca es contra él.
+	"A": {
+		"name": ARCADIO_NAME,
+		"frames": "res://assets/characters/topdown_elder_frames.tres",
+		"lines": [
+			"Gud morning, mai friend! Ai am practicando. For de trip.",
+			"Mai sons live veri far, in de oder side of de mar. Dey say mi: papá, lern de inglish. Ai am lerning veri fasteishon.",
+			"De nietos no espik espanish. So ai espik inglish. Is veri importeishon, de comunicación.",
+			"Tumorrow ai practice de verbs. De verbs are veri difficulteishon.",
+		],
+		"attitude": Npc.Attitude.CURIOUS,
+		"wander_radius": 0.0,
+		"walk_speed": 0.0,
+		"barks": ["Gud morning!", "Ai am practicando.", "Veri importeishon.", "Hau ar yu? ...Ai am fain, tenkiu."],
+		"idle_emotes": ["..."],
+		"facing": "down",
+	},
+	# Riega y ventila las casas de los que se fueron. Habla de ellas como de
+	# vecinos que salieron un rato.
+	"V": {
+		"name": NEIGHBOR_NAME,
+		"frames": "res://assets/characters/topdown_neighbor_frames.tres",
+		"lines": [
+			"Tengo las llaves de doce casas. Les riego las plantas y las ventilo los domingos, para que no huelan a cerrado.",
+			"Los dueños están de viaje. Algunos hace mucho, pero de viaje.",
+			"¿La de la esquina? No. Esa nunca me la dejaron.",
+		],
+		"attitude": Npc.Attitude.CURIOUS,
+		"wander_radius": 56.0,
+		"walk_speed": 32.0,
+		"barks": ["Hoy toca regar.", "¿Y esa llave de qué era?", "Domingo, ventanas abiertas."],
+		"idle_emotes": ["..."],
 	},
 }

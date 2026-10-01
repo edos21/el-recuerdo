@@ -43,8 +43,12 @@ for src, name in (("Male Characters/mhap_male_hero_02.png", "hero"),
                   ("Female Characters/mhap_female_cultivator_01.png", "npc_a"),
                   ("Male Characters/mhap_male_cultivator_01.png", "npc_b")):
     shutil.copyfile(os.path.join(HEROES, src), OUT + name + ".png")
-# La posadera: una base humana sin equipo de aventurera.
-shutil.copyfile(os.path.join(HEROES, "..", "Base Characters", "Female Base", "mhap_female_human_base_01.png"), OUT + "innkeeper.png")
+# La posadera y los vecinos: bases humanas sin equipo de aventurero.
+BASES = os.path.join(HEROES, "..", "Base Characters")
+for src, name in (("Female Base/mhap_female_human_base_01.png", "innkeeper"),
+                  ("Male Base/mhap_male_human_base_03.png", "elder"),
+                  ("Female Base/mhap_female_human_base_02.png", "neighbor")):
+    shutil.copyfile(os.path.join(BASES, src), OUT + name + ".png")
 
 # --- Casas: armadas con el kit modular "Thatch Roof Home" de Mana Seed ---
 # El kit trae piezas sueltas (techo, muros, puerta, cimiento) que se encajan en
