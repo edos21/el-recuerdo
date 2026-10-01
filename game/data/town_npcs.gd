@@ -16,8 +16,6 @@ extends RefCounted
 const MARTA_NAME := "Marta"
 const TOMAS_NAME := "Tomás"
 const POSADERA_NAME := "Doña Flor"
-const ARCADIO_NAME := "Don Arcadio"
-const NEIGHBOR_NAME := "La vecina"
 const MARTA_FRAMES := "res://assets/characters/topdown_npc_a_frames.tres"
 
 const LIST := {
@@ -85,7 +83,7 @@ const LIST := {
 	# Bajo el árbol de la plaza practica el idioma del país donde viven sus
 	# hijos. Lo habla mal y está orgulloso: el chiste nunca es contra él.
 	"A": {
-		"name": ARCADIO_NAME,
+		"name": "Don Arcadio",
 		"frames": "res://assets/characters/topdown_elder_frames.tres",
 		"lines": [
 			"Gud morning, mai friend! Ai am practicando. For de trip.",
@@ -103,7 +101,7 @@ const LIST := {
 	# Riega y ventila las casas de los que se fueron. Habla de ellas como de
 	# vecinos que salieron un rato.
 	"V": {
-		"name": NEIGHBOR_NAME,
+		"name": "La vecina",
 		"frames": "res://assets/characters/topdown_neighbor_frames.tres",
 		"lines": [
 			"Tengo las llaves de doce casas. Les riego las plantas y las ventilo los domingos, para que no huelan a cerrado.",

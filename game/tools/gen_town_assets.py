@@ -272,13 +272,14 @@ candles = Image.open(os.path.join(CANDLES, "animated candles anim 16x16 v01.png"
 strip([candles.crop(box) for box in CANDLE_FRAMES], 16).save(OUT + "inn_candle.png")
 Image.open(os.path.join(COZY, "cozy furnishings 48x32.png")).convert("RGBA").crop(COUNTER).save(OUT + "inn_counter.png")
 chair = Image.open(os.path.join(COZY, "cozy furnishings 16x32.png")).convert("RGBA").crop(CHAIR)
+chair_right = chair.transpose(Image.FLIP_LEFT_RIGHT)
 table_set = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
 table_set.alpha_composite(chair, (0, 0))
 table_set.alpha_composite(cozy_32.crop(ROUND_TABLE), (16, 0))
-table_set.alpha_composite(chair.transpose(Image.FLIP_LEFT_RIGHT), (48, 0))
+table_set.alpha_composite(chair_right, (48, 0))
 table_set.save(OUT + "inn_table_set.png")
 # La silla del rincon (la del marido de Dona Flor): sola, mirando al salon.
-chair.transpose(Image.FLIP_LEFT_RIGHT).save(OUT + "inn_chair.png")
+chair_right.save(OUT + "inn_chair.png")
 shutil.copyfile(os.path.join(SLICEABLE, "animated cooking pot 32x32.png"), OUT + "inn_pot.png")
 
 # --- Objetos del guion en el pueblo ---
