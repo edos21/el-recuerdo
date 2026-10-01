@@ -43,6 +43,26 @@ func bind_player(player: CharacterBody2D, camera: Camera2D) -> void:
 	_on_stability_changed(player.stability, player.max_stability)
 	set_process(_needs_view)
 
+# Conecta las barras a las señales de Vida y Estabilidad del jugador de cada
+# género, con el mismo contrato en todos, y las pone al día.
+func bind_hud(player: CharacterBody2D) -> void:
+	player.health_changed.connect(hud.set_health)
+	player.stability_changed.connect(hud.set_stability)
+	player.low_stability_changed.connect(hud.set_low_stability)
+	# El jugador ya emitio en su _ready, antes de estas conexiones.
+	hud.set_health(player.health, player.max_health)
+	hud.set_stability(player.stability, player.max_stability)
+	hud.set_low_stability(GameState.is_low_stability(player.stability, player.max_stability))
+
+# Los recuerdos ya recuperados siguen encendidos en el HUD al cambiar de escena.
+func restore_hud() -> void:
+	for ability in GameState.abilities:
+		hud.note_ability_unlocked(ability)
+	if GameState.has_ability("health"):
+		hud.show_health_bar()
+	if GameState.has_ability("stability"):
+		hud.show_stability_bar()
+
 func _process(_delta: float) -> void:
 	var view_size := get_viewport().get_visible_rect().size / _camera.zoom
 	world_material.set_shader_parameter("view_size", view_size)
