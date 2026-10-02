@@ -123,16 +123,25 @@ func lock_memory(memory_id: StringName) -> bool:
 func is_memory_locked() -> bool:
 	return pending_memory != &""
 
+# Cada recuerdo pregunta por el suyo: que otro esté pendiente no es asunto de
+# quien lo entregó.
+func is_memory_pending(memory_id: StringName) -> bool:
+	return pending_memory == memory_id
+
 # Listo para dispararse: es el recuerdo pendiente y pasó al menos una noche
 # desde la entrega. Dormir no lo libera, solo lo deja listo.
 func is_memory_ready(memory_id: StringName) -> bool:
-	return pending_memory == memory_id and day > pending_since_day
+	return is_memory_pending(memory_id) and _slept_since_day(pending_since_day)
 
 # Al vivir el recuerdo. Soltar uno que no está pendiente no hace nada: los
 # recuerdos se pueden entrar sin pasar por el bloqueo (DebugConfig).
 func release_memory(memory_id: StringName) -> void:
 	if pending_memory == memory_id:
 		pending_memory = &""
+
+# Pasó al menos una noche desde ese día: la única definición de "un día después".
+func _slept_since_day(since_day: int) -> bool:
+	return day > since_day
 
 func has_item(item: StringName) -> bool:
 	return items.has(item)
@@ -172,7 +181,7 @@ func is_met(condition: Dictionary) -> bool:
 			"lacks_item":
 				holds = not has_item(value)
 			"slept_since":
-				holds = is_beat_done(value) and day > beat_day[value]
+				holds = is_beat_done(value) and _slept_since_day(beat_day[value])
 			"memory_locked":
 				holds = is_memory_locked() == value
 			_:

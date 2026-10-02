@@ -48,6 +48,8 @@ func _check_memory_lock() -> void:
 	_expect(GameState.is_met({"memory_locked": false}), "al empezar el bloqueo está libre")
 	_expect(GameState.lock_memory(MEMORY_A), "se puede fijar un recuerdo pendiente")
 	_expect(GameState.is_met({"memory_locked": true}), "con uno fijado, el bloqueo está activo")
+	_expect(GameState.is_memory_pending(MEMORY_A), "el recuerdo fijado está pendiente")
+	_expect(not GameState.is_memory_pending(MEMORY_B), "otro recuerdo no está pendiente por el bloqueo del primero")
 	_expect(not GameState.lock_memory(MEMORY_B), "con uno fijado, no se puede fijar otro")
 	_expect(GameState.pending_memory == MEMORY_A, "el segundo intento no pisa al primero")
 	_expect(not GameState.is_memory_ready(MEMORY_A), "el mismo día de la entrega no está listo")
