@@ -43,7 +43,7 @@ func change_scene(path: String) -> void:
 	get_tree().change_scene_to_file(path)
 	# Una pausa es de la escena que la pidio (un dialogo abierto durante el
 	# fundido): la escena nueva arranca sin ella, o quedaria congelada.
-	get_tree().paused = false
+	Pause.clear()
 	await get_tree().process_frame
 	await _fade(0.0, FADE_IN_TIME)
 	_busy = false

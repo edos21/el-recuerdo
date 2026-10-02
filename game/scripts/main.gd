@@ -72,6 +72,8 @@ func _ready() -> void:
 func _start_in_debug_scene() -> void:
 	for ability in DebugConfig.abilities_to_grant():
 		GameState.unlock(ability)
+	if DebugConfig.notebook:
+		GameState.receive_notebook()
 	GameState.begin_wake_up()
 	SceneRouter.change_scene.call_deferred(DebugConfig.start_scene)
 

@@ -48,6 +48,9 @@ var arrival_door: StringName = &""
 # Lo que el protagonista lleva encima para dárselo a alguien (las llaves que
 # encontró, un balde lleno). No es un inventario: son encargos del guion.
 var items: Array[StringName] = []
+# Si ya recibió el libro de huéspedes. Es lo único que decide si Esc abre la
+# contratapa del cuaderno o la pausa mínima; las entradas se derivan de is_met().
+var has_notebook := false
 
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
@@ -153,6 +156,9 @@ func add_item(item: StringName) -> void:
 func remove_item(item: StringName) -> void:
 	items.erase(item)
 
+func receive_notebook() -> void:
+	has_notebook = true
+
 # Un id que no está en el catálogo daría false para siempre sin avisar (el NPC
 # nunca cambia, el objeto nunca desaparece): se avisa acá, igual que al completarlo.
 func is_beat_done(beat_id: String) -> bool:
@@ -240,3 +246,4 @@ func reset() -> void:
 	pending_since_day = FIRST_DAY
 	arrival_door = &""
 	items.clear()
+	has_notebook = false

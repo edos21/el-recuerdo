@@ -11,20 +11,36 @@ extends Node
 const WORLD_MAX_CANVAS_LAYER := 1
 const WORLD_OVERLAY_LAYER := 2
 const HUD_LAYER := 3
+# El menu va sobre el HUD y bajo el fundido de SceneRouter (capa 20).
+const MENU_LAYER := 4
 const BLUR_SHADER := preload("res://shaders/world_post.gdshader")
 const SHARP_SHADER := preload("res://shaders/world_post_sharp.gdshader")
+
+# Desde donde se juega la escena. Decide que abre Esc: en un recuerdo ajeno el
+# cuaderno del protagonista no existe y solo hay una pausa minima.
+enum Context { HUB, OWN_MEMORY, OTHER_MEMORY }
+
+@export var context := Context.HUB
 
 @onready var hud: Hud = %HUD
 @onready var audio: Node = %AudioLayers
 @onready var world_material: ShaderMaterial = %PostRect.material
 
+var menu: PauseMenu
 var _camera: Camera2D
 var _needs_view := false
 
 func _ready() -> void:
 	%WorldPost.layer = WORLD_MAX_CANVAS_LAYER
 	hud.layer = HUD_LAYER
+	menu = PauseMenu.new()
+	menu.layer = MENU_LAYER
+	add_child(menu)
 	set_process(false)
+
+# Un recuerdo ajeno no tiene cuaderno aunque ya se tenga el libro.
+func notebook_available() -> bool:
+	return GameState.has_notebook and context != Context.OTHER_MEMORY
 
 func apply_look(look: WorldLook) -> void:
 	world_material.shader = BLUR_SHADER if look.needs_blur() else SHARP_SHADER

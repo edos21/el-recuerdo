@@ -21,3 +21,4 @@ script = ExtResource("2")
 script = ExtResource("3")
 
 [node name="Core" parent="." instance=ExtResource("4")]
+context = 2
