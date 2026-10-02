@@ -2,12 +2,15 @@ extends RefCounted
 # Tomás y sus llaves. Alivio: devolverle algo que "perdió". No las perdió del
 # todo, y por eso el agradecimiento no le sale del todo aliviado.
 
+const PENDING_CLOSING := "Estoy cansado. Hablamos con calma, ¿sí?"
+const DONE_CLOSING := "Yo ya no pregunto. Pero lo de las llaves... gracias."
 const BARKS_AFTER := ["Mm.", "Buen día... creo.", "Hoy no perdí nada. Todavía."]
 
 static func run() -> bool:
 	if GameState.has_item(Dialogues.KEYS):
 		GameState.remove_item(Dialogues.KEYS)
 		GameState.complete_beat(BeatData.TOMAS_KEYS)
+		GameState.lock_memory(Dialogues.MEMORY_TOMAS_STORE)
 		Dialogues.say(TownNpcData.TOMAS_NAME, [
 			"¿Esas son...? Mis llaves.",
 			"Gracias. De verdad. Hace mucho que nadie me devolvía nada.",
@@ -15,10 +18,10 @@ static func run() -> bool:
 		])
 		return true
 	if GameState.is_beat_done(BeatData.TOMAS_KEYS):
-		Dialogues.say(TownNpcData.TOMAS_NAME, [
-			"Hoy no perdí nada. Bueno, todavía no.",
-			"Yo ya no pregunto. Pero lo de las llaves... gracias.",
-		])
+		# Con su recuerdo pendiente no se cierra la conversación ni se adelanta
+		# nada: responde algo neutro hasta que llegue el momento.
+		var closing := PENDING_CLOSING if GameState.is_memory_pending(Dialogues.MEMORY_TOMAS_STORE) else DONE_CLOSING
+		Dialogues.say(TownNpcData.TOMAS_NAME, ["Hoy no perdí nada. Bueno, todavía no.", closing])
 		return true
 	# Lo olvidó, pero no del todo: la pista de dónde buscarlas.
 	Dialogues.say(TownNpcData.TOMAS_NAME, [

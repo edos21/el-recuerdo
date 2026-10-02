@@ -220,6 +220,7 @@ func _check_scene(map: StageMap) -> void:
 
 	# Acompañar a Tomás hasta que lo diga termina el recuerdo.
 	GameState.stability = GameState.max_stability
+	GameState.lock_memory(Dialogues.MEMORY_TOMAS_STORE)
 	scene.finished.connect(func() -> void: _finished_memory = true)
 	await _teleport(scene, next_to_tomas)
 	await _press_and_wait("keyring_next")
@@ -230,6 +231,7 @@ func _check_scene(map: StageMap) -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	_expect(_finished_memory, "acompañar a Tomás hasta el final termina el recuerdo")
+	_expect(not GameState.is_memory_locked(), "vivir el recuerdo libera el bloqueo")
 	_finish("check_ferreteria")
 
 func _frames(count: int) -> void:

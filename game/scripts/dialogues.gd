@@ -13,6 +13,8 @@ const POSADERA := preload("res://scripts/dialogues/posadera.gd")
 
 const KEYS := &"llaves_de_tomas"
 const BUCKET := &"balde_de_agua"
+# Ids de los recuerdos que una entrega deja pendientes (GameState.lock_memory).
+const MEMORY_TOMAS_STORE := &"tomas_store"
 
 static func run(id: StringName, speaker: Node2D) -> bool:
 	match id:
