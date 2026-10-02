@@ -11,6 +11,8 @@ enum Entry { RESUME, ERRANDS, TOWN, OPTIONS, LOAD, QUIT }
 const PAUSE_HOLDER := &"menu"
 const CAVEAT := preload("res://assets/fonts/Caveat-VariableFont_wght.ttf")
 const HANDWRITING_WEIGHT := 700
+# Caveat junta mucho las letras: un poco de aire entre glifos la hace legible.
+const HANDWRITING_SPACING := 2
 const PLAIN_EMBOLDEN := 1.0
 
 const PLAIN_ENTRIES: Array[Entry] = [Entry.RESUME, Entry.QUIT]
@@ -68,18 +70,19 @@ const COVER_BORDER := Color(0.16, 0.08, 0.04)
 const COVER_MARGIN := 20
 const COVER_CORNER := 16
 const BOOK_HINT_GAP := 18
-const INK := Color(0.13, 0.1, 0.09)
-const INK_IDLE := Color(0.13, 0.1, 0.09, 0.7)
-const MARKER_HIGHLIGHT := Color(1.0, 0.84, 0.2, 0.5)
+const INK := Color(0.08, 0.07, 0.1)
+const INK_IDLE := Color(0.08, 0.07, 0.1, 0.78)
+const MARKER_HIGHLIGHT := Color(0.98, 0.82, 0.3, 0.45)
 const MARKER_OVERHANG := 10.0
-const FIELD_SIZE := 38
-const ENTRY_SIZE := 38
-const NOTE_TITLE_SIZE := 44
-const NOTE_SIZE := 34
+const FIELD_SIZE := 42
+const ENTRY_SIZE := 44
+const NOTE_TITLE_SIZE := 48
+const NOTE_SIZE := 38
 const LEFT_COLUMNS := ["Fecha", "Nombre", "Procedencia"]
 const LEFT_COLUMN_STARTS := [0.0, 0.2, 0.72]
 const RIGHT_COLUMNS := ["Observaciones"]
 const RIGHT_COLUMN_STARTS := [0.0]
+const RIGHT_PAGE_SEED := 1.0
 
 var _core: Core
 var _notebook := false
@@ -103,6 +106,7 @@ func _ready() -> void:
 	visible = false
 	_handwriting.base_font = CAVEAT
 	_handwriting.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): HANDWRITING_WEIGHT}
+	_handwriting.spacing_glyph = HANDWRITING_SPACING
 	_plain_bold.base_font = ThemeDB.fallback_font
 	_plain_bold.variation_embolden = PLAIN_EMBOLDEN
 	_marker_style.bg_color = MARKER_HIGHLIGHT
@@ -210,6 +214,7 @@ func _build_book() -> void:
 		_book_rows.append(row)
 
 	var right := _make_page("Habitación", ROOM_VALUE, RIGHT_COLUMNS, RIGHT_COLUMN_STARTS, 0, true)
+	right.paper_seed = RIGHT_PAGE_SEED
 	spread.add_child(right)
 	_note_title = _make_row(NOTE_TITLE_SIZE, INK)
 	right.body.add_child(_note_title)

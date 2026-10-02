@@ -6,7 +6,9 @@ extends Control
 # es que usa un registro de hotel como cuaderno: escribe en la columna que le
 # queda comoda, no en la que corresponde.
 
-const PAPER := Color(0.94, 0.89, 0.77)
+# Hueso apagado, no crema: el amarillo saturado se veia de caricatura.
+const PAPER := Color(0.9, 0.87, 0.8)
+const PAPER_SHADER := preload("res://shaders/paper.gdshader")
 const PRINT_INK := Color(0.55, 0.2, 0.18, 0.8)
 const RULE_INK := Color(0.33, 0.47, 0.66, 0.35)
 const SPINE_SHADOW := Color(0.25, 0.15, 0.08, 0.4)
@@ -14,7 +16,7 @@ const FRAME_INSET := 18.0
 const FRAME_GAP := 5.0
 const FIELD_HEIGHT := 74.0
 const HEADER_HEIGHT := 40.0
-const ROW_HEIGHT := 50.0
+const ROW_HEIGHT := 58.0
 const PRINT_SIZE := 15
 const SPINE_WIDTH := 48.0
 const SPINE_STEPS := 8
@@ -30,12 +32,18 @@ var column_starts: PackedFloat32Array = []
 var writing_column := 0
 # El lomo queda del lado de adentro del libro abierto.
 var spine_on_left := false
+# Cada pagina con su propio grano, para que no se vean calcadas.
+var paper_seed := 0.0
 
 var field_value := Label.new()
 var body := VBoxContainer.new()
 
 func _ready() -> void:
 	clip_contents = true
+	var paper := ShaderMaterial.new()
+	paper.shader = PAPER_SHADER
+	paper.set_shader_parameter("seed", paper_seed)
+	material = paper
 	body.add_theme_constant_override("separation", 0)
 	add_child(field_value)
 	add_child(body)
@@ -53,6 +61,7 @@ func _header_top() -> float:
 	return _frame().position.y + FRAME_GAP + FIELD_HEIGHT
 
 func _place_children() -> void:
+	(material as ShaderMaterial).set_shader_parameter("page_size", size)
 	var frame := _frame()
 	var field_x := frame.position.x + FRAME_GAP + TEXT_PADDING + _label_width()
 	field_value.position = Vector2(field_x, frame.position.y + FRAME_GAP)
