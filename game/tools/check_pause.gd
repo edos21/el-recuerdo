@@ -1,7 +1,7 @@
 extends CheckBase
 # godot --headless --fixed-fps 60 --path . res://tools/check_pause.tscn
 # Comprueba la pausa y la contratapa sin jugar: Esc abre y cierra pausando el
-# arbol, el libro decide entre contratapa y pausa minima segun el contexto, un
+# arbol, el libro decide entre el cuaderno y la pausa minima segun el contexto, un
 # recuerdo ajeno nunca muestra el cuaderno, y el menu y el dialogo del HUD no se
 # pisan la pausa. Imprime FAIL por cada chequeo roto y sale con código 1.
 
@@ -52,6 +52,7 @@ func _check_plain_pause() -> void:
 	_expect(core.menu.is_open(), "Esc abre el menú")
 	_expect(get_tree().paused, "el menú pausa el árbol")
 	_expect(not core.menu.is_notebook_view(), "sin el libro se ve la pausa mínima")
+	_expect(core.menu.entries() == PauseMenu.PLAIN_ENTRIES, "la pausa mínima solo tiene Seguir y Salir")
 	await _tap("pause")
 	_expect(not core.menu.is_open(), "Esc cierra el menú")
 	_expect(not get_tree().paused, "cerrar el menú suelta la pausa")
@@ -63,13 +64,20 @@ func _check_notebook_pages() -> void:
 	var core := _spawn(Core.Context.HUB)
 	await _frames()
 	await _tap("pause")
-	_expect(core.menu.is_notebook_view(), "con el libro se ve la contratapa")
-	_expect(core.menu.page == PauseMenu.Page.MAIN, "la contratapa abre en la página principal")
+	_expect(core.menu.is_notebook_view(), "con el libro se ve el cuaderno abierto")
+	_expect(core.menu.entries() == PauseMenu.NOTEBOOK_ENTRIES, "el índice del cuaderno tiene todas sus entradas")
+	_expect(core.menu.selected_entry() == PauseMenu.Entry.RESUME, "el cuaderno abre con Seguir elegido")
 	await _tap("move_down")
+	_expect(core.menu.selected_entry() == PauseMenu.Entry.ERRANDS, "bajar elige la entrada siguiente")
+	_expect(core.menu.note_title() == PauseMenu.ENTRY_NOTES[PauseMenu.Entry.ERRANDS][0], "la página derecha muestra la entrada elegida")
 	await _tap("interact")
-	_expect(core.menu.page == PauseMenu.Page.OPTIONS, "la segunda entrada de la contratapa abre Opciones")
+	_expect(core.menu.is_open(), "confirmar una entrada sin contenido no cierra el cuaderno")
+	await _tap("move_up")
+	await _tap("move_up")
+	_expect(core.menu.selected_entry() == PauseMenu.Entry.QUIT, "subir desde la primera vuelve a la última")
 	await _tap("pause")
-	_expect(core.menu.is_open() and core.menu.page == PauseMenu.Page.MAIN, "Esc en Opciones vuelve a la contratapa sin cerrarla")
+	_expect(not core.menu.is_open() and not get_tree().paused, "Esc cierra el cuaderno y suelta la pausa")
+	await _tap("pause")
 	await _tap("interact")
 	_expect(not core.menu.is_open() and not get_tree().paused, "Seguir cierra y suelta la pausa")
 	await _despawn(core)
