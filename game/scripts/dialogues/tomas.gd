@@ -8,10 +8,19 @@ static func run() -> bool:
 	if GameState.has_item(Dialogues.KEYS):
 		GameState.remove_item(Dialogues.KEYS)
 		GameState.complete_beat(BeatData.TOMAS_KEYS)
+		GameState.lock_memory(Dialogues.MEMORY_TOMAS_STORE)
 		Dialogues.say(TownNpcData.TOMAS_NAME, [
 			"¿Esas son...? Mis llaves.",
 			"Gracias. De verdad. Hace mucho que nadie me devolvía nada.",
 			"...Ya me había acostumbrado a no tenerlas.",
+		])
+		return true
+	# Con el recuerdo pendiente no se cierra la conversación ni se adelanta nada:
+	# responde algo neutro hasta que llegue el momento.
+	if GameState.is_memory_locked():
+		Dialogues.say(TownNpcData.TOMAS_NAME, [
+			"Hoy no perdí nada. Bueno, todavía no.",
+			"Estoy cansado. Hablamos con calma, ¿sí?",
 		])
 		return true
 	if GameState.is_beat_done(BeatData.TOMAS_KEYS):

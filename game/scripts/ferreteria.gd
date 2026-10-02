@@ -344,6 +344,7 @@ func _update_accompany(delta: float) -> void:
 		_finish()
 
 func _finish() -> void:
+	GameState.release_memory(Dialogues.MEMORY_TOMAS_STORE)
 	finished.emit()
 	_ending = true
 	accompanying = false

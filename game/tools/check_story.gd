@@ -35,6 +35,8 @@ func _ready() -> void:
 		func() -> void: _expect(not _keys_sprite_left(), "levantadas, las llaves ya no se ven en el suelo"),
 		func() -> void: _talk(_npc(&"tomas"), []),
 		func() -> void: _check_keys_returned(),
+		func() -> void: _talk(_npc(&"tomas"), []),
+		func() -> void: _expect(GameState.pending_memory == Dialogues.MEMORY_TOMAS_STORE, "hablarle a Tomás con el recuerdo pendiente no lo cambia"),
 		func() -> void: _talk(_npc(&"marta"), ["interact"]),
 		func() -> void: _expect(not GameState.is_beat_done(BeatData.DONT_KNOW), "\"Estoy bien\" no cuenta"),
 		func() -> void: _max_before = GameState.max_stability,
@@ -92,6 +94,8 @@ func _talk(target: Node2D, keys: Array[String]) -> void:
 func _check_keys_returned() -> void:
 	_expect(GameState.is_beat_done(BeatData.TOMAS_KEYS), "devolverle las llaves a Tomás es el alivio")
 	_expect(not GameState.has_item(Dialogues.KEYS), "las llaves ya no están encima")
+	_expect(GameState.pending_memory == Dialogues.MEMORY_TOMAS_STORE, "devolver las llaves deja pendiente el recuerdo de Tomás")
+	_expect(not GameState.is_memory_ready(Dialogues.MEMORY_TOMAS_STORE), "el mismo día de la entrega el recuerdo no está listo")
 
 func _check_seen() -> void:
 	_expect(GameState.is_beat_done(BeatData.DONT_KNOW), "\"No sé quién soy\" es madurar")

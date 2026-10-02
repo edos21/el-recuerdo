@@ -7,6 +7,9 @@ extends Node
 # Solo la emite lo que cambia la Vida o la Estabilidad fuera de un jugador (los
 # beats y el descanso del hub); los valores se leen de aca.
 signal vitals_changed
+# Al descansar: pasó una noche. Las escenas ya abiertas reaccionan acá; las que
+# se cargan después leen `day` al entrar.
+signal day_advanced(day: int)
 
 const MAX_HEALTH := 5
 const MAX_STABILITY := 90.0
@@ -21,6 +24,7 @@ const LOW_STABILITY_RATIO := 0.4
 # Despierta en la posada con el cuerpo descansado y la cabeza no: Vida completa
 # y Estabilidad en zona baja (lo que dejo la expulsion). A afinar jugando.
 const WAKE_STABILITY_RATIO := 0.3
+const FIRST_DAY := 1
 
 var abilities: Array[String] = []
 var health: int = MAX_HEALTH
@@ -28,6 +32,16 @@ var max_stability: float = MAX_STABILITY
 var stability: float = MAX_STABILITY
 var came_from_expulsion := false
 var completed_beats: Array[String] = []
+# Un tick narrativo, no un reloj: solo sube al dormir. Lo que pasa "un día
+# después" se pregunta con `slept_since` / `is_memory_ready`, no con horas.
+var day := FIRST_DAY
+# El día en que se completó cada beat, para preguntar si pasó una noche desde él.
+var beat_day: Dictionary[String, int] = {}
+# El recuerdo que una entrega dejó pendiente (vacío = ninguno) y el día en que se
+# fijó. Mientras haya uno, nada más puede disparar otro: así dos entregas no se
+# encolan al dormir.
+var pending_memory: StringName = &""
+var pending_since_day := FIRST_DAY
 # Puerta por la que se sale de una escena (DoorData): la de destino hace aparecer
 # al jugador en la puerta con el mismo id y la limpia.
 var arrival_door: StringName = &""
@@ -68,6 +82,7 @@ func complete_beat(beat_id: String) -> bool:
 	if is_beat_done(beat_id):
 		return false
 	completed_beats.append(beat_id)
+	beat_day[beat_id] = day
 	match beat.kind:
 		BeatData.Kind.RELIEF:
 			stability = minf(stability + beat.amount, max_stability)
@@ -95,6 +110,30 @@ func begin_wake_up() -> void:
 	health = MAX_HEALTH
 	stability = max_stability * WAKE_STABILITY_RATIO
 
+# Fija el recuerdo pendiente. Devuelve false si ya hay uno: quien entrega algo
+# que dispara un recuerdo decide qué hacer (no es un error, es una condición del
+# juego que `is_memory_locked` permite consultar antes).
+func lock_memory(memory_id: StringName) -> bool:
+	if is_memory_locked():
+		return false
+	pending_memory = memory_id
+	pending_since_day = day
+	return true
+
+func is_memory_locked() -> bool:
+	return pending_memory != &""
+
+# Listo para dispararse: es el recuerdo pendiente y pasó al menos una noche
+# desde la entrega. Dormir no lo libera, solo lo deja listo.
+func is_memory_ready(memory_id: StringName) -> bool:
+	return pending_memory == memory_id and day > pending_since_day
+
+# Al vivir el recuerdo. Soltar uno que no está pendiente no hace nada: los
+# recuerdos se pueden entrar sin pasar por el bloqueo (DebugConfig).
+func release_memory(memory_id: StringName) -> void:
+	if pending_memory == memory_id:
+		pending_memory = &""
+
 func has_item(item: StringName) -> bool:
 	return items.has(item)
 
@@ -114,7 +153,9 @@ func is_beat_done(beat_id: String) -> bool:
 
 # Condición de guion para que algo esté o pase (un NPC presente, un objeto en
 # el suelo): se cumplen todas las claves. Vacía, siempre se cumple.
-# wake_pending: bool; beat_done / beat_pending: id de beat; has_item / lacks_item: objeto.
+# wake_pending: bool; beat_done / beat_pending: id de beat; has_item / lacks_item: objeto;
+# slept_since: id de beat (pasó al menos una noche desde que se completó);
+# memory_locked: bool (hay un recuerdo pendiente).
 func is_met(condition: Dictionary) -> bool:
 	for key in condition:
 		var value: Variant = condition[key]
@@ -130,6 +171,10 @@ func is_met(condition: Dictionary) -> bool:
 				holds = has_item(value)
 			"lacks_item":
 				holds = not has_item(value)
+			"slept_since":
+				holds = is_beat_done(value) and day > beat_day[value]
+			"memory_locked":
+				holds = is_memory_locked() == value
 			_:
 				push_error("GameState: condición desconocida '%s'." % key)
 				holds = false
@@ -141,9 +186,11 @@ func is_met(condition: Dictionary) -> bool:
 # levanta la Estabilidad hasta el piso del despertar, nunca mas: es para no
 # quedar sin salida, no una fuente de Estabilidad (esa es alivio y madurar).
 func rest() -> void:
+	day += 1
 	health = MAX_HEALTH
 	stability = maxf(stability, max_stability * WAKE_STABILITY_RATIO)
 	vitals_changed.emit()
+	day_advanced.emit(day)
 
 # Lo que cuesta o devuelve un recuerdo ajeno mientras se juega (cambiar de día,
 # quedarse en uno), sin pasar del tope ni bajar de cero.
@@ -178,5 +225,9 @@ func reset() -> void:
 	stability = MAX_STABILITY
 	came_from_expulsion = false
 	completed_beats.clear()
+	day = FIRST_DAY
+	beat_day.clear()
+	pending_memory = &""
+	pending_since_day = FIRST_DAY
 	arrival_door = &""
 	items.clear()
