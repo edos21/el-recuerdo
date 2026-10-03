@@ -1,8 +1,7 @@
-[gd_resource type="Resource" script_class="WorldLook" format=3]
+[gd_resource type="Resource" script_class="WorldLook" format=3 uid="uid://cx6w6tnvkd8w2"]
 
-[ext_resource type="Script" path="res://scripts/world_look.gd" id="1"]
+[ext_resource type="Script" uid="uid://uyku5lje78v2" path="res://scripts/world_look.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
-saturation = 1.0
 vignette = 0.2
