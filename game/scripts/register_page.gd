@@ -10,7 +10,7 @@ extends Control
 const PAPER := Color(0.9, 0.87, 0.8)
 const PAPER_SHADER := preload("res://shaders/paper.gdshader")
 const PRINT_INK := Color(0.55, 0.2, 0.18, 0.8)
-const RULE_INK := Color(0.33, 0.47, 0.66, 0.35)
+const RULE_INK := Color(0.33, 0.47, 0.66, 0.25)
 const SPINE_SHADOW := Color(0.25, 0.15, 0.08, 0.4)
 const FRAME_INSET := 18.0
 const FRAME_GAP := 5.0
@@ -22,6 +22,12 @@ const SPINE_WIDTH := 48.0
 const SPINE_STEPS := 8
 const TEXT_PADDING := 12.0
 const FIELD_LINE_LIFT := 14.0
+const FIELD_VALUE_GAP := 14.0
+# Ninguna linea mide 1 px: si la ventana es mas chica que el viewport, el
+# escalado nearest del proyecto descarta columnas enteras y una linea fina se
+# borra en algunos tramos.
+const THICK_LINE := 3.0
+const THIN_LINE := 2.0
 
 # Titulo impreso del campo de arriba y de cada columna, con la fraccion del
 # ancho donde empieza cada una.
@@ -63,7 +69,7 @@ func _header_top() -> float:
 func _place_children() -> void:
 	(material as ShaderMaterial).set_shader_parameter("page_size", size)
 	var frame := _frame()
-	var field_x := frame.position.x + FRAME_GAP + TEXT_PADDING + _label_width()
+	var field_x := frame.position.x + FRAME_GAP + TEXT_PADDING + _label_width() + FIELD_VALUE_GAP
 	field_value.position = Vector2(field_x, frame.position.y + FRAME_GAP)
 	field_value.size = Vector2(frame.end.x - FRAME_GAP - field_x, FIELD_HEIGHT - FIELD_LINE_LIFT * 0.5)
 	field_value.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
@@ -80,16 +86,16 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), PAPER)
 	_draw_spine()
 	var frame := _frame()
-	draw_rect(frame, PRINT_INK, false, 2.0)
-	draw_rect(frame.grow(-FRAME_GAP), PRINT_INK, false, 1.0)
+	draw_rect(frame, PRINT_INK, false, THICK_LINE)
+	draw_rect(frame.grow(-FRAME_GAP), PRINT_INK, false, THIN_LINE)
 	_draw_field(frame)
 	var header_top := _header_top()
 	var header_bottom := header_top + HEADER_HEIGHT
-	draw_line(Vector2(frame.position.x, header_top), Vector2(frame.end.x, header_top), PRINT_INK, 2.0)
-	draw_line(Vector2(frame.position.x, header_bottom), Vector2(frame.end.x, header_bottom), PRINT_INK, 1.0)
+	draw_line(Vector2(frame.position.x, header_top), Vector2(frame.end.x, header_top), PRINT_INK, THICK_LINE)
+	draw_line(Vector2(frame.position.x, header_bottom), Vector2(frame.end.x, header_bottom), PRINT_INK, THIN_LINE)
 	var y := header_bottom + ROW_HEIGHT
 	while y < frame.end.y - FRAME_GAP:
-		draw_line(Vector2(frame.position.x + FRAME_GAP, y), Vector2(frame.end.x - FRAME_GAP, y), RULE_INK, 1.0)
+		draw_line(Vector2(frame.position.x + FRAME_GAP, y), Vector2(frame.end.x - FRAME_GAP, y), RULE_INK, THIN_LINE)
 		y += ROW_HEIGHT
 	_draw_columns(frame, header_top, header_bottom)
 
@@ -98,14 +104,14 @@ func _draw_field(frame: Rect2) -> void:
 	var x := frame.position.x + FRAME_GAP + TEXT_PADDING
 	draw_string(ThemeDB.fallback_font, Vector2(x, baseline), field_label.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, PRINT_SIZE, PRINT_INK)
 	var line_y := baseline + 4.0
-	draw_line(Vector2(x + _label_width() + 6.0, line_y), Vector2(frame.end.x - FRAME_GAP - TEXT_PADDING, line_y), PRINT_INK, 1.0)
+	draw_line(Vector2(x + _label_width() + 6.0, line_y), Vector2(frame.end.x - FRAME_GAP - TEXT_PADDING, line_y), PRINT_INK, THIN_LINE)
 
 func _draw_columns(frame: Rect2, header_top: float, header_bottom: float) -> void:
 	var baseline := header_bottom - (HEADER_HEIGHT - PRINT_SIZE) * 0.5
 	for i in columns.size():
 		var x := _column_x(i)
 		if i > 0:
-			draw_line(Vector2(x, header_top), Vector2(x, frame.end.y - FRAME_GAP), PRINT_INK, 1.0)
+			draw_line(Vector2(x, header_top), Vector2(x, frame.end.y - FRAME_GAP), PRINT_INK, THIN_LINE)
 		draw_string(ThemeDB.fallback_font, Vector2(x + TEXT_PADDING, baseline), columns[i].to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, PRINT_SIZE, PRINT_INK)
 
 # Sombra del lomo: se oscurece hacia el centro del libro abierto.
