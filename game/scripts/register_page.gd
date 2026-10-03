@@ -23,9 +23,9 @@ const SPINE_STEPS := 8
 const TEXT_PADDING := 12.0
 const FIELD_LINE_LIFT := 14.0
 const FIELD_VALUE_GAP := 14.0
-# Ninguna linea mide 1 px: si la ventana es mas chica que el viewport, el
-# escalado nearest del proyecto descarta columnas enteras y una linea fina se
-# borra en algunos tramos.
+# Ninguna linea mide 1 px mientras el proyecto no tenga modo de escalado: si la
+# ventana es mas chica que el viewport, el filtro nearest descarta columnas
+# enteras y una linea fina se borra a tramos.
 const THICK_LINE := 3.0
 const THIN_LINE := 2.0
 
@@ -51,6 +51,7 @@ func _ready() -> void:
 	paper.set_shader_parameter("seed", paper_seed)
 	material = paper
 	body.add_theme_constant_override("separation", 0)
+	field_value.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	add_child(field_value)
 	add_child(body)
 	resized.connect(_place_children)
@@ -72,8 +73,7 @@ func _place_children() -> void:
 	var field_x := frame.position.x + FRAME_GAP + TEXT_PADDING + _label_width() + FIELD_VALUE_GAP
 	field_value.position = Vector2(field_x, frame.position.y + FRAME_GAP)
 	field_value.size = Vector2(frame.end.x - FRAME_GAP - field_x, FIELD_HEIGHT - FIELD_LINE_LIFT * 0.5)
-	field_value.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	var body_x := _column_x(writing_column) + TEXT_PADDING if not columns.is_empty() else frame.position.x + TEXT_PADDING
+	var body_x := _column_x(writing_column) + TEXT_PADDING
 	var body_top := _header_top() + HEADER_HEIGHT
 	body.position = Vector2(body_x, body_top)
 	body.size = Vector2(frame.end.x - FRAME_GAP - TEXT_PADDING - body_x, frame.end.y - FRAME_GAP - body_top)

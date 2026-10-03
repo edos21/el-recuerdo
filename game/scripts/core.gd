@@ -20,7 +20,9 @@ const SHARP_SHADER := preload("res://shaders/world_post_sharp.gdshader")
 # cuaderno del protagonista no existe y solo hay una pausa minima.
 enum Context { HUB, OWN_MEMORY, OTHER_MEMORY }
 
-@export var context := Context.HUB
+# Por defecto la mas restrictiva: una escena que olvida decirlo no muestra el
+# cuaderno donde no corresponde.
+@export var context := Context.OTHER_MEMORY
 
 @onready var hud: Hud = %HUD
 @onready var audio: Node = %AudioLayers
@@ -35,6 +37,7 @@ func _ready() -> void:
 	hud.layer = HUD_LAYER
 	menu = PauseMenu.new()
 	menu.layer = MENU_LAYER
+	menu.notebook_available = notebook_available
 	add_child(menu)
 	set_process(false)
 

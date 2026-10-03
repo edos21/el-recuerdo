@@ -26,3 +26,4 @@ doors = Dictionary[String, StringName]({
 script = ExtResource("4")
 
 [node name="Core" parent="." instance=ExtResource("3")]
+context = 0

@@ -2,9 +2,9 @@ class_name PauseMenu
 extends CanvasLayer
 # Esc: pausa del juego. Con el libro de huespedes se abre el libro a doble
 # pagina (indice a la izquierda, lo anotado de cada entrada a la derecha); sin
-# el, o en un recuerdo ajeno, una pausa minima. Core lo crea y decide cual de
-# las dos corresponde (`notebook_available`). Se arma en codigo, como el
-# fundido de SceneRouter.
+# el, o en un recuerdo ajeno, una pausa minima. Core lo crea y le pasa como
+# decidir cual de las dos corresponde (`notebook_available`). Se arma en
+# codigo, como el fundido de SceneRouter.
 
 enum Entry { RESUME, ERRANDS, TOWN, OPTIONS, LOAD, QUIT }
 
@@ -25,19 +25,21 @@ const ENTRY_LABELS := {
 	Entry.LOAD: "Cargar",
 	Entry.QUIT: "Salir",
 }
-# Lo que el protagonista tiene anotado en cada entrada. Las que todavia no
-# tienen contenido (encargos, pueblo, opciones, cargar) son una nota suya.
+# Lo que el protagonista tiene anotado en cada entrada; el titulo es el de la
+# entrada salvo en Seguir. Las que todavia no tienen contenido (encargos,
+# pueblo, opciones, cargar) son una nota suya.
+const RESUME_NOTE_TITLE := "Instrucciones para detenerse"
 const ENTRY_NOTES := {
-	Entry.RESUME: ["Instrucciones para detenerse", "Primero, dejar de moverse. Después, esperar a que el mundo también se dé cuenta."],
-	Entry.ERRANDS: ["Encargos", "Todavía no anoté ninguno. O me los olvidé, que sería peor."],
-	Entry.TOWN: ["El pueblo", "Una posada, una olla y demasiada gente para tan pocas calles. Anotar nombres antes de que se me olviden."],
-	Entry.OPTIONS: ["Opciones", "Por ahora no hay nada que ajustar. Si algo molesta, probar con respirar más hondo."],
-	Entry.LOAD: ["Cargar", "Lo que se guarda, se guarda durmiendo. Por ahora no hay nada que cargar, salvo la valija."],
-	Entry.QUIT: ["Salir", "Cerrar el libro. El pueblo va a seguir aquí mañana. Eso espero."],
+	Entry.RESUME: "Primero, dejar de moverse. Después, esperar a que el mundo también se dé cuenta.",
+	Entry.ERRANDS: "Todavía no anoté ninguno. O me los olvidé, que sería peor.",
+	Entry.TOWN: "Una posada, una olla y demasiada gente para tan pocas calles. Anotar nombres antes de que se me olviden.",
+	Entry.OPTIONS: "Por ahora no hay nada que ajustar. Si algo molesta, probar con respirar más hondo.",
+	Entry.LOAD: "Lo que se guarda, se guarda durmiendo. Por ahora no hay nada que cargar, salvo la valija.",
+	Entry.QUIT: "Cerrar el libro. El pueblo va a seguir aquí mañana. Eso espero.",
 }
 const NAME_VALUE := "Todavía no me acuerdo"
 const ROOM_VALUE := "La de arriba"
-const HINT := "[W/S] elegir     [Enter] confirmar     [Esc] seguir"
+const HINT := Hud.CHOICE_HINT + "     [Esc] seguir"
 
 const DIM_COLOR := Color(0, 0, 0, 0.5)
 const HINT_SIZE := 22
@@ -47,11 +49,11 @@ const HINT_COLOR := Color(0.85, 0.85, 0.9)
 # azul de la Estabilidad (detenerse es lo que la cuida).
 const PLAIN_BOX_SIZE := Vector2(560, 360)
 const PLAIN_BOX_COLOR := Color(0.04, 0.05, 0.09, 0.68)
-const PLAIN_BORDER_COLOR := Color(0.55, 0.72, 1.0, 0.45)
+const PLAIN_BORDER_COLOR := Color(Hud.BAR_GROWTH_COLOR, 0.45)
 const PLAIN_CORNER := 14
 const PLAIN_TITLE := "Pausa"
 const PLAIN_TITLE_SIZE := 72
-const PLAIN_TITLE_COLOR := Color(0.55, 0.72, 1.0)
+const PLAIN_TITLE_COLOR := Hud.BAR_GROWTH_COLOR
 const PLAIN_TITLE_OUTLINE := Color(0.03, 0.04, 0.08)
 const PLAIN_TITLE_OUTLINE_SIZE := 14
 # El centro de la etiqueta no es el de las letras (sin descendentes, quedan bajas).
@@ -80,11 +82,13 @@ const NOTE_TITLE_SIZE := 48
 const NOTE_SIZE := 38
 const LEFT_COLUMNS := ["Fecha", "Nombre", "Procedencia"]
 const LEFT_COLUMN_STARTS := [0.0, 0.2, 0.72]
+const LEFT_WRITING_COLUMN := 1
 const RIGHT_COLUMNS := ["Observaciones"]
 const RIGHT_COLUMN_STARTS := [0.0]
 const RIGHT_PAGE_SEED := 1.0
 
-var _core: Core
+# Lo pasa Core: si corresponde el cuaderno o la pausa minima.
+var notebook_available: Callable
 var _notebook := false
 var _entries: Array[Entry] = []
 var _selected := 0
@@ -102,7 +106,6 @@ var _no_style := StyleBoxEmpty.new()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_core = get_parent()
 	visible = false
 	_handwriting.base_font = CAVEAT
 	_handwriting.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): HANDWRITING_WEIGHT}
@@ -136,11 +139,7 @@ func note_title() -> String:
 	return _note_title.text
 
 func _build_plain() -> void:
-	_plain_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_plain_root)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_plain_root.add_child(center)
+	var center := _make_centered(_plain_root)
 	var box := Control.new()
 	box.custom_minimum_size = PLAIN_BOX_SIZE
 	center.add_child(box)
@@ -166,10 +165,7 @@ func _build_plain() -> void:
 		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(row)
 		_plain_rows.append(row)
-	var hint := _make_label(ThemeDB.fallback_font, HINT_SIZE, HINT_COLOR)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.text = HINT
-	column.add_child(hint)
+	column.add_child(_make_hint())
 
 	# Montado sobre el borde de arriba: la mitad adentro y la mitad afuera.
 	var title := _make_label(_plain_bold, PLAIN_TITLE_SIZE, PLAIN_TITLE_COLOR)
@@ -184,11 +180,7 @@ func _build_plain() -> void:
 	box.add_child(title)
 
 func _build_book() -> void:
-	_book_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_book_root)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_book_root.add_child(center)
+	var center := _make_centered(_book_root)
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", BOOK_HINT_GAP)
 	center.add_child(stack)
@@ -206,14 +198,20 @@ func _build_book() -> void:
 	spread.add_theme_constant_override("separation", 0)
 	cover.add_child(spread)
 
-	var left := _make_page("Nombre", NAME_VALUE, LEFT_COLUMNS, LEFT_COLUMN_STARTS, 1, false)
+	var left := _make_page("Nombre", NAME_VALUE)
+	left.columns = PackedStringArray(LEFT_COLUMNS)
+	left.column_starts = PackedFloat32Array(LEFT_COLUMN_STARTS)
+	left.writing_column = LEFT_WRITING_COLUMN
 	spread.add_child(left)
 	for i in NOTEBOOK_ENTRIES.size():
 		var row := _make_row(ENTRY_SIZE, INK_IDLE)
 		left.body.add_child(row)
 		_book_rows.append(row)
 
-	var right := _make_page("Habitación", ROOM_VALUE, RIGHT_COLUMNS, RIGHT_COLUMN_STARTS, 0, true)
+	var right := _make_page("Habitación", ROOM_VALUE)
+	right.columns = PackedStringArray(RIGHT_COLUMNS)
+	right.column_starts = PackedFloat32Array(RIGHT_COLUMN_STARTS)
+	right.spine_on_left = true
 	right.paper_seed = RIGHT_PAGE_SEED
 	spread.add_child(right)
 	_note_title = _make_row(NOTE_TITLE_SIZE, INK)
@@ -224,19 +222,27 @@ func _build_book() -> void:
 	_note_body.add_theme_constant_override("line_spacing", int(RegisterPage.ROW_HEIGHT - _handwriting.get_height(NOTE_SIZE)))
 	right.body.add_child(_note_body)
 
+	stack.add_child(_make_hint())
+
+# Raiz de una vista a pantalla completa, con su contenido centrado.
+func _make_centered(root: Control) -> CenterContainer:
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(root)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(center)
+	return center
+
+func _make_hint() -> Label:
 	var hint := _make_label(ThemeDB.fallback_font, HINT_SIZE, HINT_COLOR)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.text = HINT
-	stack.add_child(hint)
+	return hint
 
-func _make_page(field: String, value: String, columns: Array, starts: Array, writing_column: int, spine_on_left: bool) -> RegisterPage:
+func _make_page(field: String, value: String) -> RegisterPage:
 	var page := RegisterPage.new()
 	page.custom_minimum_size = PAGE_SIZE
 	page.field_label = field
-	page.columns = PackedStringArray(columns)
-	page.column_starts = PackedFloat32Array(starts)
-	page.writing_column = writing_column
-	page.spine_on_left = spine_on_left
 	_style_label(page.field_value, _handwriting, FIELD_SIZE, INK)
 	page.field_value.text = value
 	return page
@@ -280,9 +286,9 @@ func _unhandled_input(event: InputEvent) -> void:
 # Un dialogo abierto o un fundido en curso tienen prioridad: abrir encima dejaria
 # dos cosas pidiendo la misma tecla.
 func _open() -> void:
-	if Pause.is_held_by_other(PAUSE_HOLDER) or SceneRouter.is_busy():
+	if get_tree().paused or SceneRouter.is_busy():
 		return
-	_notebook = _core.notebook_available()
+	_notebook = notebook_available.call()
 	_entries = NOTEBOOK_ENTRIES if _notebook else PLAIN_ENTRIES
 	_selected = 0
 	_plain_root.visible = not _notebook
@@ -322,6 +328,6 @@ func _render_book() -> void:
 		_book_rows[i].text = ENTRY_LABELS[_entries[i]]
 		_book_rows[i].add_theme_stylebox_override("normal", _marker_style if chosen else _no_style)
 		_book_rows[i].add_theme_color_override("font_color", INK if chosen else INK_IDLE)
-	var note: Array = ENTRY_NOTES[selected_entry()]
-	_note_title.text = note[0]
-	_note_body.text = note[1]
+	var entry := selected_entry()
+	_note_title.text = RESUME_NOTE_TITLE if entry == Entry.RESUME else ENTRY_LABELS[entry]
+	_note_body.text = ENTRY_NOTES[entry]

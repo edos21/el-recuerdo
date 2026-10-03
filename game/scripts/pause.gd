@@ -16,12 +16,6 @@ func release(holder: StringName) -> void:
 	_holders.erase(holder)
 	get_tree().paused = not _holders.is_empty()
 
-func is_held_by_other(holder: StringName) -> bool:
-	for key in _holders:
-		if key != holder:
-			return true
-	return false
-
 # Una pausa es de la escena que la pidio: al cambiar de escena se suelta toda.
 func clear() -> void:
 	_holders.clear()
