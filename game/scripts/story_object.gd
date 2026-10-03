@@ -5,6 +5,10 @@ extends Interactable
 # sprite lo pone el loader como cualquier objeto del mapa; este nodo lo conoce
 # para poder hacerlo desaparecer. Los datos vienen de data/story_objects.gd.
 
+# Para encontrar un objeto desde un diálogo que no lo tiene a mano (el libro
+# del mostrador lo entrega la posadera, no el objeto).
+const GROUP := &"story_objects"
+
 var dialogue: StringName
 var _prop: Node2D
 
@@ -12,11 +16,12 @@ func _init(area: Rect2, hint_text: String, dialogue_id: StringName, prop: Node2D
 	super(area, hint_text)
 	dialogue = dialogue_id
 	_prop = prop
+	add_to_group(GROUP)
 
 func interact(_player: Node2D) -> void:
 	Dialogues.run(dialogue, self)
 
-# Se lo lleva el protagonista (las llaves): se va con su sprite.
+# Se lo lleva el protagonista (las llaves) o se lo dan (el libro): se va con su sprite.
 func vanish() -> void:
 	_prop.queue_free()
 	queue_free()

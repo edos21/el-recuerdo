@@ -268,6 +268,8 @@ desk.alpha_composite(cozy_32.crop(DESK), (0, DESK_TOP_MARGIN))
 desk.alpha_composite(cozy_16.crop(BOOK_STACK), BOOK_STACK_AT)
 desk.alpha_composite(cozy_16.crop(OPEN_BOOK), OPEN_BOOK_AT)
 desk.save(OUT + "inn_desk.png")
+# El libro de registro del mostrador: el mismo libro abierto del escritorio, solo.
+cozy_16.crop(OPEN_BOOK).save(OUT + "guest_book.png")
 candles = Image.open(os.path.join(CANDLES, "animated candles anim 16x16 v01.png")).convert("RGBA")
 strip([candles.crop(box) for box in CANDLE_FRAMES], 16).save(OUT + "inn_candle.png")
 Image.open(os.path.join(COZY, "cozy furnishings 48x32.png")).convert("RGBA").crop(COUNTER).save(OUT + "inn_counter.png")

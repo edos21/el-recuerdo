@@ -17,6 +17,7 @@ const TOMAS_KEYS := "tomas_keys"
 const INN_WATER := "inn_water"
 const BROTH := "broth"
 const DONT_KNOW := "dont_know_who_i_am"
+const GUEST_BOOK := "guest_book"
 
 @export var entries: Array[BeatDef] = []
 

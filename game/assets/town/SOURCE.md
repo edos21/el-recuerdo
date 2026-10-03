@@ -50,6 +50,8 @@ llevar los PNG. Uso de este proyecto: personal, sin venta.
   `inn_trunk.png` (la valija): recorte del baul de `cozy furnishings 32x32.png`.
   `inn_desk.png`: el escritorio con cajones de ese mismo archivo con una pila de libros y un libro
   abierto de `cozy furnishings 16x16.png`. Todo Mana Seed (Seliel the Shaper), licencia de compra.
+- `guest_book.png`: el libro abierto de `cozy furnishings 16x16.png` (el mismo de `inn_desk.png`),
+  solo. Mana Seed (Seliel the Shaper), licencia de compra.
 - `inn_candle.png` (tira de 4 cuadros): la vela en candelero de
   `animated candles anim 16x16 v01.png`, Mana Seed "Animated Candles". Licencia de compra.
 

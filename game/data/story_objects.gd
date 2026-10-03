@@ -26,6 +26,17 @@ const LIST := {
 		"dialogue": &"silla",
 		"reach": 16.0,
 	},
+	# El libro de registro del salón, sobre el mostrador junto a Doña Flor: está
+	# hasta que ella se lo regala al protagonista.
+	"g": {
+		"texture": preload("res://assets/town/guest_book.png"),
+		"feet": Vector2(8, 30),
+		"body": Vector2.ZERO,
+		"hint": "[Enter] mirar",
+		"dialogue": &"libro",
+		"present_if": {"beat_pending": BeatData.GUEST_BOOK},
+		"reach": 40.0,
+	},
 	"O": {
 		"texture": preload("res://assets/town/well.png"),
 		"feet": Vector2(24, 79),
