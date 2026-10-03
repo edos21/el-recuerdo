@@ -16,6 +16,12 @@ const BUCKET := &"balde_de_agua"
 # Ids de los recuerdos que una entrega deja pendientes (GameState.lock_memory).
 const MEMORY_TOMAS_STORE := &"tomas_store"
 
+# El recuerdo de Tomás se puede pedir una noche después de las llaves y una noche
+# después de recibir el libro de huéspedes (en cualquier orden). Es la condición
+# del disparo; lo que se sume (los recados de orientación) se agrega acá.
+static func tomas_memory_ready() -> bool:
+	return GameState.is_memory_ready(MEMORY_TOMAS_STORE) and GameState.is_met({"slept_since": BeatData.GUEST_BOOK})
+
 static func run(id: StringName, speaker: Node2D) -> bool:
 	match id:
 		&"tomas":
@@ -46,7 +52,7 @@ static func barks(id: StringName, default: PackedStringArray) -> PackedStringArr
 static func vanish_object(id: StringName) -> void:
 	for node in (Engine.get_main_loop() as SceneTree).get_nodes_in_group(StoryObject.GROUP):
 		var story_object := node as StoryObject
-		if story_object.dialogue == id and not story_object.is_queued_for_deletion():
+		if story_object.dialogue == id:
 			story_object.vanish()
 
 # Como los NPCs: el nombre de quien habla solo en la primera línea.

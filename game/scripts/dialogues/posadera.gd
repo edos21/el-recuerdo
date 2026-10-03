@@ -4,8 +4,6 @@ extends RefCounted
 # otra vez al recibir el libro de huéspedes, un regalo que no puede devolver.
 # Rechazar el caldo no cuesta nada: se puede aceptar después, y el libro espera.
 
-const GUEST_BOOK_HINT := "Un libro de registro para anotar lo que pasa. Con Esc se abre."
-
 static func run() -> bool:
 	if GameState.has_item(Dialogues.BUCKET):
 		GameState.remove_item(Dialogues.BUCKET)
@@ -22,9 +20,6 @@ static func run() -> bool:
 		return true
 	if not GameState.is_beat_done(BeatData.BROTH):
 		_offer_broth()
-		return true
-	if not GameState.is_beat_done(BeatData.GUEST_BOOK):
-		_give_book()
 		return true
 	return false
 
@@ -46,8 +41,6 @@ static func look_at_chair() -> bool:
 	])
 	return true
 
-# Se puede mirar desde el principio: el regalo llega después, pero el libro ya
-# estaba ahí, casi vacío.
 static func look_at_book() -> bool:
 	Dialogues.say("", ["El libro de registro de la posada, abierto sobre el mostrador. Casi todas las filas están en blanco."])
 	Dialogues.say(TownNpcData.POSADERA_NAME, ["Es el libro de los huéspedes."])
@@ -80,5 +73,5 @@ static func _give_book() -> void:
 		"Este es el libro de los huéspedes. Hace mucho que no viene nadie a quien anotar. Quédatelo, es un regalo. A ver si te ayuda a acordarte de quién eres.",
 		"Mi primer marido decía que un libro vacío es una casa sin gente. Todavía lo dice, pero ya no le hago caso.",
 	])
-	Events.hint_requested.emit("guest_book", GUEST_BOOK_HINT)
+	Events.hint_requested.emit("guest_book", "Un libro de registro para anotar lo que pasa. Con Esc se abre.")
 	Dialogues.vanish_object(&"libro")

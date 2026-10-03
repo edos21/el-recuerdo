@@ -1,16 +1,9 @@
 extends CheckBase
 # godot --headless --fixed-fps 60 --path . res://tools/check_story.tscn
 # Comprueba los beats del primer día por el camino real (los NPCs y objetos de
-# las escenas, el HUD, Enter y las flechas): hablarle a Tomás sin las llaves no
-# cuenta; levantarlas y devolvérselas es el alivio, y después no vuelven a
-# aparecer en el suelo; "Estoy bien" con Marta no cuenta y "No sé quién soy"
-# sí; el pozo da el balde y la posadera lo recibe; la cadena de Doña Flor va en
-# orden (agua, caldo, libro): sin balde no ofrece caldo, rechazarlo no cuesta
-# nada y aceptarlo después cuenta y le da el libro, que sale del mostrador y
-# prende el cuaderno una sola vez; el recuerdo de Tomás espera al libro: una noche
-# después de tener las llaves entregadas y el libro, en cualquier orden; la silla
-# del rincón de la que habla está en el salón y se puede mirar. Imprime FAIL por
-# cada chequeo roto y sale con código 1.
+# las escenas, el HUD, Enter y las flechas): cada beat cuenta una sola vez, la
+# cadena de Doña Flor va en orden (agua, caldo, libro) y el recuerdo de Tomás
+# espera al libro. Imprime FAIL por cada chequeo roto y sale con código 1.
 
 const TOWN := preload("res://scenes/Town.tscn")
 const HALL := preload("res://scenes/InnHall.tscn")
@@ -148,19 +141,16 @@ func _check_book_given() -> void:
 	_expect(GameState.max_stability > _max_before, "recibir el libro es madurar: sube el tope")
 	_expect(_object(&"libro") == null, "regalado, el libro se va del mostrador")
 
-# El recuerdo de Tomás espera al libro: con las llaves entregadas y una noche
-# dormida pero sin libro, todavía no se puede disparar.
-func _tomas_may_ask() -> bool:
-	return GameState.is_memory_ready(Dialogues.MEMORY_TOMAS_STORE) and GameState.is_met({"slept_since": BeatData.GUEST_BOOK})
-
+# Con las llaves entregadas y una noche dormida pero sin libro, el recuerdo de
+# Tomás todavía no se puede pedir.
 func _check_tomas_gate_without_book() -> void:
 	_expect(GameState.is_memory_ready(Dialogues.MEMORY_TOMAS_STORE), "pasada una noche, el recuerdo de Tomás está listo")
-	_expect(not _tomas_may_ask(), "sin el libro, Tomás todavía no pide que lo acompañen")
+	_expect(not Dialogues.tomas_memory_ready(), "sin el libro, Tomás todavía no pide que lo acompañen")
 
 func _check_tomas_gate_after_book() -> void:
-	_expect(not _tomas_may_ask(), "la noche del libro todavía no alcanza")
+	_expect(not Dialogues.tomas_memory_ready(), "la noche del libro todavía no alcanza")
 	GameState.rest()
-	_expect(_tomas_may_ask(), "una noche después del libro, Tomás ya puede pedirlo")
+	_expect(Dialogues.tomas_memory_ready(), "una noche después del libro, Tomás ya puede pedirlo")
 
 # Al revés: el libro primero y las llaves después; el bloqueo se fija al entregarlas.
 func _check_tomas_gate_book_first() -> void:
@@ -168,9 +158,9 @@ func _check_tomas_gate_book_first() -> void:
 	GameState.complete_beat(BeatData.GUEST_BOOK)
 	GameState.rest()
 	GameState.lock_memory(Dialogues.MEMORY_TOMAS_STORE)
-	_expect(not _tomas_may_ask(), "con el libro de antes, la noche de las llaves no alcanza")
+	_expect(not Dialogues.tomas_memory_ready(), "con el libro de antes, la noche de las llaves no alcanza")
 	GameState.rest()
-	_expect(_tomas_may_ask(), "con el libro de antes, una noche después de las llaves se puede pedir")
+	_expect(Dialogues.tomas_memory_ready(), "con el libro de antes, una noche después de las llaves se puede pedir")
 
 # La letra de las mesas del salón chocaba con la de Marta: las mesas no se
 # dibujaban (y con el despertar pendiente habrían aparecido dos Martas).
