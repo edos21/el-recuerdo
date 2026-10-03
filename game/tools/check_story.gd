@@ -17,6 +17,8 @@ const HALL := preload("res://scenes/InnHall.tscn")
 # Cada tecla simulada se deja procesar unos frames antes de la siguiente.
 const KEY_GAP_FRAMES := 4
 const STEP_TIMEOUT := 20.0
+# Cuánto más abajo del libro se para el jugador frente al mostrador (px de mundo).
+const COUNTER_FRONT_OFFSET := 19.0
 
 var _scene: TopDownScene
 var _steps: Array[Callable] = []
@@ -56,6 +58,10 @@ func _ready() -> void:
 		func() -> void: _check_hall_tables(),
 		func() -> void: _talk(_object(&"silla"), []),
 		func() -> void: _expect(_object(&"libro") != null, "el libro se ve en el mostrador desde el principio"),
+		func() -> void: _stand_in_front_of(_npc(&"posadera")),
+		func() -> void: _expect(_nearest_dialogue() == &"posadera", "frente a Doña Flor se le habla a ella, no al libro"),
+		func() -> void: _stand_in_front_of(_object(&"libro")),
+		func() -> void: _expect(_nearest_dialogue() == &"libro", "frente al libro se mira el libro, no a Doña Flor"),
 		func() -> void: _talk(_object(&"libro"), []),
 		func() -> void: _expect(not GameState.is_beat_done(BeatData.GUEST_BOOK) and not GameState.has_notebook, "mirar el libro no lo da"),
 		func() -> void: GameState.remove_item(Dialogues.BUCKET),
@@ -111,6 +117,15 @@ func _talk(target: Node2D, keys: Array[String]) -> void:
 		return
 	_keys = keys.duplicate()
 	target.interact(_scene.player)
+
+# Parado frente al mostrador, bajo `target`: lo que el jugador alcanza de verdad
+# (las zonas se solapan en el mostrador, así que hay que probar cuál gana).
+func _stand_in_front_of(target: Node2D) -> void:
+	_scene.player.global_position = Vector2(target.global_position.x, _object(&"libro").global_position.y + COUNTER_FRONT_OFFSET)
+
+func _nearest_dialogue() -> Variant:
+	var target: Node = _scene.player._nearest_interactable()
+	return target.get("dialogue") if target else null
 
 func _check_keys_returned() -> void:
 	_expect(GameState.is_beat_done(BeatData.TOMAS_KEYS), "devolverle las llaves a Tomás es el alivio")

@@ -35,7 +35,7 @@ const LIST := {
 		"hint": "[Enter] mirar",
 		"dialogue": &"libro",
 		"present_if": {"beat_pending": BeatData.GUEST_BOOK},
-		"reach": 40.0,
+		"reach": 16.0,
 	},
 	"O": {
 		"texture": preload("res://assets/town/well.png"),
