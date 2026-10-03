@@ -3,7 +3,8 @@ extends Node2D
 # Base de todo lo que se usa acercándose y apretando Enter y no es un NPC (la
 # cama, unas llaves en el suelo, el pozo): una zona en la capa de interacción
 # y la pista con la acción. El jugador busca `interact` en el padre de las
-# áreas que toca (topdown_player.gd).
+# áreas que toca (topdown_player.gd) y enfoca un solo objeto a la vez: la pista
+# solo se muestra en el enfocado (`set_focused`), así nunca hay dos carteles.
 
 const HINT_SIZE := Vector2(120, 26)
 # Cuánto por encima de la zona flota la pista: la zona ya envuelve al objeto,
@@ -12,6 +13,7 @@ const HINT_GAP := 4.0
 const HINT_FONT_SIZE := 14
 const HINT_OUTLINE := 4
 
+var focused := false
 var _hint := Label.new()
 
 # `area`: dónde tiene que estar el jugador (px de mundo, relativa a este nodo);
@@ -22,8 +24,6 @@ func _init(area: Rect2, hint_text: String) -> void:
 	zone.collision_mask = 8
 	zone.position = area.get_center()
 	zone.add_child(MapUtils.rect_shape(area.size))
-	zone.area_entered.connect(_on_zone_area_entered)
-	zone.area_exited.connect(_on_zone_area_exited)
 	add_child(zone)
 	_hint.text = hint_text
 	_hint.position = Vector2(area.get_center().x - HINT_SIZE.x * 0.5, area.position.y - HINT_SIZE.y - HINT_GAP)
@@ -38,10 +38,6 @@ func _init(area: Rect2, hint_text: String) -> void:
 func interact(_player: Node2D) -> void:
 	pass
 
-func _on_zone_area_entered(area: Area2D) -> void:
-	if area.get_parent().is_in_group("player"):
-		_hint.visible = true
-
-func _on_zone_area_exited(area: Area2D) -> void:
-	if area.get_parent().is_in_group("player"):
-		_hint.visible = false
+func set_focused(value: bool) -> void:
+	focused = value
+	_hint.visible = value

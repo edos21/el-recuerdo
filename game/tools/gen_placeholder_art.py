@@ -174,6 +174,11 @@ kd = ImageDraw.Draw(keys)
 kd.rectangle((1, 2, 11, 5), fill=(90, 90, 100, 255))
 kd.rectangle((10, 0, 15, 7), fill=(90, 90, 100, 255))
 save("town/keys.png", keys)
+guest_book = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+gbd = ImageDraw.Draw(guest_book)
+gbd.rectangle((1, 5, 14, 12), fill=(200, 190, 160, 255))
+gbd.line((7, 5, 7, 12), fill=(110, 80, 50, 255))
+save("town/guest_book.png", guest_book)
 
 DIRS = ["down", "left", "right", "up"]
 for name, body in (("hero", (70, 80, 130, 255)), ("npc_a", (200, 120, 150, 255)), ("npc_b", (130, 130, 140, 255)),

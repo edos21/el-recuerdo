@@ -16,6 +16,12 @@ const BUCKET := &"balde_de_agua"
 # Ids de los recuerdos que una entrega deja pendientes (GameState.lock_memory).
 const MEMORY_TOMAS_STORE := &"tomas_store"
 
+# El recuerdo de Tomás se puede pedir una noche después de las llaves y una noche
+# después de recibir el libro de huéspedes (en cualquier orden). Es la condición
+# del disparo; lo que se sume (los recados de orientación) se agrega acá.
+static func tomas_memory_ready() -> bool:
+	return GameState.is_memory_ready(MEMORY_TOMAS_STORE) and GameState.is_met({"slept_since": BeatData.GUEST_BOOK})
+
 static func run(id: StringName, speaker: Node2D) -> bool:
 	match id:
 		&"tomas":
@@ -28,6 +34,8 @@ static func run(id: StringName, speaker: Node2D) -> bool:
 			return POSADERA.use_well()
 		&"silla":
 			return POSADERA.look_at_chair()
+		&"libro":
+			return POSADERA.look_at_book()
 		&"marta":
 			return MARTA.run()
 	push_error("Dialogues: no hay diálogo '%s'." % id)
@@ -38,6 +46,14 @@ static func barks(id: StringName, default: PackedStringArray) -> PackedStringArr
 	if id == &"tomas":
 		return TOMAS.barks(default)
 	return default
+
+# Saca de la escena el objeto del guion con ese diálogo, para lo que un NPC le
+# da al protagonista desde otro lado (el libro del mostrador).
+static func vanish_object(id: StringName) -> void:
+	for node in (Engine.get_main_loop() as SceneTree).get_nodes_in_group(StoryObject.GROUP):
+		var story_object := node as StoryObject
+		if story_object.dialogue == id:
+			story_object.vanish()
 
 # Como los NPCs: el nombre de quien habla solo en la primera línea.
 static func say(speaker_name: String, lines: Array) -> void:

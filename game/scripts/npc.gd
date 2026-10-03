@@ -57,6 +57,7 @@ var _facing := "down"
 var _player: Node2D
 var _noticed := false
 var _bark_cooldown := 0.0
+var focused := false
 var _breath_time := 0.0
 var _base_scale: Vector2
 var _base_offset: Vector2
@@ -97,7 +98,6 @@ func _ready() -> void:
 	bark.modulate.a = 0.0
 	_enter_idle()
 	talk_zone.area_entered.connect(_on_zone_area_entered)
-	talk_zone.area_exited.connect(_on_zone_area_exited)
 
 func _physics_process(delta: float) -> void:
 	if _player == null:
@@ -257,11 +257,11 @@ func _face(dir: String) -> void:
 # El area de interaccion del jugador es la que "entra" en la zona del NPC.
 func _on_zone_area_entered(area: Area2D) -> void:
 	if area.get_parent().is_in_group("player"):
-		hint.visible = true
 		if _bark_tween:
 			_bark_tween.kill()
 		bark.modulate.a = 0.0
 
-func _on_zone_area_exited(area: Area2D) -> void:
-	if area.get_parent().is_in_group("player"):
-		hint.visible = false
+# El jugador enfoca un solo interactuable a la vez y la pista solo se ve en ese.
+func set_focused(value: bool) -> void:
+	focused = value
+	hint.visible = value

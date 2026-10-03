@@ -38,12 +38,17 @@ var _facing := "down"
 # Bloqueado (una escena guionada): no camina ni interactúa, pero sigue vivo
 # (animación, cámara, puede girar con face()).
 var _locked := false
+var _focus: Node
 var _step_time := 0.0
 var _base_scale: Vector2
 var _base_offset: Vector2
 var _base_camera: Vector2
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+# Cuánto pesa la distancia en profundidad (eje Y) frente a la lateral al elegir
+# qué interactuar, ya al cuadrado.
+const DEPTH_WEIGHT_SQUARED := 0.25
+
 @onready var interact_area: Area2D = $InteractArea
 @onready var camera: Camera2D = $Camera2D
 @onready var dust: CPUParticles2D = $Dust
@@ -95,6 +100,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		sprite.play("idle_" + _facing)
 	_animate_step(walking, delta)
+	_update_focus()
 	dust.emitting = walking
 	var target := _base_camera + direction * CAMERA_LOOKAHEAD
 	camera.position = camera.position.lerp(target, 1.0 - exp(-CAMERA_LOOKAHEAD_SPEED * delta))
@@ -113,23 +119,48 @@ func _animate_step(walking: bool, delta: float) -> void:
 	sprite.scale = _base_scale * Vector2(1.0 + squash, 1.0 - squash)
 
 
+# Un solo interactuable enfocado: es el que responde a `interact` y el único
+# con su pista a la vista, para que lo que se ve sea lo que va a pasar.
+func _update_focus() -> void:
+	var target := _nearest_interactable()
+	if target == _focus:
+		return
+	if is_instance_valid(_focus):
+		_focus.set_focused(false)
+	_focus = target
+	if _focus:
+		_focus.set_focused(true)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _locked or not event.is_action_pressed("interact"):
 		return
-	var target := _nearest_interactable()
-	if target:
+	if is_instance_valid(_focus):
 		get_viewport().set_input_as_handled()
-		target.interact(self)
+		_focus.interact(self)
 
+# Gana la zona cuyo centro está más cerca del centro de la zona del jugador, no
+# el origen del nodo: el origen de un NPC está en sus pies y el de un objeto en
+# su base, y con dos cosas contiguas (el libro junto a Doña Flor) decidía el
+# lado del que se llegaba en vez de a quién se apuntaba. En la vista 3/4 la
+# profundidad está acortada: lo que está delante de uno pesa más que lo que
+# queda un poco más atrás o adelante.
 func _nearest_interactable() -> Node:
 	var nearest: Node = null
 	var best := INF
+	var reach_center := _shape_center(interact_area)
 	for area in interact_area.get_overlapping_areas():
 		var owner_node := area.get_parent()
 		if not owner_node.has_method("interact"):
 			continue
-		var distance := global_position.distance_squared_to(owner_node.global_position)
+		var offset := _shape_center(area) - reach_center
+		var distance := offset.x * offset.x + offset.y * offset.y * DEPTH_WEIGHT_SQUARED
 		if distance < best:
 			best = distance
 			nearest = owner_node
 	return nearest
+
+func _shape_center(area: Area2D) -> Vector2:
+	for child in area.get_children():
+		if child is CollisionShape2D:
+			return child.global_position
+	return area.global_position

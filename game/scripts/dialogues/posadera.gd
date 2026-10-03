@@ -1,7 +1,8 @@
 extends RefCounted
-# Doña Flor, la posadera. Alivio: el agua que no puede ir a buscar. Madurar:
-# aceptar el caldo aunque no tenga con qué pagarlo (rechazarlo no cuesta nada:
-# se puede aceptar después).
+# Doña Flor, la posadera. Cadena de tres: alivio con el agua que no puede ir a
+# buscar, madurar al aceptar el caldo aunque no tenga con qué pagarlo, y madurar
+# otra vez al recibir el libro de huéspedes, un regalo que no puede devolver.
+# Rechazar el caldo no cuesta nada: se puede aceptar después, y el libro espera.
 
 static func run() -> bool:
 	if GameState.has_item(Dialogues.BUCKET):
@@ -12,13 +13,13 @@ static func run() -> bool:
 			"¿Sabes para qué más sirve un balde? Cuando alguien se va del pueblo, se le tira agua por detrás, para que vuelva.",
 			"Estos años se gastó mucha agua aquí.",
 		])
-		return true
-	if not GameState.is_beat_done(BeatData.BROTH):
-		Dialogues.ask(TownNpcData.POSADERA_NAME, "Tengo caldo recién hecho. ¿Te sirvo un plato?",
-				["Sí, gracias", "No tengo con qué pagar"], _on_broth_chosen)
+		_offer_broth()
 		return true
 	if not GameState.is_beat_done(BeatData.INN_WATER):
 		_ask_for_water()
+		return true
+	if not GameState.is_beat_done(BeatData.BROTH):
+		_offer_broth()
 		return true
 	return false
 
@@ -40,6 +41,17 @@ static func look_at_chair() -> bool:
 	])
 	return true
 
+static func look_at_book() -> bool:
+	Dialogues.say("", ["El libro de registro de la posada, abierto sobre el mostrador. Casi todas las filas están en blanco."])
+	Dialogues.say(TownNpcData.POSADERA_NAME, ["Es el libro de los huéspedes."])
+	Dialogues.say("", ["¿Y quién llegó?"])
+	Dialogues.say(TownNpcData.POSADERA_NAME, ["Tú. Hace tiempo que eres el único."])
+	return true
+
+static func _offer_broth() -> void:
+	Dialogues.ask(TownNpcData.POSADERA_NAME, "Tengo caldo recién hecho. ¿Te sirvo un plato?",
+			["Sí, gracias", "No tengo con qué pagar"], _on_broth_chosen)
+
 static func _on_broth_chosen(index: int) -> void:
 	if index == 0:
 		GameState.complete_beat(BeatData.BROTH)
@@ -47,10 +59,19 @@ static func _on_broth_chosen(index: int) -> void:
 			"Toma. Despacio, que quema.",
 			"Hoy me salió contento. Los días que cocino triste, aquí nadie habla.",
 		])
+		_give_book()
 	else:
 		Dialogues.say(TownNpcData.POSADERA_NAME, ["¿Y quién te habló de pagar? Bueno... la olla no se va a ningún lado."])
-	if not GameState.is_beat_done(BeatData.INN_WATER):
-		_ask_for_water()
 
 static func _ask_for_water() -> void:
 	Dialogues.say(TownNpcData.POSADERA_NAME, ["Si sales, ¿me traerías un balde del pozo? No puedo dejar el mostrador."])
+
+static func _give_book() -> void:
+	GameState.complete_beat(BeatData.GUEST_BOOK)
+	GameState.receive_notebook()
+	Dialogues.say(TownNpcData.POSADERA_NAME, [
+		"Este es el libro de los huéspedes. Hace mucho que no viene nadie a quien anotar. Quédatelo, es un regalo. A ver si te ayuda a acordarte de quién eres.",
+		"Mi primer marido decía que un libro vacío es una casa sin gente. Todavía lo dice, pero ya no le hago caso.",
+	])
+	Events.hint_requested.emit("guest_book", "Un libro de registro para anotar lo que pasa. Con Esc se abre.")
+	Dialogues.vanish_object(&"libro")

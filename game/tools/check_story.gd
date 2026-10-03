@@ -1,19 +1,19 @@
 extends CheckBase
 # godot --headless --fixed-fps 60 --path . res://tools/check_story.tscn
 # Comprueba los beats del primer día por el camino real (los NPCs y objetos de
-# las escenas, el HUD, Enter y las flechas): hablarle a Tomás sin las llaves no
-# cuenta; levantarlas y devolvérselas es el alivio, y después no vuelven a
-# aparecer en el suelo; "Estoy bien" con Marta no cuenta y "No sé quién soy"
-# sí; el pozo da el balde y la posadera lo recibe; rechazar el caldo no cuesta
-# nada y aceptarlo después cuenta; la silla del rincón de la que habla está en
-# el salón y se puede mirar. Imprime FAIL por cada chequeo roto y sale con
-# código 1.
+# las escenas, el HUD, Enter y las flechas): cada beat cuenta una sola vez, la
+# cadena de Doña Flor va en orden (agua, caldo, libro) y el recuerdo de Tomás
+# espera al libro. Imprime FAIL por cada chequeo roto y sale con código 1.
 
 const TOWN := preload("res://scenes/Town.tscn")
 const HALL := preload("res://scenes/InnHall.tscn")
 # Cada tecla simulada se deja procesar unos frames antes de la siguiente.
 const KEY_GAP_FRAMES := 4
 const STEP_TIMEOUT := 20.0
+# Cuánto más abajo del libro se para el jugador frente al mostrador, y cuánto se
+# corre a cada lado del centro de lo que apunta, dentro de su celda (px de mundo).
+const COUNTER_FRONT_OFFSET := 19.0
+const SIDE_MARGIN := 12.0
 
 var _scene: TopDownScene
 var _steps: Array[Callable] = []
@@ -35,6 +35,8 @@ func _ready() -> void:
 		func() -> void: _expect(not _keys_sprite_left(), "levantadas, las llaves ya no se ven en el suelo"),
 		func() -> void: _talk(_npc(&"tomas"), []),
 		func() -> void: _check_keys_returned(),
+		func() -> void: GameState.rest(),
+		func() -> void: _check_tomas_gate_without_book(),
 		func() -> void: _talk(_npc(&"tomas"), []),
 		func() -> void: _expect(GameState.pending_memory == Dialogues.MEMORY_TOMAS_STORE, "hablarle a Tomás con el recuerdo pendiente no lo cambia"),
 		func() -> void: _talk(_npc(&"marta"), ["interact"]),
@@ -50,12 +52,36 @@ func _ready() -> void:
 		func() -> void: _load(HALL),
 		func() -> void: _check_hall_tables(),
 		func() -> void: _talk(_object(&"silla"), []),
+		func() -> void: _expect(_object(&"libro") != null, "el libro se ve en el mostrador desde el principio"),
+		func() -> void: _stand_in_front_of(_npc(&"posadera"), -SIDE_MARGIN),
+		func() -> void: _expect(_focused_dialogues() == [&"posadera"], "frente a Doña Flor, a su izquierda, se le habla a ella (un solo cartel)"),
+		func() -> void: _stand_in_front_of(_npc(&"posadera"), SIDE_MARGIN),
+		func() -> void: _expect(_focused_dialogues() == [&"posadera"], "frente a Doña Flor, a su derecha, se le habla a ella y no al libro"),
+		func() -> void: _stand_in_front_of(_object(&"libro"), -SIDE_MARGIN),
+		func() -> void: _expect(_focused_dialogues() == [&"libro"], "frente al libro, a su izquierda, se mira el libro y no a Doña Flor"),
+		func() -> void: _stand_in_front_of(_object(&"libro"), SIDE_MARGIN),
+		func() -> void: _expect(_focused_dialogues() == [&"libro"], "frente al libro, a su derecha, se mira el libro"),
+		func() -> void: _talk(_object(&"libro"), []),
+		func() -> void: _expect(not GameState.is_beat_done(BeatData.GUEST_BOOK) and not GameState.has_notebook, "mirar el libro no lo da"),
+		func() -> void: GameState.remove_item(Dialogues.BUCKET),
 		func() -> void: _talk(_npc(&"posadera"), []),
+		func() -> void: _expect(not GameState.is_beat_done(BeatData.BROTH), "sin balde, Doña Flor pide el agua y no ofrece el caldo"),
+		func() -> void: GameState.add_item(Dialogues.BUCKET),
+		func() -> void: _talk(_npc(&"posadera"), ["interact", "interact", "interact", "move_down", "interact"]),
 		func() -> void: _check_water_delivered(),
-		func() -> void: _talk(_npc(&"posadera"), ["move_down", "interact"]),
 		func() -> void: _expect(not GameState.is_beat_done(BeatData.BROTH), "rechazar el caldo no cuenta ni cuesta nada"),
+		func() -> void: _expect(not GameState.is_beat_done(BeatData.GUEST_BOOK) and not GameState.has_notebook, "sin aceptar el caldo no hay libro"),
+		func() -> void: _expect(_object(&"libro") != null, "rechazado el caldo, el libro sigue en el mostrador"),
+		func() -> void: _max_before = GameState.max_stability,
 		func() -> void: _talk(_npc(&"posadera"), ["interact"]),
-		func() -> void: _expect(GameState.is_beat_done(BeatData.BROTH), "aceptar el caldo después cuenta"),
+		func() -> void: _check_book_given(),
+		func() -> void: _load(HALL),
+		func() -> void: _expect(_object(&"libro") == null, "con el libro regalado, el mostrador queda sin él al volver"),
+		func() -> void: _max_before = GameState.max_stability,
+		func() -> void: _talk(_npc(&"posadera"), []),
+		func() -> void: _expect(is_equal_approx(GameState.max_stability, _max_before), "la cadena no se repite"),
+		func() -> void: _check_tomas_gate_after_book(),
+		func() -> void: _check_tomas_gate_book_first(),
 	]
 
 func _process(delta: float) -> void:
@@ -91,6 +117,19 @@ func _talk(target: Node2D, keys: Array[String]) -> void:
 	_keys = keys.duplicate()
 	target.interact(_scene.player)
 
+# Parado frente al mostrador, bajo `target`: lo que el jugador alcanza de verdad
+# (las zonas se solapan en el mostrador, así que hay que probar cuál gana).
+func _stand_in_front_of(target: Node2D, side_offset: float) -> void:
+	_scene.player.global_position = Vector2(target.global_position.x + side_offset, _object(&"libro").global_position.y + COUNTER_FRONT_OFFSET)
+
+# Los diálogos de lo que tiene su pista a la vista: tiene que ser uno solo.
+func _focused_dialogues() -> Array[StringName]:
+	var focused: Array[StringName] = []
+	for node in _scene.find_children("*", "Node2D", true, false):
+		if (node is Npc or node is StoryObject) and node.focused:
+			focused.append(node.dialogue)
+	return focused
+
 func _check_keys_returned() -> void:
 	_expect(GameState.is_beat_done(BeatData.TOMAS_KEYS), "devolverle las llaves a Tomás es el alivio")
 	_expect(not GameState.has_item(Dialogues.KEYS), "las llaves ya no están encima")
@@ -104,6 +143,34 @@ func _check_seen() -> void:
 func _check_water_delivered() -> void:
 	_expect(GameState.is_beat_done(BeatData.INN_WATER), "llevarle el balde a la posadera es el alivio")
 	_expect(not GameState.has_item(Dialogues.BUCKET), "el balde ya no está encima")
+
+func _check_book_given() -> void:
+	_expect(GameState.is_beat_done(BeatData.BROTH), "aceptar el caldo después cuenta")
+	_expect(GameState.is_beat_done(BeatData.GUEST_BOOK), "después del caldo, Doña Flor regala el libro")
+	_expect(GameState.has_notebook, "recibir el libro prende el cuaderno")
+	_expect(GameState.max_stability > _max_before, "recibir el libro es madurar: sube el tope")
+	_expect(_object(&"libro") == null, "regalado, el libro se va del mostrador")
+
+# Con las llaves entregadas y una noche dormida pero sin libro, el recuerdo de
+# Tomás todavía no se puede pedir.
+func _check_tomas_gate_without_book() -> void:
+	_expect(GameState.is_memory_ready(Dialogues.MEMORY_TOMAS_STORE), "pasada una noche, el recuerdo de Tomás está listo")
+	_expect(not Dialogues.tomas_memory_ready(), "sin el libro, Tomás todavía no pide que lo acompañen")
+
+func _check_tomas_gate_after_book() -> void:
+	_expect(not Dialogues.tomas_memory_ready(), "la noche del libro todavía no alcanza")
+	GameState.rest()
+	_expect(Dialogues.tomas_memory_ready(), "una noche después del libro, Tomás ya puede pedirlo")
+
+# Al revés: el libro primero y las llaves después; el bloqueo se fija al entregarlas.
+func _check_tomas_gate_book_first() -> void:
+	GameState.reset()
+	GameState.complete_beat(BeatData.GUEST_BOOK)
+	GameState.rest()
+	GameState.lock_memory(Dialogues.MEMORY_TOMAS_STORE)
+	_expect(not Dialogues.tomas_memory_ready(), "con el libro de antes, la noche de las llaves no alcanza")
+	GameState.rest()
+	_expect(Dialogues.tomas_memory_ready(), "con el libro de antes, una noche después de las llaves se puede pedir")
 
 # La letra de las mesas del salón chocaba con la de Marta: las mesas no se
 # dibujaban (y con el despertar pendiente habrían aparecido dos Martas).
