@@ -54,13 +54,13 @@ func _ready() -> void:
 		func() -> void: _talk(_object(&"silla"), []),
 		func() -> void: _expect(_object(&"libro") != null, "el libro se ve en el mostrador desde el principio"),
 		func() -> void: _stand_in_front_of(_npc(&"posadera"), -SIDE_MARGIN),
-		func() -> void: _expect(_nearest_dialogue() == &"posadera", "frente a Doña Flor, a su izquierda, se le habla a ella"),
+		func() -> void: _expect(_focused_dialogues() == [&"posadera"], "frente a Doña Flor, a su izquierda, se le habla a ella (un solo cartel)"),
 		func() -> void: _stand_in_front_of(_npc(&"posadera"), SIDE_MARGIN),
-		func() -> void: _expect(_nearest_dialogue() == &"posadera", "frente a Doña Flor, a su derecha, se le habla a ella y no al libro"),
+		func() -> void: _expect(_focused_dialogues() == [&"posadera"], "frente a Doña Flor, a su derecha, se le habla a ella y no al libro"),
 		func() -> void: _stand_in_front_of(_object(&"libro"), -SIDE_MARGIN),
-		func() -> void: _expect(_nearest_dialogue() == &"libro", "frente al libro, a su izquierda, se mira el libro y no a Doña Flor"),
+		func() -> void: _expect(_focused_dialogues() == [&"libro"], "frente al libro, a su izquierda, se mira el libro y no a Doña Flor"),
 		func() -> void: _stand_in_front_of(_object(&"libro"), SIDE_MARGIN),
-		func() -> void: _expect(_nearest_dialogue() == &"libro", "frente al libro, a su derecha, se mira el libro"),
+		func() -> void: _expect(_focused_dialogues() == [&"libro"], "frente al libro, a su derecha, se mira el libro"),
 		func() -> void: _talk(_object(&"libro"), []),
 		func() -> void: _expect(not GameState.is_beat_done(BeatData.GUEST_BOOK) and not GameState.has_notebook, "mirar el libro no lo da"),
 		func() -> void: GameState.remove_item(Dialogues.BUCKET),
@@ -122,9 +122,13 @@ func _talk(target: Node2D, keys: Array[String]) -> void:
 func _stand_in_front_of(target: Node2D, side_offset: float) -> void:
 	_scene.player.global_position = Vector2(target.global_position.x + side_offset, _object(&"libro").global_position.y + COUNTER_FRONT_OFFSET)
 
-func _nearest_dialogue() -> Variant:
-	var target: Node = _scene.player._nearest_interactable()
-	return target.get("dialogue") if target else null
+# Los diálogos de lo que tiene su pista a la vista: tiene que ser uno solo.
+func _focused_dialogues() -> Array[StringName]:
+	var focused: Array[StringName] = []
+	for node in _scene.find_children("*", "Node2D", true, false):
+		if (node is Npc or node is StoryObject) and node.focused:
+			focused.append(node.dialogue)
+	return focused
 
 func _check_keys_returned() -> void:
 	_expect(GameState.is_beat_done(BeatData.TOMAS_KEYS), "devolverle las llaves a Tomás es el alivio")

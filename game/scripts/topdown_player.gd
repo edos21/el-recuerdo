@@ -38,6 +38,7 @@ var _facing := "down"
 # Bloqueado (una escena guionada): no camina ni interactúa, pero sigue vivo
 # (animación, cámara, puede girar con face()).
 var _locked := false
+var _focus: Node
 var _step_time := 0.0
 var _base_scale: Vector2
 var _base_offset: Vector2
@@ -99,6 +100,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		sprite.play("idle_" + _facing)
 	_animate_step(walking, delta)
+	_update_focus()
 	dust.emitting = walking
 	var target := _base_camera + direction * CAMERA_LOOKAHEAD
 	camera.position = camera.position.lerp(target, 1.0 - exp(-CAMERA_LOOKAHEAD_SPEED * delta))
@@ -117,13 +119,24 @@ func _animate_step(walking: bool, delta: float) -> void:
 	sprite.scale = _base_scale * Vector2(1.0 + squash, 1.0 - squash)
 
 
+# Un solo interactuable enfocado: es el que responde a `interact` y el único
+# con su pista a la vista, para que lo que se ve sea lo que va a pasar.
+func _update_focus() -> void:
+	var target := _nearest_interactable()
+	if target == _focus:
+		return
+	if is_instance_valid(_focus):
+		_focus.set_focused(false)
+	_focus = target
+	if _focus:
+		_focus.set_focused(true)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _locked or not event.is_action_pressed("interact"):
 		return
-	var target := _nearest_interactable()
-	if target:
+	if is_instance_valid(_focus):
 		get_viewport().set_input_as_handled()
-		target.interact(self)
+		_focus.interact(self)
 
 # Gana la zona cuyo centro está más cerca del centro de la zona del jugador, no
 # el origen del nodo: el origen de un NPC está en sus pies y el de un objeto en
