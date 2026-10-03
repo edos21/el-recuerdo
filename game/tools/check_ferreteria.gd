@@ -15,7 +15,6 @@ const PLAYER_HALF_WIDTH := StagePlayer.BODY_WIDTH * 0.5
 const LEGEND_WALL := "." + StageMap.SHELF_FULL + StageMap.SHELF_EMPTY + StageMap.WINDOW + StageMap.COUNTER + StageMap.BACK_DOOR
 const LEGEND_FLOOR := "." + StageMap.CRATE + StageMap.GATE + StageMap.HINGE + StageMap.BOOK + StageMap.NEIGHBOR + StageMap.TOMAS + StageMap.BAG + StageMap.SPAWN
 const SETTLE_FRAMES := 3
-const INPUT_FRAMES := 2
 const RATE_FRAMES := 60
 const DIALOGUE_TIMEOUT_FRAMES := 600
 # Acompañar a Tomás dura unos 13 s de juego.
@@ -148,7 +147,7 @@ func _check_scene(map: StageMap) -> void:
 	GameState.reset()
 	var scene: Ferreteria = SCENE.instantiate()
 	add_child(scene)
-	await _frames(SETTLE_FRAMES)
+	await _wait_frames(SETTLE_FRAMES)
 	_expect(scene.day == StageMap.Day.HOY and scene.carried == Ferreteria.NO_ITEM and not scene.served, "el recuerdo arranca en Hoy, con las manos vacías")
 	_expect(GameState.stability > 0.0, "se entra con Estabilidad")
 
@@ -186,13 +185,13 @@ func _check_scene(map: StageMap) -> void:
 
 	# Hoy recupera despacio; Ayer gasta.
 	GameState.stability = LOW_STABILITY
-	await _frames(RATE_FRAMES)
+	await _wait_frames(RATE_FRAMES)
 	_expect(GameState.stability > LOW_STABILITY, "Hoy recupera Estabilidad")
 	GameState.stability = MID_STABILITY
 	await _press_and_wait("keyring_next")
 	var at_ayer := GameState.stability
 	_expect(scene.day == StageMap.Day.AYER, "E lleva al día siguiente")
-	await _frames(RATE_FRAMES)
+	await _wait_frames(RATE_FRAMES)
 	_expect(GameState.stability < at_ayer - EPSILON, "Ayer gasta Estabilidad")
 
 	# Tomás no habla hasta que se entregó la bisagra.
@@ -234,17 +233,9 @@ func _check_scene(map: StageMap) -> void:
 	_expect(not GameState.is_memory_locked(), "vivir el recuerdo libera el bloqueo")
 	_finish("check_ferreteria")
 
-func _frames(count: int) -> void:
-	for i in count:
-		await get_tree().process_frame
-
-func _press_and_wait(action: String) -> void:
-	_press(action)
-	await _frames(INPUT_FRAMES)
-
 func _teleport(scene: Ferreteria, col: int) -> void:
 	scene.player.position.x = StageMap.center_x(col)
-	await _frames(1)
+	await _wait_frames(1)
 
 # Los mensajes pausan el juego hasta apretar Enter.
 func _dismiss_dialogue() -> void:

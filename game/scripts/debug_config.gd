@@ -15,6 +15,8 @@ var start_at_level_end := false
 # Todas las habilidades, incluidas las que se ganan fuera del Nivel 1.
 var unlock_all := false
 var abilities: Array[String] = []
+# Empezar ya con el cuaderno, para probar la contratapa sin recibir el libro.
+var notebook := false
 
 func _ready() -> void:
 	if not OS.is_debug_build():
@@ -30,6 +32,7 @@ func _ready() -> void:
 	start_at_level_end = config.get_value(SECTION, "level_end", false)
 	unlock_all = config.get_value(SECTION, "unlock_all", false)
 	abilities.assign(config.get_value(SECTION, "abilities", []))
+	notebook = config.get_value(SECTION, "notebook", false)
 	if start_scene != "" and not ResourceLoader.exists(start_scene):
 		push_error("DebugConfig: la escena '%s' no existe." % start_scene)
 		start_scene = ""

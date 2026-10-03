@@ -485,8 +485,9 @@ func take_damage(amount: int, from_position: Vector2) -> void:
 func _show_avoidance_hint_delayed() -> void:
 	# Esperamos un instante para que primero se sienta el empujón — si el
 	# mensaje (que pausa el juego) apareciera en el mismo frame del golpe,
-	# se comería la reacción física.
-	await get_tree().create_timer(AVOIDANCE_HINT_DELAY).timeout
+	# se comería la reacción física. La espera respeta la pausa: el aviso no
+	# debe aparecer con el menú abierto.
+	await get_tree().create_timer(AVOIDANCE_HINT_DELAY, false).timeout
 	Events.hint_requested.emit("avoidance", "No estoy en condiciones de enfrentar esto todavía. No pasa nada — a veces evitarlo es la decisión correcta.")
 
 func request_respawn() -> void:

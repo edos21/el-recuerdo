@@ -18,3 +18,7 @@
 
 # Habilidades sueltas, por su nombre en memories.tres (se suman a unlock_all).
 # abilities = ["dash"]
+
+# Empezar con el cuaderno ya recibido (Esc abre la contratapa en vez de la pausa
+# mínima). Solo vale al saltar a otra escena con `scene`: el Nivel 1 no lo tiene.
+# notebook = true

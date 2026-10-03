@@ -90,6 +90,7 @@ texture = ExtResource("12")
 centered = false
 
 [node name="Core" parent="." instance=ExtResource("10")]
+context = 1
 
 [node name="WorldProgression" type="Node" parent="." node_paths=PackedStringArray("parallax", "foreground")]
 script = ExtResource("6")

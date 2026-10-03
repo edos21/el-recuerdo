@@ -36,6 +36,7 @@ const TITLE_FADE = 1.0
 const CHOICE_HINT = "[W/S] elegir     [Enter] confirmar"
 const CHOICE_MARKER = ">  "
 const CHOICE_PADDING = "    "
+const PAUSE_HOLDER := &"dialogue"
 
 # Un cuadro de la cola de diálogo: texto para leer o, si trae opciones, una
 # elección. Comparten cola para que una pregunta nunca se adelante a lo que
@@ -252,7 +253,7 @@ func _show_next_message() -> void:
 	if _thought_tween and _thought_tween.is_valid():
 		_thought_tween.kill()
 	thought_label.modulate.a = 0.0
-	get_tree().paused = true
+	Pause.hold(PAUSE_HOLDER)
 
 func _render_line(line: QueuedLine) -> void:
 	if not line.is_choice():
@@ -285,6 +286,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			line.on_chosen.call(_selected_option)
 		if _message_queue.is_empty():
 			narrative_box.visible = false
-			get_tree().paused = false
+			Pause.release(PAUSE_HOLDER)
 		else:
 			_show_next_message()

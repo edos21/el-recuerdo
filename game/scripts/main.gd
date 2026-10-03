@@ -72,6 +72,8 @@ func _ready() -> void:
 func _start_in_debug_scene() -> void:
 	for ability in DebugConfig.abilities_to_grant():
 		GameState.unlock(ability)
+	if DebugConfig.notebook:
+		GameState.receive_notebook()
 	GameState.begin_wake_up()
 	SceneRouter.change_scene.call_deferred(DebugConfig.start_scene)
 
@@ -137,7 +139,8 @@ func _on_expulsion_triggered(body: Node2D) -> void:
 
 func _on_player_collapsed() -> void:
 	world_progression.collapse()
-	await get_tree().create_timer(COLLAPSE_HOLD_TIME).timeout
+	# Respeta la pausa: con el menu abierto no hay que mudarse a la posada.
+	await get_tree().create_timer(COLLAPSE_HOLD_TIME, false).timeout
 	GameState.capture_from_platformer(player)
 	GameState.begin_wake_up()
 	SceneRouter.change_scene(INN_ROOM_SCENE)
