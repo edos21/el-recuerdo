@@ -139,7 +139,8 @@ func _on_expulsion_triggered(body: Node2D) -> void:
 
 func _on_player_collapsed() -> void:
 	world_progression.collapse()
-	await get_tree().create_timer(COLLAPSE_HOLD_TIME).timeout
+	# Respeta la pausa: con el menu abierto no hay que mudarse a la posada.
+	await get_tree().create_timer(COLLAPSE_HOLD_TIME, false).timeout
 	GameState.capture_from_platformer(player)
 	GameState.begin_wake_up()
 	SceneRouter.change_scene(INN_ROOM_SCENE)
