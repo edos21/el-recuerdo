@@ -9,7 +9,7 @@ const MAX_ROWS := 10
 const DRAWING_ROWS := 5
 # El título ocupa el primer renglón de la página derecha; el dibujo va debajo.
 const DRAWING_SLOT := 1
-const SEED_RANGE := 1000
+const SEED_RANGE := 64
 const PAPER_SHADER := preload("res://shaders/drawing_on_paper.gdshader")
 
 var rows: Array[Label] = []

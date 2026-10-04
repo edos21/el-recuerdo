@@ -15,6 +15,11 @@ uniform float grain_size = 1.6;
 uniform float edge_roughness = 0.10;
 uniform float edge_inset = 0.015;
 uniform float edge_fade = 0.05;
+// Filo del recorte, apenas más oscuro: sin él, una lámina de colores claros (como el
+// papel) no deja ver que está recortada.
+uniform float rim_width = 0.05;
+uniform float rim_strength = 0.28;
+uniform vec3 rim_tint = vec3(0.62, 0.52, 0.4);
 uniform float edge_noise_scale = 7.0;
 uniform float seed = 0.0;
 
@@ -36,10 +41,13 @@ void fragment() {
 	float short_side = min(size_px.x, size_px.y);
 	vec2 to_edge = min(UV, 1.0 - UV) * size_px / short_side;
 	float dist = min(to_edge.x, to_edge.y);
-	vec2 p = UV * size_px / short_side * edge_noise_scale + seed * 17.0;
+	vec2 p = UV * size_px / short_side * edge_noise_scale + seed * 1.7;
 	float wobble = value_noise(p) * 0.65 + value_noise(p * 2.7) * 0.35 - 0.5;
-	float mask = smoothstep(0.0, edge_fade, dist - edge_inset + wobble * edge_roughness);
+	float depth = dist - edge_inset + wobble * edge_roughness;
+	float mask = smoothstep(0.0, edge_fade, depth);
+	float rim = smoothstep(0.0, edge_fade * 0.6, depth) * (1.0 - smoothstep(edge_fade * 0.6, edge_fade + rim_width, depth));
 	vec3 color = clamp(art.rgb * exposure, 0.0, 1.0) * paper_tint;
+	color *= mix(vec3(1.0), rim_tint, rim * rim_strength);
 	color *= 1.0 + (hash(floor(FRAGCOORD.xy / grain_size)) - 0.5) * grain_strength;
 	// Lo transparente no dibuja nada (multiplicar por negro lo taparía).
 	COLOR = vec4(mix(vec3(1.0), color, mask * art.a), 1.0);
