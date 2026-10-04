@@ -64,6 +64,7 @@ static func _on_broth_chosen(index: int) -> void:
 		Dialogues.say(TownNpcData.POSADERA_NAME, ["¿Y quién te habló de pagar? Bueno... la olla no se va a ningún lado."])
 
 static func _ask_for_water() -> void:
+	GameState.learn(StoryFacts.WATER_ASKED)
 	Dialogues.say(TownNpcData.POSADERA_NAME, ["Si sales, ¿me traerías un balde del pozo? No puedo dejar el mostrador."])
 
 static func _give_book() -> void:

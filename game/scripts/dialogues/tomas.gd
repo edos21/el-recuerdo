@@ -24,6 +24,7 @@ static func run() -> bool:
 		Dialogues.say(TownNpcData.TOMAS_NAME, ["Hoy no perdí nada. Bueno, todavía no.", closing])
 		return true
 	# Lo olvidó, pero no del todo: la pista de dónde buscarlas.
+	GameState.learn(StoryFacts.TOMAS_TOLD_KEYS)
 	Dialogues.say(TownNpcData.TOMAS_NAME, [
 		"El pueblo anda raro estos días. Todos olvidan cosas pequeñas.",
 		"Yo mismo... juraría que esta mañana tenía las llaves en la mano. Bajando por el camino del sur, creo. ¿O era ayer?",

@@ -51,6 +51,8 @@ var items: Array[StringName] = []
 # Si ya recibió el libro de huéspedes. Es lo único que decide si Esc abre la
 # contratapa del cuaderno o la pausa mínima; las entradas se derivan de is_met().
 var has_notebook := false
+# Lo que le contaron y no cambió nada (StoryFacts): el cuaderno lo anota desde ahí.
+var facts: Array[StringName] = []
 
 func has_ability(ability: String) -> bool:
 	return abilities.has(ability)
@@ -159,6 +161,19 @@ func remove_item(item: StringName) -> void:
 func receive_notebook() -> void:
 	has_notebook = true
 
+# Idempotente, como unlock(): repetir un diálogo no lo cuenta dos veces.
+func learn(fact: StringName) -> void:
+	if not StoryFacts.ALL.has(fact):
+		push_error("Hecho desconocido: %s" % fact)
+		return
+	if not facts.has(fact):
+		facts.append(fact)
+
+func knows(fact: StringName) -> bool:
+	if not StoryFacts.ALL.has(fact):
+		push_error("Hecho desconocido: %s" % fact)
+	return facts.has(fact)
+
 # Un id que no está en el catálogo daría false para siempre sin avisar (el NPC
 # nunca cambia, el objeto nunca desaparece): se avisa acá, igual que al completarlo.
 func is_beat_done(beat_id: String) -> bool:
@@ -170,7 +185,7 @@ func is_beat_done(beat_id: String) -> bool:
 # el suelo): se cumplen todas las claves. Vacía, siempre se cumple.
 # wake_pending: bool; beat_done / beat_pending: id de beat; has_item / lacks_item: objeto;
 # slept_since: id de beat (pasó al menos una noche desde que se completó);
-# memory_locked: bool (hay un recuerdo pendiente).
+# memory_locked: bool (hay un recuerdo pendiente); knows: id de StoryFacts.
 func is_met(condition: Dictionary) -> bool:
 	for key in condition:
 		var value: Variant = condition[key]
@@ -190,6 +205,8 @@ func is_met(condition: Dictionary) -> bool:
 				holds = is_beat_done(value) and _slept_since_day(beat_day[value])
 			"memory_locked":
 				holds = is_memory_locked() == value
+			"knows":
+				holds = knows(value)
 			_:
 				push_error("GameState: condición desconocida '%s'." % key)
 				holds = false
@@ -247,3 +264,4 @@ func reset() -> void:
 	arrival_door = &""
 	items.clear()
 	has_notebook = false
+	facts.clear()
