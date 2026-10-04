@@ -7,8 +7,6 @@ extends RefCounted
 
 const MAX_ROWS := 10
 const DRAWING_ROWS := 5
-# El título ocupa el primer renglón de la página derecha; el dibujo va debajo.
-const DRAWING_SLOT := 1
 const SEED_RANGE := 64
 const PAPER_SHADER := preload("res://shaders/drawing_on_paper.gdshader")
 
@@ -16,8 +14,11 @@ var rows: Array[Label] = []
 var entries: Array[NotebookEntryDef] = []
 var _strikes: Array[StrikeLine] = []
 var _drawing := TextureRect.new()
+# Volver a una lámina ya vista no la decodifica de nuevo; una que falta queda en null.
+var _textures: Dictionary[String, Texture2D] = {}
 
-func _init(left_body: Control, right_body: Control, make_row: Callable) -> void:
+# El dibujo se acomoda justo debajo de `title`, el rótulo de la página derecha.
+func _init(left_body: Control, right_body: Control, title: Control, make_row: Callable) -> void:
 	for i in MAX_ROWS:
 		var row: Label = make_row.call()
 		var strike := StrikeLine.new()
@@ -34,7 +35,7 @@ func _init(left_body: Control, right_body: Control, make_row: Callable) -> void:
 	_drawing.material.shader = PAPER_SHADER
 	_drawing.visible = false
 	right_body.add_child(_drawing)
-	right_body.move_child(_drawing, DRAWING_SLOT)
+	right_body.move_child(_drawing, title.get_index() + 1)
 
 # Vuelve a leer el catálogo: lo que se hizo desde la última vez cambia de etapa.
 func refresh() -> void:
@@ -58,6 +59,8 @@ func set_active(active: bool) -> void:
 
 func show_drawing(entry: NotebookEntryDef) -> void:
 	var path := Catalogs.notebook.drawing_path(entry)
-	_drawing.texture = load(path) if ResourceLoader.exists(path) else null
+	if not _textures.has(path):
+		_textures[path] = load(path) if ResourceLoader.exists(path) else null
+	_drawing.texture = _textures[path]
 	# Cada lámina con su propio recorte, para que no parezcan hechas con el mismo molde.
 	(_drawing.material as ShaderMaterial).set_shader_parameter("seed", float(entry.id.hash() % SEED_RANGE))

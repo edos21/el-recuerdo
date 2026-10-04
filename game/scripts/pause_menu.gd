@@ -84,7 +84,7 @@ const NOTE_TITLE_SIZE := 48
 const NOTE_SIZE := 38
 # Con la Estabilidad baja escribe más chico y con la tinta más pálida.
 const LOW_NOTE_SIZE := 32
-const INK_LOW := Color(0.08, 0.07, 0.1, 0.6)
+const INK_LOW := Color(INK, 0.6)
 const LEFT_COLUMNS := ["Fecha", "Nombre", "Procedencia"]
 const LEFT_COLUMN_STARTS := [0.0, 0.2, 0.72]
 const LEFT_WRITING_COLUMN := 1
@@ -159,9 +159,6 @@ func errand_titles() -> Array[String]:
 
 func selected_errand() -> NotebookEntryDef:
 	return _errands.entries[_errand_selected]
-
-func note_text() -> String:
-	return _note_body.text
 
 func _build_plain() -> void:
 	var center := _make_centered(_plain_root)
@@ -246,7 +243,7 @@ func _build_book() -> void:
 	_note_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.body.add_child(_note_body)
 	_style_note(NOTE_SIZE, INK)
-	_errands = NotebookErrands.new(left.body, right.body, _make_row.bind(ENTRY_SIZE, INK_IDLE))
+	_errands = NotebookErrands.new(left.body, right.body, _note_title, _make_row.bind(ENTRY_SIZE, INK_IDLE))
 
 	_book_hint = _make_hint()
 	stack.add_child(_book_hint)

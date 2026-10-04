@@ -1,10 +1,13 @@
 shader_type canvas_item;
 render_mode blend_mul;
+
 // Hace que una lámina escaneada parezca dibujada en la página del libro: se
 // multiplica por el papel de abajo (el blanco de la hoja no tapa nada y los
 // lápices toman su tono), se amarillea un poco para igualarlo, lleva el grano del
 // papel y el borde se recorta a mano, irregular y con fundido, en vez de cortarse
 // recto. Con multiplicar, blanco = no hacer nada, así que fundir es ir a blanco.
+
+#include "res://shaders/paper_noise.gdshaderinc"
 
 uniform vec3 paper_tint = vec3(1.0, 0.95, 0.84);
 // Multiplicar contra un papel que ya es beige oscurece todo: se compensa antes.
@@ -22,18 +25,6 @@ uniform float rim_strength = 0.28;
 uniform vec3 rim_tint = vec3(0.62, 0.52, 0.4);
 uniform float edge_noise_scale = 7.0;
 uniform float seed = 0.0;
-
-float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float value_noise(vec2 p) {
-	vec2 cell = floor(p);
-	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash(cell), hash(cell + vec2(1.0, 0.0)), u.x),
-			mix(hash(cell + vec2(0.0, 1.0)), hash(cell + vec2(1.0, 1.0)), u.x), u.y);
-}
 
 void fragment() {
 	vec4 art = texture(TEXTURE, UV);
