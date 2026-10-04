@@ -6,9 +6,11 @@ extends RefCounted
 # y la nota la escribe PauseMenu en sus rótulos de siempre.
 
 const MAX_ROWS := 10
-const DRAWING_ROWS := 3
+const DRAWING_ROWS := 5
 # El título ocupa el primer renglón de la página derecha; el dibujo va debajo.
 const DRAWING_SLOT := 1
+const SEED_RANGE := 1000
+const PAPER_SHADER := preload("res://shaders/drawing_on_paper.gdshader")
 
 var rows: Array[Label] = []
 var entries: Array[NotebookEntryDef] = []
@@ -28,6 +30,8 @@ func _init(left_body: Control, right_body: Control, make_row: Callable) -> void:
 	_drawing.custom_minimum_size.y = RegisterPage.ROW_HEIGHT * DRAWING_ROWS
 	_drawing.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_drawing.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_drawing.material = ShaderMaterial.new()
+	_drawing.material.shader = PAPER_SHADER
 	_drawing.visible = false
 	right_body.add_child(_drawing)
 	right_body.move_child(_drawing, DRAWING_SLOT)
@@ -55,3 +59,5 @@ func set_active(active: bool) -> void:
 func show_drawing(entry: NotebookEntryDef) -> void:
 	var path := Catalogs.notebook.drawing_path(entry)
 	_drawing.texture = load(path) if ResourceLoader.exists(path) else null
+	# Cada lámina con su propio recorte, para que no parezcan hechas con el mismo molde.
+	(_drawing.material as ShaderMaterial).set_shader_parameter("seed", float(entry.id.hash() % SEED_RANGE))
