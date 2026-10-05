@@ -17,6 +17,8 @@ var unlock_all := false
 var abilities: Array[String] = []
 # Empezar ya con el cuaderno, para probar la contratapa sin recibir el libro.
 var notebook := false
+# Hay un debug.cfg leído: el guardado va a otro archivo (SaveGame).
+var active := false
 
 func _ready() -> void:
 	if not OS.is_debug_build():
@@ -28,6 +30,7 @@ func _ready() -> void:
 	if error != OK:
 		push_error("DebugConfig: no se pudo leer %s (error %d)." % [CONFIG_PATH, error])
 		return
+	active = true
 	start_scene = config.get_value(SECTION, "scene", "")
 	start_at_level_end = config.get_value(SECTION, "level_end", false)
 	unlock_all = config.get_value(SECTION, "unlock_all", false)

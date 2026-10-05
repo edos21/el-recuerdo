@@ -2,6 +2,9 @@
 # descomentá lo que necesites. Solo se lee en builds de debug; sin `debug.cfg`
 # el juego arranca normal.
 
+# Con un debug.cfg presente, dormir guarda en `save_debug.json` y la pantalla de
+# inicio no aparece: probar no pisa la partida real.
+
 [start]
 # Escena a la que saltar en vez del Nivel 1. Si se omite, se juega el Nivel 1.
 # scene = "res://scenes/Town.tscn"

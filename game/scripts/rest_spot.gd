@@ -21,14 +21,20 @@ func interact(player: Node2D) -> void:
 
 # Descansar con fundido; `thought`, si viene, se piensa al abrir los ojos. El
 # jugador no se mueve hasta que vuelve la imagen: con la pantalla negra podría
-# llegar a una puerta sin verla.
+# llegar a una puerta sin verla. Dormir cierra el día y es lo único que guarda la
+# partida, con la escena de la cama para reanudar ahí.
 static func rest(player: Node2D, thought := "") -> void:
 	player.set_locked(true)
-	await SceneRouter.blink(REST_HOLD, GameState.rest)
+	var scene_path := player.get_tree().current_scene.scene_file_path
+	await SceneRouter.blink(REST_HOLD, _sleep.bind(scene_path))
 	if is_instance_valid(player):
 		player.set_locked(false)
 	if thought != "":
 		Events.thought_requested.emit(thought, Events.DEFAULT_THOUGHT_HOLD)
+
+static func _sleep(scene_path: String) -> void:
+	GameState.rest()
+	SaveGame.save_game(scene_path)
 
 # La elección corre con el árbol en pausa: el fundido arranca cuando se suelta.
 func _on_chosen(index: int) -> void:
