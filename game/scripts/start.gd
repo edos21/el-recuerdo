@@ -17,14 +17,13 @@ const BACKDROP_COLOR := Color.BLACK
 var _selected := 0
 var _new_game_armed := false
 var _rows: Array[Label] = []
-var _bold := FontVariation.new()
+var _bold: FontVariation
 
 func _ready() -> void:
-	if DebugConfig.start_scene != "" or not SaveGame.has_save():
-		_start_new.call_deferred(false)
+	if DebugConfig.active or not SaveGame.has_save():
+		_start_new.call_deferred()
 		return
-	_bold.base_font = ThemeDB.fallback_font
-	_bold.variation_embolden = PauseMenu.PLAIN_EMBOLDEN
+	_bold = PauseMenu.plain_font()
 	_build()
 	_render()
 
@@ -41,10 +40,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", PauseMenu.PLAIN_OPTION_GAP)
 	center.add_child(column)
 	for choice in LABELS:
-		var row := Label.new()
-		row.add_theme_font_override("font", _bold)
-		row.add_theme_font_size_override("font_size", PauseMenu.PLAIN_OPTION_SIZE)
-		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var row := PauseMenu.make_plain_row(_bold)
 		column.add_child(row)
 		_rows.append(row)
 
@@ -66,18 +62,17 @@ func _confirm() -> void:
 				_new_game_armed = true
 				_render()
 				return
-			_start_new(true)
+			SaveGame.delete_save()
+			_start_new()
 		Choice.QUIT:
 			get_tree().quit()
 
-func _start_new(erase_save: bool) -> void:
-	if erase_save:
-		SaveGame.delete_save()
+# Directo y no por SceneRouter: esta escena ya está en negro y un fundido de
+# más retrasaría el arranque normal sin partida.
+func _start_new() -> void:
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 func _render() -> void:
 	for i in _rows.size():
 		var label: String = NEW_GAME_CONFIRM if i == Choice.NEW_GAME and _new_game_armed else LABELS[i]
-		var chosen := i == _selected
-		_rows[i].text = PauseMenu.PLAIN_MARKER % label if chosen else label
-		_rows[i].add_theme_color_override("font_color", PauseMenu.PLAIN_SELECTED if chosen else PauseMenu.PLAIN_IDLE)
+		PauseMenu.mark_plain_row(_rows[i], label, i == _selected)

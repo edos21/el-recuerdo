@@ -105,7 +105,7 @@ var _view := View.CONTENTS
 var _item_selected := 0
 var _load_armed := false
 var _handwriting := FontVariation.new()
-var _plain_bold := FontVariation.new()
+var _plain_bold: FontVariation
 
 var _plain_root := Control.new()
 var _plain_rows: Array[Label] = []
@@ -125,8 +125,7 @@ func _ready() -> void:
 	_handwriting.base_font = CAVEAT
 	_handwriting.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): HANDWRITING_WEIGHT}
 	_handwriting.spacing_glyph = HANDWRITING_SPACING
-	_plain_bold.base_font = ThemeDB.fallback_font
-	_plain_bold.variation_embolden = PLAIN_EMBOLDEN
+	_plain_bold = plain_font()
 	_marker_style.bg_color = MARKER_HIGHLIGHT
 	_marker_style.expand_margin_left = MARKER_OVERHANG
 	_marker_style.expand_margin_right = MARKER_OVERHANG
@@ -137,6 +136,25 @@ func _ready() -> void:
 	add_child(dim)
 	_build_plain()
 	_build_book()
+
+# Lo comparte la pantalla de inicio, que se ve igual que la pausa mínima.
+static func plain_font() -> FontVariation:
+	var font := FontVariation.new()
+	font.base_font = ThemeDB.fallback_font
+	font.variation_embolden = PLAIN_EMBOLDEN
+	return font
+
+static func make_plain_row(font: Font) -> Label:
+	var row := Label.new()
+	row.add_theme_font_override("font", font)
+	row.add_theme_font_size_override("font_size", PLAIN_OPTION_SIZE)
+	row.add_theme_color_override("font_color", PLAIN_IDLE)
+	row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return row
+
+static func mark_plain_row(row: Label, text: String, chosen: bool) -> void:
+	row.text = PLAIN_MARKER % text if chosen else text
+	row.add_theme_color_override("font_color", PLAIN_SELECTED if chosen else PLAIN_IDLE)
 
 func is_open() -> bool:
 	return visible
@@ -188,8 +206,7 @@ func _build_plain() -> void:
 	column.add_theme_constant_override("separation", PLAIN_OPTION_GAP)
 	box.add_child(column)
 	for i in PLAIN_ENTRIES.size():
-		var row := _make_label(_plain_bold, PLAIN_OPTION_SIZE, PLAIN_IDLE)
-		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var row := make_plain_row(_plain_bold)
 		column.add_child(row)
 		_plain_rows.append(row)
 	column.add_child(_make_hint())
@@ -355,7 +372,7 @@ func _confirm(entry: Entry) -> void:
 
 # Dos pasos porque cargar tira lo jugado desde que se durmió.
 func _confirm_load() -> void:
-	if not SaveGame.has_save():
+	if SaveGame.saved_day() == 0:
 		return
 	if not _load_armed:
 		_load_armed = true
@@ -390,10 +407,7 @@ func _render() -> void:
 
 func _render_plain() -> void:
 	for i in _plain_rows.size():
-		var label: String = ENTRY_LABELS[_entries[i]]
-		var chosen := i == _selected
-		_plain_rows[i].text = PLAIN_MARKER % label if chosen else label
-		_plain_rows[i].add_theme_color_override("font_color", PLAIN_SELECTED if chosen else PLAIN_IDLE)
+		mark_plain_row(_plain_rows[i], ENTRY_LABELS[_entries[i]], i == _selected)
 
 func _render_book() -> void:
 	if _view != View.CONTENTS:
@@ -408,9 +422,10 @@ func _render_book() -> void:
 	_style_note(NOTE_SIZE, INK)
 
 func _contents_note(entry: Entry) -> String:
-	if entry != Entry.LOAD or not SaveGame.has_save():
+	var day := SaveGame.saved_day() if entry == Entry.LOAD else 0
+	if day == 0:
 		return ENTRY_NOTES[entry]
-	return (LOAD_NOTE_ARMED if _load_armed else LOAD_NOTE_SAVED) % SaveGame.saved_day()
+	return (LOAD_NOTE_ARMED if _load_armed else LOAD_NOTE_SAVED) % day
 
 func _render_index() -> void:
 	_mark_selected(_index.rows, _item_selected)

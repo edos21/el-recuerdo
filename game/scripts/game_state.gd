@@ -255,9 +255,6 @@ const TRANSIENT_FIELDS: Array[StringName] = [&"came_from_expulsion", &"arrival_d
 
 # Solo tipos que JSON ida y vuelta conserva: ids como texto, números simples.
 func to_save() -> Dictionary:
-	var days := {}
-	for beat_id in beat_day:
-		days[beat_id] = beat_day[beat_id]
 	return {
 		"abilities": abilities.duplicate(),
 		"health": health,
@@ -265,7 +262,7 @@ func to_save() -> Dictionary:
 		"stability": stability,
 		"completed_beats": completed_beats.duplicate(),
 		"day": day,
-		"beat_day": days,
+		"beat_day": beat_day.duplicate(),
 		"pending_memory": String(pending_memory),
 		"pending_since_day": pending_since_day,
 		"items": items.map(func(item: StringName) -> String: return String(item)),
