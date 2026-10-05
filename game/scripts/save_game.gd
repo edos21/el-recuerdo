@@ -40,10 +40,12 @@ func save_game(scene_path: String) -> bool:
 		return false
 	return true
 
-# Devuelve si había algo cargable; si no, no toca el estado ni la escena.
+# Devuelve si había algo cargable; si no, no toca el estado ni la escena. Con un
+# fundido en curso tampoco carga: SceneRouter descartaría el cambio y el estado
+# nuevo quedaría corriendo sobre la escena vieja.
 func load_game() -> bool:
 	var data := _read()
-	if data.is_empty():
+	if data.is_empty() or SceneRouter.is_busy():
 		return false
 	GameState.apply_save(data["state"])
 	SceneRouter.change_scene(data["scene"])
