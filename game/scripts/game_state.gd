@@ -248,6 +248,63 @@ func ensure_defaults() -> void:
 	abilities.assign(granted_by_default())
 	begin_wake_up()
 
+# Lo que `to_save` deja afuera a propósito: ya se consumió al dormir (el despertar)
+# o es un trámite de una sola escena (la puerta). check_save exige que todo campo
+# esté guardado o figure acá, para que uno nuevo no se olvide.
+const TRANSIENT_FIELDS: Array[StringName] = [&"came_from_expulsion", &"arrival_door"]
+
+# Solo tipos que JSON ida y vuelta conserva: ids como texto, números simples.
+func to_save() -> Dictionary:
+	var days := {}
+	for beat_id in beat_day:
+		days[beat_id] = beat_day[beat_id]
+	return {
+		"abilities": abilities.duplicate(),
+		"health": health,
+		"max_stability": max_stability,
+		"stability": stability,
+		"completed_beats": completed_beats.duplicate(),
+		"day": day,
+		"beat_day": days,
+		"pending_memory": String(pending_memory),
+		"pending_since_day": pending_since_day,
+		"items": items.map(func(item: StringName) -> String: return String(item)),
+		"has_notebook": has_notebook,
+		"facts": facts.map(func(fact: StringName) -> String: return String(fact)),
+	}
+
+# Reemplaza todo el estado por el guardado. Un id que ya no existe en los
+# catálogos (el juego cambió desde la partida) se descarta con aviso en vez de
+# colarse: sería un hecho o un beat que nada sabe interpretar.
+func apply_save(data: Dictionary) -> void:
+	reset()
+	for ability in data.get("abilities", []):
+		if Catalogs.memories.has(ability):
+			abilities.append(ability)
+		else:
+			push_warning("Guardado: habilidad desconocida '%s', se descarta." % ability)
+	for beat_id in data.get("completed_beats", []):
+		if Catalogs.beats.entry(beat_id) == null:
+			push_warning("Guardado: beat desconocido '%s', se descarta." % beat_id)
+			continue
+		completed_beats.append(beat_id)
+		beat_day[beat_id] = int(data.get("beat_day", {}).get(beat_id, FIRST_DAY))
+	for fact in data.get("facts", []):
+		if StoryFacts.ALL.has(StringName(fact)):
+			facts.append(StringName(fact))
+		else:
+			push_warning("Guardado: hecho desconocido '%s', se descarta." % fact)
+	for item in data.get("items", []):
+		items.append(StringName(item))
+	max_stability = float(data.get("max_stability", MAX_STABILITY))
+	stability = clampf(float(data.get("stability", max_stability)), 0.0, max_stability)
+	health = clampi(int(data.get("health", MAX_HEALTH)), 0, MAX_HEALTH)
+	day = int(data.get("day", FIRST_DAY))
+	pending_memory = StringName(data.get("pending_memory", ""))
+	pending_since_day = int(data.get("pending_since_day", day))
+	has_notebook = bool(data.get("has_notebook", false))
+	vitals_changed.emit()
+
 # Al arrancar el Nivel 1 de nuevo (F6, o volver a jugar) el estado no debe
 # heredar habilidades de una corrida anterior.
 func reset() -> void:

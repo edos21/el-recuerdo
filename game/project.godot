@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="El Recuerdo"
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/Start.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [audio]
@@ -26,6 +26,7 @@ SceneRouter="*res://scripts/scene_router.gd"
 Pause="*res://scripts/pause.gd"
 Events="*res://scripts/events.gd"
 DebugConfig="*res://scripts/debug_config.gd"
+SaveGame="*res://scripts/save_game.gd"
 
 [display]
 

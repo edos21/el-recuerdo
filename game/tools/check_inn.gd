@@ -16,6 +16,8 @@ const WAKE_TIMEOUT := 30.0
 const REST_TIMEOUT := 8.0
 const SETTLE_FRAMES := 3
 const BLINK_HOLD := 0.1
+# Dormir en la cama guarda la partida: que sea en un archivo de prueba, no en la real.
+const TEST_SAVE_PATH := "user://check_inn_save.json"
 # Dos fundidos completos (salir, sostener, volver) con margen.
 const BLINKS_TIMEOUT := 10.0
 # Durante el primer pensamiento se aprieta Enter y se espera un poco: si el
@@ -34,6 +36,7 @@ var _saw_dialogue := false
 var _blinks := 0
 
 func _ready() -> void:
+	SaveGame.path = TEST_SAVE_PATH
 	_check_consume_wake()
 	_check_rest_rules()
 	_check_player_reflects_rest()
@@ -106,6 +109,7 @@ func _process(delta: float) -> void:
 				_expect(_blinks == 2, "un descanso durante otro fundido espera en vez de descartarse (%d de 2)" % _blinks)
 				_step = Step.DONE
 		Step.DONE:
+			SaveGame.delete_save()
 			_finish("check_inn")
 
 func _check_consume_wake() -> void:
