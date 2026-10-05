@@ -1,0 +1,125 @@
+[gd_resource type="Resource" script_class="NotebookData" format=3]
+
+[ext_resource type="Script" path="res://data/notebook_stage_def.gd" id="1_stage"]
+[ext_resource type="Script" path="res://data/notebook_entry_def.gd" id="2_entry"]
+[ext_resource type="Script" path="res://data/notebook.gd" id="3_notebook"]
+
+[sub_resource type="Resource" id="Stage_woke_up_0"]
+script = ExtResource("1_stage")
+note = "Llegada: no recuerdo. Procedencia: el puerto, dicen. Equipaje: una valija que sabe más que yo."
+
+[sub_resource type="Resource" id="Entry_woke_up"]
+script = ExtResource("2_entry")
+id = "woke_up"
+title = "Desperté"
+section = 1
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_woke_up_0")])
+
+[sub_resource type="Resource" id="Stage_tomas_keys_0"]
+script = ExtResource("1_stage")
+condition = {"knows": &"tomas_told_keys"}
+note = "Un señor llamado Tomás perdió las llaves. Dice que las dejó 'por el camino del sur, ¿o era ayer?'. Ayer no es un lugar, pero lo voy a tener en cuenta."
+
+[sub_resource type="Resource" id="Stage_tomas_keys_1"]
+script = ExtResource("1_stage")
+stage = 1
+condition = {"has_item": &"llaves_de_tomas"}
+
+[sub_resource type="Resource" id="Stage_tomas_keys_2"]
+script = ExtResource("1_stage")
+stage = 2
+condition = {"beat_done": "tomas_keys"}
+note = "Llaves devueltas. Me miró como si le hubiera devuelto algo más. No pregunté. (Parece que aquí nadie pregunta.)"
+
+[sub_resource type="Resource" id="Entry_tomas_keys"]
+script = ExtResource("2_entry")
+id = "tomas_keys"
+title = "Las llaves de Tomás"
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_tomas_keys_0"), SubResource("Stage_tomas_keys_1"), SubResource("Stage_tomas_keys_2")])
+
+[sub_resource type="Resource" id="Stage_inn_water_0"]
+script = ExtResource("1_stage")
+condition = {"knows": &"water_asked"}
+note = "La posadera me dio techo sin cobrarme. Lo mínimo es cargar un balde. El pozo está arriba de la plaza. Recordatorio: los baldes pesan más que la culpa, pero menos."
+
+[sub_resource type="Resource" id="Stage_inn_water_1"]
+script = ExtResource("1_stage")
+stage = 1
+condition = {"has_item": &"balde_de_agua"}
+
+[sub_resource type="Resource" id="Stage_inn_water_2"]
+script = ExtResource("1_stage")
+stage = 2
+condition = {"beat_done": "inn_water"}
+
+[sub_resource type="Resource" id="Entry_inn_water"]
+script = ExtResource("2_entry")
+id = "inn_water"
+title = "Agua para la posada"
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_inn_water_0"), SubResource("Stage_inn_water_1"), SubResource("Stage_inn_water_2")])
+
+[sub_resource type="Resource" id="Stage_broth_0"]
+script = ExtResource("1_stage")
+condition = {"beat_done": "inn_water"}
+note = "Me ofrecieron caldo. Dije que no tengo con qué pagar. Ella dijo que eso no me lo preguntó. Pendiente: aprender a aceptar cosas. También: el caldo."
+
+[sub_resource type="Resource" id="Stage_broth_1"]
+script = ExtResource("1_stage")
+stage = 2
+condition = {"beat_done": "broth"}
+
+[sub_resource type="Resource" id="Entry_broth"]
+script = ExtResource("2_entry")
+id = "broth"
+title = "El caldo"
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_broth_0"), SubResource("Stage_broth_1")])
+
+[sub_resource type="Resource" id="Stage_dont_know_0"]
+script = ExtResource("1_stage")
+condition = {"knows": &"marta_asked"}
+note = "Datos confirmados sobre mí: 1) tengo una valija. 2) sé dibujar, al parecer. 3) ... Marta pregunta cómo estoy. Opciones: mentir, o no."
+
+[sub_resource type="Resource" id="Stage_dont_know_1"]
+script = ExtResource("1_stage")
+stage = 2
+condition = {"beat_done": "dont_know_who_i_am"}
+note = "Le dije la verdad. No se arregló nada, pero pesó menos."
+
+[sub_resource type="Resource" id="Entry_dont_know"]
+script = ExtResource("2_entry")
+id = "dont_know"
+title = "No sé quién soy"
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_dont_know_0"), SubResource("Stage_dont_know_1")])
+
+[sub_resource type="Resource" id="Stage_guest_book_0"]
+script = ExtResource("1_stage")
+stage = 2
+condition = {"beat_done": "guest_book"}
+note = "Nota para mí, sea quien sea yo: este era el libro de huéspedes. Soy el único huésped. Me anoté, por si acaso."
+
+[sub_resource type="Resource" id="Entry_guest_book"]
+script = ExtResource("2_entry")
+id = "guest_book"
+title = "El libro"
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_guest_book_0")])
+
+[sub_resource type="Resource" id="Stage_flor_husband_0"]
+script = ExtResource("1_stage")
+condition = {"beat_done": "guest_book"}
+note = "Doña Flor nombró a su marido como si estuviera en la cocina. No he visto a nadie más en la posada. Revisé. Dos veces."
+
+[sub_resource type="Resource" id="Entry_flor_husband"]
+script = ExtResource("2_entry")
+id = "flor_husband"
+title = "El marido de Doña Flor"
+section = 1
+stages = Array[ExtResource("1_stage")]([SubResource("Stage_flor_husband_0")])
+
+[sub_resource type="Resource" id="Stage_name_0"]
+script = ExtResource("1_stage")
+note = "Todavía no me acuerdo"
+
+[resource]
+script = ExtResource("3_notebook")
+entries = Array[ExtResource("2_entry")]([SubResource("Entry_woke_up"), SubResource("Entry_tomas_keys"), SubResource("Entry_inn_water"), SubResource("Entry_broth"), SubResource("Entry_dont_know"), SubResource("Entry_guest_book"), SubResource("Entry_flor_husband")])
+name_stages = Array[ExtResource("1_stage")]([SubResource("Stage_name_0")])

@@ -6,6 +6,7 @@ extends RefCounted
 static func run() -> bool:
 	if GameState.is_beat_done(BeatData.DONT_KNOW):
 		return false
+	GameState.learn(StoryFacts.MARTA_ASKED)
 	Dialogues.ask(TownNpcData.MARTA_NAME, "¿Cómo estás? Pero de verdad.", ["Estoy bien", "No sé quién soy"], _on_chosen)
 	return true
 

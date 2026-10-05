@@ -1,0 +1,66 @@
+class_name NotebookIndex
+extends RefCounted
+# Índice de una sección del cuaderno (Encargos, El pueblo): lo anotado en la página
+# izquierda (los cumplidos tachados, al final) y el dibujo de la entrada elegida
+# en la derecha. Solo arma y muestra; qué hay y en qué etapa lo dice NotebookData
+# y la nota la escribe PauseMenu en sus rótulos de siempre.
+
+const MAX_ROWS := 10
+const DRAWING_ROWS := 5
+const SEED_RANGE := 64
+const PAPER_SHADER := preload("res://shaders/drawing_on_paper.gdshader")
+
+var rows: Array[Label] = []
+var entries: Array[NotebookEntryDef] = []
+var _strikes: Array[StrikeLine] = []
+var _drawing := TextureRect.new()
+# Volver a una lámina ya vista no la decodifica de nuevo; una que falta queda en null.
+var _textures: Dictionary[String, Texture2D] = {}
+
+# El dibujo se acomoda justo debajo de `title`, el rótulo de la página derecha.
+func _init(left_body: Control, right_body: Control, title: Control, make_row: Callable) -> void:
+	for i in MAX_ROWS:
+		var row: Label = make_row.call()
+		var strike := StrikeLine.new()
+		strike.seed_value = i
+		row.add_child(strike)
+		row.visible = false
+		left_body.add_child(row)
+		rows.append(row)
+		_strikes.append(strike)
+	_drawing.custom_minimum_size.y = RegisterPage.ROW_HEIGHT * DRAWING_ROWS
+	_drawing.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_drawing.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_drawing.material = ShaderMaterial.new()
+	_drawing.material.shader = PAPER_SHADER
+	_drawing.visible = false
+	right_body.add_child(_drawing)
+	right_body.move_child(_drawing, title.get_index() + 1)
+
+# Vuelve a leer el catálogo: lo que se hizo desde la última vez cambia de etapa.
+func refresh(section: NotebookData.Section) -> void:
+	entries = Catalogs.notebook.visible_entries(section).slice(0, MAX_ROWS)
+	for i in MAX_ROWS:
+		var shown := i < entries.size()
+		rows[i].visible = shown
+		if not shown:
+			continue
+		rows[i].text = entries[i].title
+		var font := rows[i].get_theme_font("font")
+		var size := rows[i].get_theme_font_size("font_size")
+		_strikes[i].span = font.get_string_size(entries[i].title, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x if Catalogs.notebook.is_done(entries[i]) else 0.0
+
+# Muestra u oculta todo el índice (el dibujo solo con algo que dibujar).
+func set_active(active: bool) -> void:
+	if not active:
+		for row in rows:
+			row.visible = false
+	_drawing.visible = active and not entries.is_empty()
+
+func show_drawing(entry: NotebookEntryDef) -> void:
+	var path := Catalogs.notebook.drawing_path(entry)
+	if not _textures.has(path):
+		_textures[path] = load(path) if ResourceLoader.exists(path) else null
+	_drawing.texture = _textures[path]
+	# Cada lámina con su propio recorte, para que no parezcan hechas con el mismo molde.
+	(_drawing.material as ShaderMaterial).set_shader_parameter("seed", float(entry.id.hash() % SEED_RANGE))

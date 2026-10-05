@@ -7,6 +7,8 @@ extends CanvasLayer
 # codigo, como el fundido de SceneRouter.
 
 enum Entry { RESUME, ERRANDS, TOWN, OPTIONS, LOAD, QUIT }
+# Dentro del libro: la contratapa (el índice de siempre) o la lista de una sección.
+enum View { CONTENTS, ERRANDS, TOWN }
 
 const PAUSE_HOLDER := &"menu"
 const CAVEAT := preload("res://assets/fonts/Caveat-VariableFont_wght.ttf")
@@ -31,15 +33,15 @@ const ENTRY_LABELS := {
 const RESUME_NOTE_TITLE := "Instrucciones para detenerse"
 const ENTRY_NOTES := {
 	Entry.RESUME: "Primero, dejar de moverse. Después, esperar a que el mundo también se dé cuenta.",
-	Entry.ERRANDS: "Todavía no anoté ninguno. O me los olvidé, que sería peor.",
+	Entry.ERRANDS: "Lo que me toca hacer, escrito a mano. Lo que ya hice, tachado, por el gusto de tacharlo.",
 	Entry.TOWN: "Una posada, una olla y demasiada gente para tan pocas calles. Anotar nombres antes de que se me olviden.",
 	Entry.OPTIONS: "Por ahora no hay nada que ajustar. Si algo molesta, probar con respirar más hondo.",
 	Entry.LOAD: "Lo que se guarda, se guarda durmiendo. Por ahora no hay nada que cargar, salvo la valija.",
 	Entry.QUIT: "Cerrar el libro. El pueblo va a seguir aquí mañana. Eso espero.",
 }
-const NAME_VALUE := "Todavía no me acuerdo"
 const ROOM_VALUE := "La de arriba"
 const HINT := Hud.CHOICE_HINT + "     [Esc] seguir"
+const LIST_HINT := "[W/S] elegir     [Esc] volver"
 
 const DIM_COLOR := Color(0, 0, 0, 0.5)
 const HINT_SIZE := 22
@@ -80,6 +82,9 @@ const FIELD_SIZE := 42
 const ENTRY_SIZE := 44
 const NOTE_TITLE_SIZE := 48
 const NOTE_SIZE := 38
+# Con la Estabilidad baja escribe más chico y con la tinta más pálida.
+const LOW_NOTE_SIZE := 32
+const INK_LOW := Color(INK, 0.6)
 const LEFT_COLUMNS := ["Fecha", "Nombre", "Procedencia"]
 const LEFT_COLUMN_STARTS := [0.0, 0.2, 0.72]
 const LEFT_WRITING_COLUMN := 1
@@ -92,6 +97,8 @@ var notebook_available: Callable
 var _notebook := false
 var _entries: Array[Entry] = []
 var _selected := 0
+var _view := View.CONTENTS
+var _item_selected := 0
 var _handwriting := FontVariation.new()
 var _plain_bold := FontVariation.new()
 
@@ -101,6 +108,9 @@ var _book_root := Control.new()
 var _book_rows: Array[Label] = []
 var _note_title: Label
 var _note_body: Label
+var _name_field: Label
+var _book_hint: Label
+var _index: NotebookIndex
 var _marker_style := StyleBoxFlat.new()
 var _no_style := StyleBoxEmpty.new()
 
@@ -137,6 +147,18 @@ func selected_entry() -> Entry:
 
 func note_title() -> String:
 	return _note_title.text
+
+func view() -> View:
+	return _view
+
+func index_titles() -> Array[String]:
+	var titles: Array[String] = []
+	for entry in _index.entries:
+		titles.append(entry.title)
+	return titles
+
+func selected_item() -> NotebookEntryDef:
+	return _index.entries[_item_selected]
 
 func _build_plain() -> void:
 	var center := _make_centered(_plain_root)
@@ -198,7 +220,8 @@ func _build_book() -> void:
 	spread.add_theme_constant_override("separation", 0)
 	cover.add_child(spread)
 
-	var left := _make_page("Nombre", NAME_VALUE)
+	var left := _make_page("Nombre", Catalogs.notebook.name_value())
+	_name_field = left.field_value
 	left.columns = PackedStringArray(LEFT_COLUMNS)
 	left.column_starts = PackedFloat32Array(LEFT_COLUMN_STARTS)
 	left.writing_column = LEFT_WRITING_COLUMN
@@ -218,11 +241,12 @@ func _build_book() -> void:
 	right.body.add_child(_note_title)
 	_note_body = _make_label(_handwriting, NOTE_SIZE, INK)
 	_note_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	# Cada linea de la nota cae sobre un renglon del registro.
-	_note_body.add_theme_constant_override("line_spacing", int(RegisterPage.ROW_HEIGHT - _handwriting.get_height(NOTE_SIZE)))
 	right.body.add_child(_note_body)
+	_style_note(NOTE_SIZE, INK)
+	_index = NotebookIndex.new(left.body, right.body, _note_title, _make_row.bind(ENTRY_SIZE, INK_IDLE))
 
-	stack.add_child(_make_hint())
+	_book_hint = _make_hint()
+	stack.add_child(_book_hint)
 
 # Raiz de una vista a pantalla completa, con su contenido centrado.
 func _make_centered(root: Control) -> CenterContainer:
@@ -268,19 +292,24 @@ func _style_label(label: Label, font: Font, size: int, color: Color) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"pause"):
 		get_viewport().set_input_as_handled()
-		if visible:
-			_close()
-		else:
+		if not visible:
 			_open()
+		elif _view != View.CONTENTS:
+			_set_view(View.CONTENTS)
+		else:
+			_close()
 		return
 	if not visible:
 		return
 	get_viewport().set_input_as_handled()
 	var step := int(event.is_action_pressed(&"move_down")) - int(event.is_action_pressed(&"move_up"))
 	if step != 0:
-		_selected = posmod(_selected + step, _entries.size())
+		if _view != View.CONTENTS:
+			_item_selected = posmod(_item_selected + step, _index.entries.size())
+		else:
+			_selected = posmod(_selected + step, _entries.size())
 		_render()
-	elif event.is_action_pressed(&"interact"):
+	elif event.is_action_pressed(&"interact") and _view == View.CONTENTS:
 		_confirm(selected_entry())
 
 # Un dialogo abierto o un fundido en curso tienen prioridad: abrir encima dejaria
@@ -291,6 +320,8 @@ func _open() -> void:
 	_notebook = notebook_available.call()
 	_entries = NOTEBOOK_ENTRIES if _notebook else PLAIN_ENTRIES
 	_selected = 0
+	_name_field.text = Catalogs.notebook.name_value()
+	_set_view(View.CONTENTS, false)
 	_plain_root.visible = not _notebook
 	_book_root.visible = _notebook
 	visible = true
@@ -306,8 +337,30 @@ func _confirm(entry: Entry) -> void:
 	match entry:
 		Entry.RESUME:
 			_close()
+		Entry.ERRANDS:
+			_open_list(View.ERRANDS, NotebookData.Section.ERRANDS)
+		Entry.TOWN:
+			_open_list(View.TOWN, NotebookData.Section.TOWN)
 		Entry.QUIT:
 			get_tree().quit()
+
+# Una sección sin nada que mostrar no abre la vista: queda su nota de la contratapa.
+func _open_list(target: View, section: NotebookData.Section) -> void:
+	_index.refresh(section)
+	if _index.entries.is_empty():
+		return
+	_item_selected = 0
+	_set_view(target)
+
+func _set_view(next_view: View, render := true) -> void:
+	_view = next_view
+	var in_list := next_view != View.CONTENTS
+	for row in _book_rows:
+		row.visible = not in_list
+	_index.set_active(in_list)
+	_book_hint.text = LIST_HINT if in_list else HINT
+	if render:
+		_render()
 
 func _render() -> void:
 	if _notebook:
@@ -323,11 +376,35 @@ func _render_plain() -> void:
 		_plain_rows[i].add_theme_color_override("font_color", PLAIN_SELECTED if chosen else PLAIN_IDLE)
 
 func _render_book() -> void:
+	if _view != View.CONTENTS:
+		_render_index()
+		return
+	_mark_selected(_book_rows, _selected)
 	for i in _book_rows.size():
-		var chosen := i == _selected
 		_book_rows[i].text = ENTRY_LABELS[_entries[i]]
-		_book_rows[i].add_theme_stylebox_override("normal", _marker_style if chosen else _no_style)
-		_book_rows[i].add_theme_color_override("font_color", INK if chosen else INK_IDLE)
 	var entry := selected_entry()
 	_note_title.text = RESUME_NOTE_TITLE if entry == Entry.RESUME else ENTRY_LABELS[entry]
 	_note_body.text = ENTRY_NOTES[entry]
+	_style_note(NOTE_SIZE, INK)
+
+func _render_index() -> void:
+	_mark_selected(_index.rows, _item_selected)
+	var entry := selected_item()
+	var low := GameState.is_low_stability(GameState.stability, GameState.max_stability)
+	_index.show_drawing(entry)
+	_note_title.text = entry.title
+	_note_body.text = Catalogs.notebook.note_for(entry, low)
+	_style_note(LOW_NOTE_SIZE if low else NOTE_SIZE, INK_LOW if low else INK)
+
+# La fila elegida lleva el marcador; las demás, tinta apagada.
+func _mark_selected(rows: Array[Label], selected: int) -> void:
+	for i in rows.size():
+		var chosen := i == selected
+		rows[i].add_theme_stylebox_override("normal", _marker_style if chosen else _no_style)
+		rows[i].add_theme_color_override("font_color", INK if chosen else INK_IDLE)
+
+# Cada linea de la nota cae sobre un renglon del registro, sea cual sea el tamaño.
+func _style_note(size: int, color: Color) -> void:
+	_note_body.add_theme_font_size_override("font_size", size)
+	_note_body.add_theme_color_override("font_color", color)
+	_note_body.add_theme_constant_override("line_spacing", int(RegisterPage.ROW_HEIGHT - _handwriting.get_height(size)))
