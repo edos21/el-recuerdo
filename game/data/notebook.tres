@@ -111,6 +111,7 @@ note = "Doña Flor nombró a su marido como si estuviera en la cocina. No he vis
 script = ExtResource("2_entry")
 id = "flor_husband"
 title = "El marido de Doña Flor"
+section = 1
 stages = Array[ExtResource("1_stage")]([SubResource("Stage_flor_husband_0")])
 
 [sub_resource type="Resource" id="Stage_name_0"]

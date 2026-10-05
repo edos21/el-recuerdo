@@ -5,4 +5,5 @@ extends Resource
 
 @export var id := ""
 @export var title := ""
+@export var section: NotebookData.Section = NotebookData.Section.ERRANDS
 @export var stages: Array[NotebookStageDef] = []

@@ -1,6 +1,6 @@
-class_name NotebookErrands
+class_name NotebookIndex
 extends RefCounted
-# Sub-vista de Encargos del cuaderno: el índice de lo anotado en la página
+# Índice de una sección del cuaderno (Encargos, El pueblo): lo anotado en la página
 # izquierda (los cumplidos tachados, al final) y el dibujo de la entrada elegida
 # en la derecha. Solo arma y muestra; qué hay y en qué etapa lo dice NotebookData
 # y la nota la escribe PauseMenu en sus rótulos de siempre.
@@ -38,8 +38,8 @@ func _init(left_body: Control, right_body: Control, title: Control, make_row: Ca
 	right_body.move_child(_drawing, title.get_index() + 1)
 
 # Vuelve a leer el catálogo: lo que se hizo desde la última vez cambia de etapa.
-func refresh() -> void:
-	entries = Catalogs.notebook.visible_entries().slice(0, MAX_ROWS)
+func refresh(section: NotebookData.Section) -> void:
+	entries = Catalogs.notebook.visible_entries(section).slice(0, MAX_ROWS)
 	for i in MAX_ROWS:
 		var shown := i < entries.size()
 		rows[i].visible = shown
@@ -50,7 +50,7 @@ func refresh() -> void:
 		var size := rows[i].get_theme_font_size("font_size")
 		_strikes[i].span = font.get_string_size(entries[i].title, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x if Catalogs.notebook.is_done(entries[i]) else 0.0
 
-# Muestra u oculta toda la sub-vista (el dibujo solo con algo que dibujar).
+# Muestra u oculta todo el índice (el dibujo solo con algo que dibujar).
 func set_active(active: bool) -> void:
 	if not active:
 		for row in rows:

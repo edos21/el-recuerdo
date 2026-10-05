@@ -7,8 +7,8 @@ extends CanvasLayer
 # codigo, como el fundido de SceneRouter.
 
 enum Entry { RESUME, ERRANDS, TOWN, OPTIONS, LOAD, QUIT }
-# Dentro del libro: la contratapa (el índice de siempre) o la lista de encargos.
-enum View { CONTENTS, ERRANDS }
+# Dentro del libro: la contratapa (el índice de siempre) o la lista de una sección.
+enum View { CONTENTS, ERRANDS, TOWN }
 
 const PAUSE_HOLDER := &"menu"
 const CAVEAT := preload("res://assets/fonts/Caveat-VariableFont_wght.ttf")
@@ -33,7 +33,7 @@ const ENTRY_LABELS := {
 const RESUME_NOTE_TITLE := "Instrucciones para detenerse"
 const ENTRY_NOTES := {
 	Entry.RESUME: "Primero, dejar de moverse. Después, esperar a que el mundo también se dé cuenta.",
-	Entry.ERRANDS: "Todavía no anoté ninguno. O me los olvidé, que sería peor.",
+	Entry.ERRANDS: "Lo que me toca hacer, escrito a mano. Lo que ya hice, tachado, por el gusto de tacharlo.",
 	Entry.TOWN: "Una posada, una olla y demasiada gente para tan pocas calles. Anotar nombres antes de que se me olviden.",
 	Entry.OPTIONS: "Por ahora no hay nada que ajustar. Si algo molesta, probar con respirar más hondo.",
 	Entry.LOAD: "Lo que se guarda, se guarda durmiendo. Por ahora no hay nada que cargar, salvo la valija.",
@@ -41,7 +41,7 @@ const ENTRY_NOTES := {
 }
 const ROOM_VALUE := "La de arriba"
 const HINT := Hud.CHOICE_HINT + "     [Esc] seguir"
-const ERRANDS_HINT := "[W/S] elegir     [Esc] volver"
+const LIST_HINT := "[W/S] elegir     [Esc] volver"
 
 const DIM_COLOR := Color(0, 0, 0, 0.5)
 const HINT_SIZE := 22
@@ -98,7 +98,7 @@ var _notebook := false
 var _entries: Array[Entry] = []
 var _selected := 0
 var _view := View.CONTENTS
-var _errand_selected := 0
+var _item_selected := 0
 var _handwriting := FontVariation.new()
 var _plain_bold := FontVariation.new()
 
@@ -110,7 +110,7 @@ var _note_title: Label
 var _note_body: Label
 var _name_field: Label
 var _book_hint: Label
-var _errands: NotebookErrands
+var _index: NotebookIndex
 var _marker_style := StyleBoxFlat.new()
 var _no_style := StyleBoxEmpty.new()
 
@@ -151,14 +151,14 @@ func note_title() -> String:
 func view() -> View:
 	return _view
 
-func errand_titles() -> Array[String]:
+func index_titles() -> Array[String]:
 	var titles: Array[String] = []
-	for entry in _errands.entries:
+	for entry in _index.entries:
 		titles.append(entry.title)
 	return titles
 
-func selected_errand() -> NotebookEntryDef:
-	return _errands.entries[_errand_selected]
+func selected_item() -> NotebookEntryDef:
+	return _index.entries[_item_selected]
 
 func _build_plain() -> void:
 	var center := _make_centered(_plain_root)
@@ -243,7 +243,7 @@ func _build_book() -> void:
 	_note_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.body.add_child(_note_body)
 	_style_note(NOTE_SIZE, INK)
-	_errands = NotebookErrands.new(left.body, right.body, _note_title, _make_row.bind(ENTRY_SIZE, INK_IDLE))
+	_index = NotebookIndex.new(left.body, right.body, _note_title, _make_row.bind(ENTRY_SIZE, INK_IDLE))
 
 	_book_hint = _make_hint()
 	stack.add_child(_book_hint)
@@ -294,7 +294,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		if not visible:
 			_open()
-		elif _view == View.ERRANDS:
+		elif _view != View.CONTENTS:
 			_set_view(View.CONTENTS)
 		else:
 			_close()
@@ -304,8 +304,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	var step := int(event.is_action_pressed(&"move_down")) - int(event.is_action_pressed(&"move_up"))
 	if step != 0:
-		if _view == View.ERRANDS:
-			_errand_selected = posmod(_errand_selected + step, _errands.entries.size())
+		if _view != View.CONTENTS:
+			_item_selected = posmod(_item_selected + step, _index.entries.size())
 		else:
 			_selected = posmod(_selected + step, _entries.size())
 		_render()
@@ -338,20 +338,27 @@ func _confirm(entry: Entry) -> void:
 		Entry.RESUME:
 			_close()
 		Entry.ERRANDS:
-			_errands.refresh()
-			if not _errands.entries.is_empty():
-				_errand_selected = 0
-				_set_view(View.ERRANDS)
+			_open_list(View.ERRANDS, NotebookData.Section.ERRANDS)
+		Entry.TOWN:
+			_open_list(View.TOWN, NotebookData.Section.TOWN)
 		Entry.QUIT:
 			get_tree().quit()
 
+# Una sección sin nada que mostrar no abre la vista: queda su nota de la contratapa.
+func _open_list(target: View, section: NotebookData.Section) -> void:
+	_index.refresh(section)
+	if _index.entries.is_empty():
+		return
+	_item_selected = 0
+	_set_view(target)
+
 func _set_view(next_view: View, render := true) -> void:
 	_view = next_view
-	var in_errands := next_view == View.ERRANDS
+	var in_list := next_view != View.CONTENTS
 	for row in _book_rows:
-		row.visible = not in_errands
-	_errands.set_active(in_errands)
-	_book_hint.text = ERRANDS_HINT if in_errands else HINT
+		row.visible = not in_list
+	_index.set_active(in_list)
+	_book_hint.text = LIST_HINT if in_list else HINT
 	if render:
 		_render()
 
@@ -369,8 +376,8 @@ func _render_plain() -> void:
 		_plain_rows[i].add_theme_color_override("font_color", PLAIN_SELECTED if chosen else PLAIN_IDLE)
 
 func _render_book() -> void:
-	if _view == View.ERRANDS:
-		_render_errands()
+	if _view != View.CONTENTS:
+		_render_index()
 		return
 	_mark_selected(_book_rows, _selected)
 	for i in _book_rows.size():
@@ -380,11 +387,11 @@ func _render_book() -> void:
 	_note_body.text = ENTRY_NOTES[entry]
 	_style_note(NOTE_SIZE, INK)
 
-func _render_errands() -> void:
-	_mark_selected(_errands.rows, _errand_selected)
-	var entry := selected_errand()
+func _render_index() -> void:
+	_mark_selected(_index.rows, _item_selected)
+	var entry := selected_item()
 	var low := GameState.is_low_stability(GameState.stability, GameState.max_stability)
-	_errands.show_drawing(entry)
+	_index.show_drawing(entry)
 	_note_title.text = entry.title
 	_note_body.text = Catalogs.notebook.note_for(entry, low)
 	_style_note(LOW_NOTE_SIZE if low else NOTE_SIZE, INK_LOW if low else INK)

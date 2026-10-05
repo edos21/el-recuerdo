@@ -9,6 +9,9 @@ extends Resource
 # manda la entrada al final del índice.
 
 enum Stage { NOTED, IN_PROGRESS, DONE, CHANGED }
+# Dónde se lista una entrada: los encargos son cosas por hacer (se tachan); lo del pueblo,
+# curiosidades que no se cumplen ni se tachan.
+enum Section { ERRANDS, TOWN }
 
 const DRAWING_DIR := "res://assets/notebook/%s.png"
 
@@ -62,13 +65,13 @@ func note_for(of: NotebookEntryDef, low: bool) -> String:
 			return of.stages[i].note
 	return ""
 
-# En curso en el orden del catálogo, cumplidas al final.
-func visible_entries() -> Array[NotebookEntryDef]:
+# De una sección: en curso en el orden del catálogo, cumplidas al final.
+func visible_entries(section: Section) -> Array[NotebookEntryDef]:
 	var open: Array[NotebookEntryDef] = []
 	var done: Array[NotebookEntryDef] = []
 	for entry in entries:
 		var stage := current_stage(entry)
-		if stage == null:
+		if stage == null or entry.section != section:
 			continue
 		if stage.stage == Stage.DONE:
 			done.append(entry)

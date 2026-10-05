@@ -17,6 +17,7 @@ func _ready() -> void:
 	_check_inheritance_and_low_note()
 	_check_retroactive_entries()
 	await _check_errands_view()
+	await _check_town_view()
 	_finish("check_notebook")
 
 func _on_timeout() -> void:
@@ -33,12 +34,15 @@ func _stage_of(entry_id: String) -> NotebookData.Stage:
 	return stage.stage if stage != null else -1 as NotebookData.Stage
 
 func _is_listed(entry_id: String) -> bool:
-	return Catalogs.notebook.visible_entries().has(Catalogs.notebook.find_entry(entry_id))
+	var entry := Catalogs.notebook.find_entry(entry_id)
+	return Catalogs.notebook.visible_entries(entry.section).has(entry)
 
 func _check_catalog() -> void:
 	GameState.reset()
 	var notebook := Catalogs.notebook
-	_expect(notebook.entries.size() <= NotebookErrands.MAX_ROWS, "las entradas caben en el índice")
+	for section in NotebookData.Section.values():
+		var count := notebook.entries.filter(func(entry: NotebookEntryDef) -> bool: return entry.section == section).size()
+		_expect(count <= NotebookIndex.MAX_ROWS, "las entradas de la sección %d caben en el índice" % section)
 	var known_keys := ["wake_pending", "beat_done", "beat_pending", "has_item", "lacks_item", "slept_since", "memory_locked", "knows"]
 	for entry in notebook.entries:
 		_expect(ResourceLoader.exists(notebook.drawing_path(entry)), "'%s' tiene dibujo" % entry.id)
@@ -58,7 +62,7 @@ func _check_stages() -> void:
 	GameState.remove_item(Dialogues.KEYS)
 	GameState.complete_beat(BeatData.TOMAS_KEYS)
 	_expect(_stage_of("tomas_keys") == NotebookData.Stage.DONE, "devueltas, el encargo se cumple")
-	var listed := Catalogs.notebook.visible_entries()
+	var listed := Catalogs.notebook.visible_entries(NotebookData.Section.ERRANDS)
 	_expect(listed.back().id == "tomas_keys", "lo cumplido va al final del índice")
 	_expect(Catalogs.notebook.is_done(_entry("tomas_keys")), "is_done refleja el tachado")
 	GameState.add_item(Dialogues.BUCKET)
@@ -92,6 +96,8 @@ func _check_retroactive_entries() -> void:
 		_expect(_is_listed(entry_id), "recién recibido el libro, '%s' ya está anotado" % entry_id)
 	_expect(_stage_of("broth") == NotebookData.Stage.DONE, "el caldo ya está cumplido")
 	_expect(_stage_of("flor_husband") == NotebookData.Stage.NOTED, "el marido de Doña Flor queda abierto")
+	_expect(not Catalogs.notebook.visible_entries(NotebookData.Section.ERRANDS).has(_entry("flor_husband")), "el marido de Doña Flor no es un encargo")
+	_expect(Catalogs.notebook.visible_entries(NotebookData.Section.TOWN).has(_entry("flor_husband")), "el marido de Doña Flor es una curiosidad del pueblo")
 
 func _check_errands_view() -> void:
 	GameState.reset()
@@ -105,7 +111,7 @@ func _check_errands_view() -> void:
 	await _press_and_wait("move_down")
 	await _press_and_wait("interact")
 	_expect(core.menu.view() == PauseMenu.View.ERRANDS, "confirmar Encargos abre la lista")
-	_expect(core.menu.errand_titles() == ["Desperté", "Las llaves de Tomás"], "el índice lista lo anotado")
+	_expect(core.menu.index_titles() == ["Desperté", "Las llaves de Tomás"], "el índice lista lo anotado")
 	await _press_and_wait("move_down")
 	_expect(core.menu.note_title() == "Las llaves de Tomás", "la página derecha muestra el encargo elegido")
 	await _press_and_wait("move_down")
@@ -113,8 +119,32 @@ func _check_errands_view() -> void:
 	await _press_and_wait("pause")
 	_expect(core.menu.is_open() and core.menu.view() == PauseMenu.View.CONTENTS, "Esc vuelve a la contratapa sin cerrar el libro")
 	_expect(get_tree().paused, "el libro sigue pausando")
+	await _press_and_wait("move_down")
+	await _press_and_wait("interact")
+	_expect(core.menu.view() == PauseMenu.View.CONTENTS, "El pueblo sin curiosidades anotadas no abre la lista")
 	await _press_and_wait("pause")
 	_expect(not core.menu.is_open() and not get_tree().paused, "el segundo Esc cierra el libro")
+	Pause.clear()
+	core.queue_free()
+	await _wait_frames(SETTLE_FRAMES)
+
+func _check_town_view() -> void:
+	GameState.reset()
+	GameState.complete_beat(BeatData.GUEST_BOOK)
+	GameState.receive_notebook()
+	var core: Core = CORE_SCENE.instantiate()
+	core.context = Core.Context.HUB
+	add_child(core)
+	await _wait_frames(SETTLE_FRAMES)
+	await _press_and_wait("pause")
+	await _press_and_wait("move_down")
+	await _press_and_wait("move_down")
+	await _press_and_wait("interact")
+	_expect(core.menu.view() == PauseMenu.View.TOWN, "confirmar El pueblo abre sus curiosidades")
+	_expect(core.menu.index_titles() == ["El marido de Doña Flor"], "El pueblo lista el marido de Doña Flor y no los encargos")
+	await _press_and_wait("pause")
+	_expect(core.menu.is_open() and core.menu.view() == PauseMenu.View.CONTENTS, "Esc vuelve a la contratapa desde El pueblo")
+	await _press_and_wait("pause")
 	Pause.clear()
 	core.queue_free()
 	await _wait_frames(SETTLE_FRAMES)
