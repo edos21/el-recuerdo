@@ -9,8 +9,9 @@ extends Resource
 # manda la entrada al final del índice.
 
 enum Stage { NOTED, IN_PROGRESS, DONE, CHANGED }
-# Dónde se lista una entrada: los encargos son cosas por hacer (se tachan); lo del pueblo,
-# curiosidades que no se cumplen ni se tachan.
+# Dónde se lista una entrada: ERRANDS son los encargos y misiones (cosas por hacer, se
+# tachan al cumplirse); TOWN son las curiosidades, los personajes y los lugares (se saben
+# o se notan, no se cumplen). Ante la duda: si se puede tachar, es un encargo.
 enum Section { ERRANDS, TOWN }
 
 const DRAWING_DIR := "res://assets/notebook/%s.png"

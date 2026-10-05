@@ -12,6 +12,7 @@ note = "Llegada: no recuerdo. Procedencia: el puerto, dicen. Equipaje: una valij
 script = ExtResource("2_entry")
 id = "woke_up"
 title = "Desperté"
+section = 1
 stages = Array[ExtResource("1_stage")]([SubResource("Stage_woke_up_0")])
 
 [sub_resource type="Resource" id="Stage_tomas_keys_0"]
